@@ -1,4 +1,5 @@
 logs/
+dist/
 
 # 依赖
 vendor/

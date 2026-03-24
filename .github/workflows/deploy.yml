@@ -1,0 +1,59 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1) 拉取代码
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2) 安装 PHP（启用 zip 扩展）
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: zip
+          tools: composer
+
+      # 3) 缓存 Composer 依赖，加速构建
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: |
+            vendor
+            ~/.composer/cache
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      # 4) 安装依赖
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      # 5) 构建站点
+      - name: Build
+        run: php main.php build
+
+      # 6) 部署 dist 到 gh-pages 分支
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          publish_branch: gh-pages
+          force_orphan: true
