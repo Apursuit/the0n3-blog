@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - linux包管理、换源</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <main class="markdown-body">
+            
+<article class="post-content">
+    <h1>linux包管理、换源</h1>
+    <p>
+        <span class="meta">发布于: 2024-09-08 06:17</span>
+    </p>
+    <div class="post-body">
+        <h1>linux包管理、换源</h1>
+<p>在刚接触ubuntu的过程中，在浏览器下载到了chrome的deb安装包，不知道怎么使用，手足无措，未知的畏惧。希望通过gpt给出命令行apt安装的方式，一直没有理解这个过程，一只学习路上的拦路虎，现在总结学到的linux包管理芝士，知识学爆。</p>
+<h2>(安装)包和(软件)源</h2>
+<p>大多数linux系统在安装后都会有默认的源配置，这些默认源通常包括了操作系统维护者推荐的官方存储库，确保系统可以获取到必要的更新和软件包。包是从源获取到的，因此可能会收到源中给出的软件包服务器地址影响，从而影响<code>下载速度</code>和<code>安全性</code>。<code>一般，安装一个系统后，可以首先更改为国内阿里云，清华，中科大软件源，加快下载、更新</code></p>
+<h3>Ubuntu/Debian更换源</h3>
+<pre><code class="language-bash">sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak # 备份原有源
+sudo rm /etc/apt/sources.list # 删除原有源
+sudo vi /etc/apt/sources.list # 创建</code></pre>
+<p>配置内容</p>
+<pre><code class="language-ini">deb http://mirrors.aliyun.com/ubuntu/ jammy main restricted
+deb http://mirrors.aliyun.com/ubuntu/ jammy-updates main restricted
+deb http://mirrors.aliyun.com/ubuntu/ jammy universe
+deb http://mirrors.aliyun.com/ubuntu/ jammy-updates universe
+deb http://mirrors.aliyun.com/ubuntu/ jammy multiverse
+deb http://mirrors.aliyun.com/ubuntu/ jammy-updates multiverse
+deb http://mirrors.aliyun.com/ubuntu/ jammy-backports main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ jammy-security main restricted
+deb http://mirrors.aliyun.com/ubuntu/ jammy-security universe
+deb http://mirrors.aliyun.com/ubuntu/ jammy-security multiverse</code></pre>
+<pre><code class="language-bash">sudo apt update # 更新软件列表</code></pre>
+<h3>CentOS更换源</h3>
+<pre><code class="language-bash">sudo cp /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.bak # 备份原有源
+sudo rm /etc/yum.repos.d/CentOS-Base.repo # 删除原有源
+sudo vi /etc/yum.repos.d/CentOS-Base.repo # 创建</code></pre>
+<p>以下是一些常用的国内centos 7镜像源，你可以选择其中一个替换。</p>
+<ul>
+<li>
+<p>阿里云源</p>
+<pre><code class="language-bash">sudo wget -O /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-7.repo</code></pre>
+</li>
+<li>
+<p>清华大学源</p>
+<pre><code class="language-bash">sudo wget -O /etc/yum.repos.d/CentOS-Base.repo https://mirrors.tuna.tsinghua.edu.cn/repo/Centos-7.repo</code></pre>
+</li>
+<li>
+<p>网易源</p>
+<pre><code class="language-bash">sudo wget -O /etc/yum.repos.d/CentOS-Base.repo http://mirrors.163.com/.help/CentOS7-Base-163.repo</code></pre>
+</li>
+<li>
+<p>中科大源</p>
+<pre><code class="language-bash">sudo wget -O /etc/yum.repos.d/CentOS-Base.repo http://mirrors.ustc.edu.cn/centos/7/os/x86_64/</code></pre>
+</li>
+</ul>
+<p>如果是最小安装没有wget，把下面内容写入<code>/etc/yum.repos.d/CentOS-Base.repo</code>文件中</p>
+<pre><code>[base]
+name=CentOS-$releasever - Base - mirrors.aliyun.com
+failovermethod=priority
+baseurl=http://mirrors.aliyun.com/centos/$releasever/os/$basearch/
+        http://mirrors.aliyuncs.com/centos/$releasever/os/$basearch/
+        http://mirrors.cloud.aliyuncs.com/centos/$releasever/os/$basearch/
+gpgcheck=1
+gpgkey=http://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-7
+
+[updates]
+name=CentOS-$releasever - Updates - mirrors.aliyun.com
+failovermethod=priority
+baseurl=http://mirrors.aliyun.com/centos/$releasever/updates/$basearch/
+        http://mirrors.aliyuncs.com/centos/$releasever/updates/$basearch/
+        http://mirrors.cloud.aliyuncs.com/centos/$releasever/updates/$basearch/
+gpgcheck=1
+gpgkey=http://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-7
+
+[extras]
+name=CentOS-$releasever - Extras - mirrors.aliyun.com
+failovermethod=priority
+baseurl=http://mirrors.aliyun.com/centos/$releasever/extras/$basearch/
+        http://mirrors.aliyuncs.com/centos/$releasever/extras/$basearch/
+        http://mirrors.cloud.aliyuncs.com/centos/$releasever/extras/$basearch/
+gpgcheck=1
+gpgkey=http://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-7
+
+[centosplus]
+name=CentOS-$releasever - Plus - mirrors.aliyun.com
+failovermethod=priority
+baseurl=http://mirrors.aliyun.com/centos/$releasever/centosplus/$basearch/
+        http://mirrors.aliyuncs.com/centos/$releasever/centosplus/$basearch/
+        http://mirrors.cloud.aliyuncs.com/centos/$releasever/centosplus/$basearch/
+gpgcheck=1
+enabled=0
+gpgkey=http://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-7
+
+[contrib]
+name=CentOS-$releasever - Contrib - mirrors.aliyun.com
+failovermethod=priority
+baseurl=http://mirrors.aliyun.com/centos/$releasever/contrib/$basearch/
+        http://mirrors.aliyuncs.com/centos/$releasever/contrib/$basearch/
+        http://mirrors.cloud.aliyuncs.com/centos/$releasever/contrib/$basearch/
+gpgcheck=1
+enabled=0
+gpgkey=http://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-7</code></pre>
+<pre><code class="language-bash">yum clean all
+yum makecache</code></pre>
+<h2>Redhat的yum/dnf包管理系统，以及rpm包管理</h2>
+<p>rpm提供单一镜像包，yum会提供镜像和依赖。大型项目时，rpm包处理比较繁琐，使用yum包会更简单</p>
+<p>学习《linux操作系统(微课版)Redhat8/centos8》过程，介绍了Redhat的yum dnf包管理系统，通过yum,dnf来管理BaseOS,APPstream两个软件包。同时介绍了一些dnf命令，通过测试yum,dnf,apt这些简单的指令几乎通用？</p>
+<pre><code class="language-bash">sudo dnf list all # 显示所有软件包
+sudo dnf info 软件名称 # 显示仓库软件相关信息
+sudo dnf install 软件名称 # 安装软件
+sudo dnf remove 软件名称 # 移除安装的软件
+sudo dnf clean all # 清楚缓存</code></pre>
+<p>在redhat/centos中，有一种低级工具rpm包管理，在浏览器下载的安装包一般是<code>.rpm</code>的RPM系格式</p>
+<pre><code class="language-bash">sudo rpm -ivh 软件名.rpm  # 安装rpm格式的安装包
+sudo rpm -e 软件名 # 移除某软件
+rpm -q 软件名 # 查询已安装软件包</code></pre>
+<h2>yum/dnf管理的BaseOS与APPstream</h2>
+<p><strong>BaseOS</strong> 提供了一个基础系统环境。它为各种应用程序和服务提供稳定的运行环境，包含内核、系统工具、基础库（如 <code>glibc</code>）、核心服务（如 <code>sshd</code>）、文件系统工具等。简单说，提供系统必须的环境/工具</p>
+<p><strong>AppStream</strong>（应用流）存储库包含了各种用户空间的应用程序、开发工具、数据库、语言运行时等，例如python,php,nodejs,mysql</p>
+<p>测试：</p>
+<pre><code class="language-bash">[cola@bogon ~]$ yum info php 
+Last metadata expiration check: 0:30:51 ago on Sat 07 Sep 2024 04:35:06 AM PDT.
+Available Packages
+Name         : php
+Version      : 7.2.24
+Release      : 1.module_el8.2.0+313+b04d0a66
+Arch         : x86_64
+Size         : 1.5 M
+Source       : php-7.2.24-1.module_el8.2.0+313+b04d0a66.src.rpm
+Repo         : AppStream # 在这里可以得到验证，php属于appstream给用户提供的可选包
+Summary      : PHP scripting language for creating dynamic web sites
+URL          : http://www.php.net/
+License      : PHP and Zend and BSD and MIT and ASL 1.0
+Description  : PHP is an HTML-embedded scripting language. PHP attempts to make it
+             : easy for developers to write dynamically generated web pages. PHP also
+             : offers built-in database integration for several commercial and
+             : non-commercial database management systems, so writing a
+             : database-enabled webpage with PHP is fairly simple. The most common
+             : use of PHP coding is probably as a replacement for CGI scripts.
+             : 
+             : The php package contains the module (often referred to as mod_php)
+             : which adds support for the PHP language to Apache HTTP Server.</code></pre>
+<h2>ubuntu的apt/dpkg包管理系统，及snap商店</h2>
+<p>在使用gpt提供的指令玩ubuntu时，见到更多的是apt安装软件的方式。上面提到，apt包管理指令类似yum/dnf</p>
+<pre><code class="language-bash">sudo apt update # 更新软件包列表
+sudo apt upgrade # 更新软件包列表
+sudo apt search 软件名 # 搜索包列表是否有某个软件   
+sudo apt info 软件名 # 查看软件相关信息
+sudo apt install 软件名 # 安装某软件
+sudo apt remove 软件名 # 移除某软件
+sudo apt list --installed # 列出通过apt已安装软件</code></pre>
+<p><img src="/images/package/apt.png" alt="apt" /></p>
+<p>在ubuntu中，有一种低级工具dpkg包管理，在浏览器下载的安装包一般是<code>.deb</code>的debian系格式</p>
+<pre><code class="language-bash">sudo dpkg -i 安装包.deb # 安装deb格式的安装包 -i/install
+sudo dpkg -r 软件名 # 移除某软件 -r/remove</code></pre>
+<p><code>扩展：snap</code></p>
+<p>在ubuntu desktop22.04中，自带的软件商店又叫snap商店，可以通过简单的点击实现安装软件。在刷知乎时，看到大佬们提到snap包一直被程序员诟病(段位太低，暂时只感到商店加载缓慢)。</p>
+<pre><code class="language-bash">snap list # 列出snap已安装软件
+sudo snap remove 软件名 # 移除某软件</code></pre>
+<p>主要缺点：</p>
+<ul>
+<li>性能问题：需要加载依赖，启动时间长，体验差</li>
+<li>软件包大小：<code>非常肿</code>  数据冗余，Snap 应用包含所有的依赖项</li>
+<li>应用更新：<code>指定snap更新</code>  Snap 应用会自动从 Snap 商店更新</li>
+</ul>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>linux</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#linux换源</span>
+                            </span>
+            </div>
+    </article>
+
+        </main>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>

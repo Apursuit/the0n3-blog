@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - Github action入门玩法</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>Github action入门玩法</h1>
+    <p>
+        <span class="meta">发布于: 2025-08-18 07:36</span>
+    </p>
+    <div class="post-body">
+        <h2>介绍</h2>
+<p>GitHub Actions 使用 GitHub 官方提供的虚拟机（ubuntu、windows、macOS），根据你的仓库脚本配置，在指定操作系统虚拟机里进行你编写的操作执行脚本，实现自动化。</p>
+<p>官方文档 <a href="https://docs.github.com/zh/actions">GitHub Actions</a></p>
+<h2>定价</h2>
+<p>Github 对于<strong>public</strong>仓库提供完全免费无限制的服务，对于<strong>private</strong>仓库的<strong>free</strong>订阅用户，提供每月2000分钟的免费使用时间，超出后按需付费。</p>
+<p>参考文档：</p>
+<ul>
+<li><a href="https://docs.github.com/zh/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job#%E9%80%82%E7%94%A8%E4%BA%8E%E4%B8%93%E7%94%A8%E5%AD%98%E5%82%A8%E5%BA%93%E7%9A%84%E6%A0%87%E5%87%86-github-%E6%89%98%E7%AE%A1%E7%9A%84%E8%BF%90%E8%A1%8C%E5%99%A8">Github action虚拟机配置</a></li>
+<li><a href="https://docs.github.com/zh/billing/concepts/product-billing/github-actions#per-minute-rates">Github action计费</a></li>
+</ul>
+<p>公共仓库可以使用的虚拟机配置</p>
+<p><img src="/images/github-action/1.png" alt="" /></p>
+<p>私有仓库可以使用的虚拟机配置</p>
+<p><img src="/images/github-action/3.png" alt="" /></p>
+<p>私有仓库使用时间上的限制</p>
+<p><img src="/images/github-action/2.png" alt="" /></p>
+<h2>可用镜像</h2>
+<p>参考文档：</p>
+<ul>
+<li><a href="https://github.com/actions/runner-images?tab=readme-ov-file#available-images">可用镜像</a></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>镜像</th>
+<th>YAML标签</th>
+<th>自带语言环境链接</th>
+<th>最新映像发布状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ubuntu 24.04</td>
+<td><code>ubuntu-latest</code> 或 <code>ubuntu-24.04</code></td>
+<td><a href="https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md">ubuntu-24.04</a></td>
+<td><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fsubir0071%2F385e39188f4280878bada99250e99db7%2Fraw%2Fubuntu24.json" alt="Endpoint Badge" /></td>
+</tr>
+<tr>
+<td>Ubuntu 22.04</td>
+<td><code>ubuntu-22.04</code></td>
+<td><a href="https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2204-Readme.md">ubuntu-22.04</a></td>
+<td><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fsubir0071%2F385e39188f4280878bada99250e99db7%2Fraw%2Fubuntu22.json" alt="Endpoint Badge" /></td>
+</tr>
+<tr>
+<td>macOS 15</td>
+<td><code>macos-15-large</code></td>
+<td><a href="https://github.com/actions/runner-images/blob/main/images/macos/macos-15-Readme.md">macOS-15</a></td>
+<td><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fsubir0071%2F385e39188f4280878bada99250e99db7%2Fraw%2Fmacos15.json" alt="Endpoint Badge" /></td>
+</tr>
+<tr>
+<td>macOS 15 Arm64</td>
+<td><code>macos-15</code> 或 <code>macos-15-xlarge</code></td>
+<td><a href="https://github.com/actions/runner-images/blob/main/images/macos/macos-15-arm64-Readme.md">macOS-15-arm64</a></td>
+<td><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fsubir0071%2F385e39188f4280878bada99250e99db7%2Fraw%2Fmacos15arm64.json" alt="Endpoint Badge" /></td>
+</tr>
+<tr>
+<td>macOS 14</td>
+<td><code>macos-latest-large</code> 或 <code>macos-14-large</code></td>
+<td><a href="https://github.com/actions/runner-images/blob/main/images/macos/macos-14-Readme.md">macOS-14</a></td>
+<td><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fsubir0071%2F385e39188f4280878bada99250e99db7%2Fraw%2Fmacos14.json" alt="Endpoint Badge" /></td>
+</tr>
+<tr>
+<td>macOS 14 Arm64</td>
+<td><code>macos-latest</code>/<code>macos-14</code>/<code>macos-latest-xlarge</code>/<code>macos-14-xlarge</code></td>
+<td><a href="https://github.com/actions/runner-images/blob/main/images/macos/macos-14-arm64-Readme.md">macOS-14-arm64</a></td>
+<td><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fsubir0071%2F385e39188f4280878bada99250e99db7%2Fraw%2Fmacos14arm64.json" alt="Endpoint Badge" /></td>
+</tr>
+</tbody>
+</table>
+<p>Github actions提供的虚拟机会自带一些编程语言环境，可用点击表格里的自带环境查看，例如这里<strong>ubuntu22.04</strong>提供的自带环境</p>
+<ul>
+<li><a href="https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2204-Readme.md#installed-software">ubuntu-22.04</a></li>
+</ul>
+<p><img src="/images/github-action/4.png" alt="" /></p>
+<h2>快速开始</h2>
+<p>了解完以上内容，可以快速入门，尝试Github actions的简单玩法了</p>
+<p>参考<strong>Github actions</strong><a href="https://docs.github.com/zh/actions/get-started/quickstart">【官方快速开始文档】</a></p>
+<p>需要先在 Github 上新建一个仓库，这里使用一个 public 仓库，配置高、免费且没有时间限制</p>
+<p>创建一个 public 仓库，描述、readme选项可选，可以不填、不勾</p>
+<p><img src="/images/github-action/5.png" alt="" /></p>
+<p>阅读<a href="https://docs.github.com/zh/actions/get-started/quickstart">【官方文档】</a>，需要创建指定目录结构<code>.github/workflows</code></p>
+<p><img src="/images/github-action/6.png" alt="" /></p>
+<p>刚刚创建好的仓库没有勾选readme，所以是这样的，点击创建文件</p>
+<p><img src="/images/github-action/7.png" alt="" /></p>
+<p>在目录里输入<code>.github/workflows/test.yml</code>，这会创建两层目录，<code>.github</code>和<code>workflows</code>，以及一个名为<code>test.yml</code>的文件</p>
+<p><img src="/images/github-action/8.png" alt="" /></p>
+<p>写一个需要手动点击执行的工作流，内容如下</p>
+<pre><code class="language-yml">name: 使用ubuntu自带python打印hello world
+
+on:
+  workflow_dispatch:   # 手动触发
+
+jobs:
+  print-hello-world:
+    name: 打印hello world
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: 打印 Hello World
+        run: |
+          python3 -c "print('Hello World')"</code></pre>
+<p>填入文件内容后，点击<code>commit changes</code>，提交这个更新到仓库</p>
+<p><img src="/images/github-action/9.png" alt="" /></p>
+<p>点击仓库的<code>Actions</code></p>
+<p><img src="/images/github-action/10.png" alt="" /></p>
+<p>可以看到左边已经有了刚刚写入的工作流，可以点击这个工作流，再点击右侧 <code>run workflow</code> 按钮手动触发工作流</p>
+<p><img src="/images/github-action/11.png" alt="" /></p>
+<p><img src="/images/github-action/12.png" alt="" /></p>
+<p>很快结束了这个任务</p>
+<p><img src="/images/github-action/13.png" alt="" /></p>
+<p>点进去查看具体内容，成功打印了hello world，整个流程只用了3s</p>
+<p><img src="/images/github-action/14.png" alt="" /></p>
+<h2>分析</h2>
+<p>简单讲讲这个工作流的内容</p>
+<pre><code class="language-yml">name: 使用ubuntu自带python打印hello world
+
+on:
+  workflow_dispatch:   # 手动触发
+
+jobs:
+  print-hello-world:
+    name: 打印hello world
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: 打印 Hello World
+        run: |
+          python3 -c "print('Hello World')"</code></pre>
+<ul>
+<li>name：工作流的名称，可以使用中文</li>
+<li>on：触发工作流的条件，这里是手动触发，还可以是<code>push</code>、<code>fork</code>等等操作</li>
+<li>jobs：任务名，这个工作流只有一个任务</li>
+<li>print-hello-world：任务名的id</li>
+<li>runs-on：指定这个任务运行的环境，这里是ubuntu-22.04</li>
+<li>steps：任务的具体步骤</li>
+<li>name：步骤的名称</li>
+<li>run：具体执行的命令，如果有多行命令，可以使用<code>|</code>符号</li>
+</ul>
+<p>可以拿这个工作流执行图自行对照一下</p>
+<p><img src="/images/github-action/15.png" alt="" /></p>
+<h2>工件</h2>
+<p>在仓库里创建了一个名为<code>hello.py</code>的python文件来打印hello world，在工作流里使用python hello.py，虚拟机找不到这个文件？</p>
+<p><img src="/images/github-action/16.png" alt="" /></p>
+<p><img src="/images/github-action/17.png" alt="" /></p>
+<p>python 报错，没有这个文件或文件夹</p>
+<p><img src="/images/github-action/18.png" alt="" /></p>
+<p>原因：工作流运行在一个全新的虚拟环境中，默认情况下执行工作流的虚拟机里是没有你仓库文件的，需要使用<code>工件</code>这个工具来拉取你仓库里的文件。</p>
+<p>修改yml文件内容，在jobs的steps下添加一个步骤，使用<code>actions/checkout</code>来检出代码，即拉取代码到虚拟机中</p>
+<p><img src="/images/github-action/19.png" alt="" /></p>
+<pre><code class="language-yml">name: 使用ubuntu自带python打印hello world
+
+on:
+  workflow_dispatch:   # 手动触发
+
+jobs:
+  print-hello-world:
+    name: 打印hello world
+    runs-on: ubuntu-22.04
+
+    steps:
+    # 检出仓库代码
+      - name: 检出仓库代码
+        uses: actions/checkout@v4
+
+      - name: 打印 hello world
+        run: python3 hello.py</code></pre>
+<p>再执行看，就可以成功执行脚本hello.py打印hello world了</p>
+<p><img src="/images/github-action/20.png" alt="" /></p>
+<p><img src="/images/github-action/21.png" alt="" /></p>
+<p>这里，工件的作用：工件主要用于在 workflow 执行过程中保存和共享文件</p>
+<p>其他工件：</p>
+<ul>
+<li>actions/download-artifact@v4</li>
+<li>actions/upload-artifact@v4</li>
+</ul>
+<p>例如，在你的项目里，存在创建文件的操作，文件需要在工作流结束后进行保存，那你可以使用upload上传工件，使用上传工件处理文件，action会保存一段时间。如果你的工作流存在多个job，需要跨job使用文件时，可以使用download工件下载前面上传保存的文件。</p>
+<p>一个常见的场景：其他师傅直接使用  github action编译各个平台的可执行文件，使用upload-artifact上传到github，发布到release，供其他人下载使用。</p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>share</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#Github</span>
+                            </span>
+            </div>
+    </article>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>

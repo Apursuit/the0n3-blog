@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - tldr安装配置中文</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>tldr安装配置中文</h1>
+    <p>
+        <span class="meta">发布于: 2025-09-24 01:24</span>
+    </p>
+    <div class="post-body">
+        <h2>什么是tldr？</h2>
+<p>一个命令帮助手册，快速查看命令的使用方法，这个工具会直接给出多个使用示例，可以覆盖大部分场景，对于新手来说非常友好。</p>
+<!-- more -->
+<h2>安装</h2>
+<p>在windows,linux,macos操作系统都可以安装使用，如果要使用中文版本，推荐使用pip安装，npm安装不能修改为中文版本</p>
+<p>pip安装</p>
+<pre><code class="language-bash">pip3 install tldr</code></pre>
+<p>npm安装</p>
+<pre><code class="language-bash">npm install -g tldr</code></pre>
+<p>macOS使用brew安装</p>
+<pre><code class="language-bash">brew install tlrc</code></pre>
+<h2>配置中文</h2>
+<p>设置环境变量</p>
+<p>windows</p>
+<pre><code class="language-powershell">#windows
+setx TLDR_LANGUAGE "zh"
+setx TLDR_CACHE_ENABLED "1"</code></pre>
+<p>ubuntu/centos/kali</p>
+<pre><code class="language-bash">echo 'export TLDR_LANGUAGE="zh"' &gt;&gt; ~/.bashrc
+echo 'export TLDR_CACHE_ENABLED=1' &gt;&gt; ~/.bashrc</code></pre>
+<p>macOS</p>
+<pre><code class="language-bash">echo 'export TLDR_LANGUAGE="zh"' &gt;&gt; ~/.zshrc
+echo 'export TLDR_CACHE_ENABLED=1' &gt;&gt; ~/.zshrc</code></pre>
+<p>使环境变量立即生效</p>
+<p>ubuntu/centos/kali</p>
+<pre><code class="language-bash">source ~/.bashrc</code></pre>
+<p>macOS</p>
+<pre><code class="language-bash">source ~/.zshrc</code></pre>
+<p>完成后，重新开一个终端，更新tldr缓存</p>
+<pre><code class="language-bash">tldr -u</code></pre>
+<p>参考：</p>
+<ul>
+<li><a href="https://blog.x-ray.work/2022/10/05/tldr-zh/">tlrd 使用中文</a></li>
+</ul>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>linux</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#tldr</span>
+                            </span>
+            </div>
+    </article>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>

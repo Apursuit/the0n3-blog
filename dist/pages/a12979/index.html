@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - linux终端命令写文件--重定向、tee命令</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>linux终端命令写文件--重定向、tee命令</h1>
+    <p>
+        <span class="meta">发布于: 2024-05-16 05:53</span>
+    </p>
+    <div class="post-body">
+        <h1>使用 echo 或 printf</h1>
+<p>中心还是利用重定向符<code>&gt;</code>实现把内容输出到文件(不存在则创建)中，及tee命令读取输入写入文件</p>
+<h2>坤本功</h2>
+<blockquote>
+<p>注意，使用双引号写文件内容中包含美元符$，反斜杠\，反引号`，双引号"时，请在前面添加反斜杠进行转义，避免这些特殊字符的特殊作用。</p>
+</blockquote>
+<h2>echo 命令用于在终端显示字符串或变量，可以配合重定向操作符 (&gt;, &gt;&gt;) 来向文件写入内容。</h2>
+<p>使用 <strong>&gt;</strong> 写入内容，这会覆盖文件原有的内容：</p>
+<pre><code class="language-bash">echo "这是新的文件内容" &gt; filename.txt</code></pre>
+<p><strong>这条命令会创建（如果文件不存在）或清空（如果文件已存在）filename.txt，然后将指定的文本写入文件。</strong></p>
+<p>使用 &gt;&gt; 追加内容到文件末尾：  </p>
+<pre><code class="language-bash">echo "这是追加的内容" &gt;&gt; filename.txt      </code></pre>
+<p><strong>如果文件不存在，它会被创建。如果文件存在，新内容会被追加到文件的末尾。</strong></p>
+<h2>使用 printf 命令配合重定向操作符 (&gt;, &gt;&gt;) 来向文件写入内容。</h2>
+<p>printf 命令比 echo 提供了更多的格式化选项。它也可以用于向文件写入内容。</p>
+<p>写入或覆盖文件：</p>
+<pre><code class="language-bash">printf "第一行内容\n第二行内容\n" &gt; filename.txt</code></pre>
+<p>追加内容到文件：</p>
+<pre><code class="language-bash">printf "追加的第一行内容\n追加的第二行内容\n" &gt;&gt; filename.txt</code></pre>
+<h2>其他命令搭配重定向“&gt;”</h2>
+<p>在上面的<code>echo</code>,<code>printf</code>命令中可以学习到，重定向写文件实际是将前面命令的结果输出写入文件</p>
+<p>那么很多linux命令都可以搭配重定向符号使用，将命令结果输出到重定向的文件中，如果这个文件不存在，会先创建这个文件，再把结果输出到文件中</p>
+<p>测试：</p>
+<pre><code class="language-bash">touch 1.php;touch 2.php;touch 3.php;
+ls &gt; 1.txt</code></pre>
+<p>结果：</p>
+<pre><code class="language-bash">root@out:/var/www/html# ls
+1.php  1.txt  2.php  3.php
+root@out:/var/www/html# cat 1.txt
+1.php
+1.txt
+2.php
+3.php</code></pre>
+<h2>重定向“&lt;”</h2>
+<pre><code class="language-bash">echo $(&lt; file)</code></pre>
+<p>重定向符“&lt;”会读取文件，$()在命令行中有命令替换的作用，替换成命令的结果，这里先用重定向符读取文件内容，替换到echo后，再打印出来</p>
+<h2>进阶</h2>
+<p><a href="https://img-blog.csdnimg.cn/img_convert/daaebba06a83b8ca8da90125396a5b30.png">ascll码字符表</a></p>
+<p>使用十六进制转义得到目标字符，绕过过滤</p>
+<p>php的echo转义要用双引号</p>
+<pre><code class="language-php">echo "\x3f";</code></pre>
+<p>linux系统echo转义要-e参数</p>
+<pre><code class="language-bash">echo -e '\x3f';</code></pre>
+<h2>tee命令</h2>
+<p>如果<code>&gt;</code>被过滤时，还可以使用<code>tee</code>命令来直接写文件</p>
+<pre><code class="language-bash">echo "This is a line." | tee filename.txt</code></pre>
+<p>在上面的命令中，<code>echo</code>命令的输出被管道（<code>|</code>）传递给<code>tee</code>命令，<code>tee</code>命令将输出写入<code>filename.txt</code>文件，并在终端上显示。</p>
+<p>左边的命令可以合理的替换为其他命令</p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>linux</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#linux</span>
+                            </span>
+            </div>
+    </article>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>

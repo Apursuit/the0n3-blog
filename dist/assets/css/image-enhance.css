@@ -1,0 +1,40 @@
+/* Image enhancement: wider image blocks and lightbox */
+article.post-content img {
+    cursor: zoom-in;
+}
+
+.markdown-body .image-block {
+    margin: 16px 0;
+}
+
+.markdown-body .image-block img {
+    display: block;
+    margin: 0 auto;
+    max-width: 100%;
+    height: auto;
+}
+
+.image-lightbox {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.72);
+    z-index: 30;
+    cursor: zoom-out;
+}
+
+.image-lightbox.is-open {
+    display: flex;
+}
+
+.image-lightbox__img {
+    max-width: 92vw;
+    max-height: 92vh;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+body.is-lightbox-open {
+    overflow: hidden;
+}

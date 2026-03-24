@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - php高亮源文件</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>php高亮源文件</h1>
+    <p>
+        <span class="meta">发布于: 2024-05-16 05:53</span>
+    </p>
+    <div class="post-body">
+        <h1>php文件函数</h1>
+<h2>显示源文件的函数</h2>
+<blockquote>
+<p>highlight_file("filename") 是一个 PHP 函数，用于在浏览器中高亮显示指定文件的源代码<br />
+show_source() 是 PHP 中的一个函数，用于在浏览器中显示指定文件的源代码。它会直接输出指定文件的原始代码，不会进行语法高亮或其他格式化处理。</p>
+</blockquote>
+<pre><code class="language-php"> highlight_file("filename")         # 显示文件源代码
+ show_source("filename")            # 同上</code></pre>
+<pre><code class="language-php">dirname("FILE")             # FILE不是一个实际文件名，返回当前目录
+scandir(dirname("FILE"))    # 扫描当前目录下所有文件，返回一个数组
+print_r()                   # 用于以易于阅读的格式打印变量的值
+print_r(scandir(dirname("FILE")))       # 打印当前目录所有文件名</code></pre>
+<p>可以扫描打印其他目录，用目录名换掉dirname("FILE")即可</p>
+<p>与print_r功能类似的函数var_dump()、var_export() </p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>web</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#php</span>
+                            </span>
+            </div>
+    </article>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>

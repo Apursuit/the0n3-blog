@@ -1,0 +1,76 @@
+.tax-accordion {
+    list-style: none;
+    padding: 0;
+    margin: 1.5rem 0 0;
+}
+
+.tax-accordion .tax-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.5rem 1rem;
+    padding: 0.75rem;
+}
+
+.tax-accordion .tax-item + .tax-item {
+    margin-top: 0.25rem;
+}
+
+.tax-accordion .tax-item.is-active {
+    background: var(--bgColor-neutral-muted, #e5e7eb);
+    border-radius: 10px;
+}
+
+.tax-accordion .tax-toggle {
+    background: none;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+}
+
+.tax-accordion .tax-toggle[aria-expanded="true"] {
+    color: var(--fgColor-accent, #0969da);
+}
+
+.tax-accordion .tax-toggle::after {
+    content: "▾";
+    display: inline-block;
+    margin-left: 0.5rem;
+    transform: translateY(-1px);
+    transition: transform 0.2s ease;
+}
+
+.tax-accordion .tax-toggle[aria-expanded="false"]::after {
+    transform: rotate(-90deg) translateX(2px);
+}
+
+.tax-accordion .post-list {
+    grid-column: 1 / -1;
+    list-style: none;
+    margin: 0.5rem 0 0.25rem;
+    padding: 0;
+    display: none;
+}
+
+.tax-accordion .post-list.is-open {
+    display: block;
+}
+
+.tax-accordion .post-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.35rem 0;
+}
+
+.tax-accordion .post-item a {
+    text-decoration: none;
+}
+
+.tax-accordion .post-item .meta {
+    white-space: nowrap;
+    color: var(--meta-color, #6b7280);
+}

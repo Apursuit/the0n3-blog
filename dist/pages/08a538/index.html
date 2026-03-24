@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - python正则表达式基础练习</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>python正则表达式基础练习</h1>
+    <p>
+        <span class="meta">发布于: 2024-08-04 05:57</span>
+    </p>
+    <div class="post-body">
+        <h1>python正则表达式基础</h1>
+<p>正则文档</p>
+<ul>
+<li>
+<p><a href="https://tool.oschina.net/uploads/apidocs/jquery/regexp.html">正则表达式手册</a></p>
+</li>
+<li>
+<p><a href="https://docs.python.org/3/howto/regex.html">python官方文档</a></p>
+</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>字符</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>\d</td>
+<td>匹配一个数字字符。等价于[0-9]</td>
+</tr>
+<tr>
+<td>\D</td>
+<td>匹配一个非数字字符。等价于[^0-9]</td>
+</tr>
+<tr>
+<td>\n</td>
+<td>匹配一个换行符。等价于\x0a</td>
+</tr>
+<tr>
+<td>\s</td>
+<td>匹配任何空白字符，包括空格、制表符、换页符等等。</td>
+</tr>
+<tr>
+<td>\S</td>
+<td>匹配任何非空白字符。</td>
+</tr>
+<tr>
+<td>\w</td>
+<td>匹配包括下划线的任何单词字符。等价于“<code>[A-Za-z0-9_]</code>”。</td>
+</tr>
+<tr>
+<td>?</td>
+<td>匹配前面的子表达式零次或一次。</td>
+</tr>
+<tr>
+<td>+</td>
+<td>匹配前面的子表达式一次或多次。</td>
+</tr>
+<tr>
+<td>*</td>
+<td>匹配前面的子表达式零次或多次。</td>
+</tr>
+<tr>
+<td>^</td>
+<td>匹配输入字符串的开始位置。</td>
+</tr>
+<tr>
+<td>$</td>
+<td>匹配输入字符串的结束位置。</td>
+</tr>
+<tr>
+<td>\</td>
+<td>转义</td>
+</tr>
+<tr>
+<td>x|y</td>
+<td>匹配x或y</td>
+</tr>
+<tr>
+<td>[xyz]</td>
+<td>字符集合。匹配所包含的任意一个字符。</td>
+</tr>
+<tr>
+<td>[^xyz]</td>
+<td>负值字符集合。匹配未包含的任意字符</td>
+</tr>
+<tr>
+<td>[a-z]</td>
+<td>字符范围。匹配指定范围内的任意字符。</td>
+</tr>
+<tr>
+<td>[^a-z]</td>
+<td>负值字符范围。匹配任何不在指定范围内的任意字符。</td>
+</tr>
+</tbody>
+</table>
+<div class="callout callout-note">
+<p>导入正则模块，注意当前文件夹/文件不要命名为<code>re</code>，防止冲突</p>
+</div>
+<pre><code class="language-python">import re</code></pre>
+<p>可以使用<code>re.complie()</code>编译一个正则表达式，创建一个正则对象，可以多次使用，提高效率</p>
+<p><code>re.search()</code>方法只会返回第一个匹配的结果，需要匹配多个结果使用<code>re.findall()</code>方法</p>
+<pre><code class="language-python">import re
+
+pattern = re.compile("\d{1,}")
+text = '111w222w333'
+match = re.search(pattern,text)
+print(match.group())
+match = re.findall(pattern,text)
+print(match)</code></pre>
+<h2>括号分组</h2>
+<pre><code class="language-python">import re
+
+pattern = re.compile("(114514)(.*)?(1919810)")
+text = "114514aaaaaaaa1919810"
+match = re.search(pattern,text)
+print(match.groups())</code></pre>
+<h2>管道符分组</h2>
+<p>利用管道符分组，匹配其中任意一个</p>
+<pre><code class="language-python">import re
+
+pattern = re.compile("'|\.|class|base|subclasses|init|globals|classeval|assert|import|exec|popen|subpress|read")
+text = "''.__class__.__base__.__subclasses__()[137].__init__.__globals__['popen']('ls').read()"
+match = re.findall(pattern,text)
+print(match)</code></pre>
+<h2>问号实现可选匹配</h2>
+<p>在匹配文本中，某段字符是否存在都可以时，使用问号表示这部分可选，例如匹配url中的<code>s</code></p>
+<pre><code class="language-python">import re
+
+pattern = re.compile("http(s)?://[\w.]+")
+text = "hi,welcome to  !!!Nice to meet u!!!"
+match = re.search(pattern,text)
+print(match.group())</code></pre>
+<h2>星号实现0次或多次匹配</h2>
+<p><code>*</code>表示0次或多次</p>
+<pre><code class="language-python">import re
+
+pattern = re.compile("([a-z]+(1145141919810)*[a-z]+)")
+text = "abcabc"
+text1 = "abc1145141919810abc"
+match = re.findall(pattern,text)
+match1 = re.findall(pattern,text1)
+print(match)
+print(match1)</code></pre>
+<h2>加号实现1次或多次匹配</h2>
+<p><code>+</code>表示至少一次或多次</p>
+<pre><code class="language-python">import re
+
+pattern = re.compile("([a-z]+(1145141919810)+[a-z]+)")
+text = "abcabc"
+text1 = "abc1145141919810abc"
+match = re.findall(pattern,text)
+match1 = re.findall(pattern,text1)
+print(match)
+print(match1)</code></pre>
+<h2>花括号实现指定次数匹配</h2>
+<p><code>{m,n}</code>，第一个参数表示至少多少次，第二个参数表示最多多少次，可以省略其中一个参数</p>
+<pre><code class="language-python">import re
+
+pattern = re.compile("abc{1,3}")
+text = "abcabcabc"
+match = re.findall(pattern,text)
+print(match)</code></pre>
+<h2>贪心匹配和非贪心匹配</h2>
+<p>贪心匹配常用<code>.*</code>来表示，会尽可能多的匹配，在这里，第一个<code>14</code>也是符合的，但是他会继续往后匹配，判断是否仍然存在符合的字符</p>
+<pre><code class="language-python">import re
+
+pattern = re.compile("abc.*14")
+text = "abc114514"
+match = re.findall(pattern,text)
+print(match)</code></pre>
+<p>非贪心匹配（惰性匹配），可以用<code>.*?</code>，在<code>.*</code>后面加一个问号，表示尽可能少的匹配，这样第一个<code>14</code>就是符合的，不会继续往后匹配</p>
+<pre><code class="language-python">import re
+
+pattern = re.compile("abc.*?14")
+text = "abc114514"
+match = re.findall(pattern,text)
+print(match)</code></pre>
+<h2>插入字符和美元字符</h2>
+<p><code>^</code>表示匹配字符串的开始位置，<code>$</code>表示匹配字符串的结束位置</p>
+<pre><code class="language-python">import re
+
+pattern = re.compile("^\w.*$")
+text = "abc114514"
+match = re.findall(pattern,text)
+print(match)</code></pre>
+<h2>通配字符</h2>
+<p>在正则里，<code>.</code>点是通配字符，可以匹配换行符之外的任意字符</p>
+<pre><code class="language-python">import re
+
+pattern = re.compile(".*")
+text = "abc114514"
+match = re.findall(pattern,text)
+print(match)</code></pre>
+<p>练习几个常见正则匹配</p>
+<h2>1. 匹配电子邮件地址</h2>
+<pre><code class="language-txt">example@example.com, example@example.org, and example@example.net.</code></pre>
+<pre><code class="language-python">import re 
+
+text = 'example@example.com, example@example.org, and example@example.net.'
+pattern = r"\b[\w\.-]+@[\w\.-]+\.[a-z]+\b"
+matches = re.findall(pattern,text)
+for match in matches:
+    print(match)</code></pre>
+<h2>2. 匹配日期</h2>
+<pre><code class="language-txt">The events are scheduled for 2024-08-01, 2024-09-15, and 2024-12-25.</code></pre>
+<pre><code class="language-python">import re 
+
+text = 'The events are scheduled for 2024-08-01, 2024-09-15, and 2024-12-25.'
+pattern = r"\b\d{4}-\d{2}-\d{2}\b"
+matches = re.findall(pattern,text)
+for match in matches:
+    print(match)</code></pre>
+<h2>3. 匹配电话号码</h2>
+<pre><code class="language-txt">You can reach us at (123) 456-7890 or (987) 654-3210.</code></pre>
+<pre><code class="language-python">import re 
+
+text = 'You can reach us at (123) 456-7890 or (987) 654-3210.'
+pattern = r'\(\d{3}\) \d{3}-\d{4}'
+matches = re.findall(pattern,text)
+for match in matches:
+    print(match)</code></pre>
+<h2>4. 匹配 URL</h2>
+<pre><code class="language-txt">Visit our website at http://www.example.com or https://example.org/page?query=1.</code></pre>
+<pre><code class="language-python">import re 
+
+text = 'Visit our website at http://www.example.com or https://example.org/page?query=1.'
+pattern = r'https?://[\w\.-]+\.[a-z]{2,}(?:/[\w\.-]*)?(?:\?[^\s\.]*)?'
+matches = re.findall(pattern,text)
+for match in matches:
+    print(match)</code></pre>
+<h2>5. 匹配所有单词</h2>
+<pre><code class="language-txt">Here are some words: hello, world, python3, and regex_example.</code></pre>
+<pre><code class="language-python">import re 
+
+text = 'Here are some words: hello, world, python3, and regex_example.'
+pattern = r'\b[\w0-9]+\b'
+matches = re.findall(pattern,text)
+for match in matches:
+    print(match)</code></pre>
+<h2>6. 匹配html标签中的url</h2>
+<pre><code class="language-txt">hi,how r u,i'm fine,3ku
+&lt;a href="/"&gt;hello,cola!&lt;/a&gt;
+&lt;a href="https://baidu.com/"&gt;shit&lt;/a&gt;
+bye,bro</code></pre>
+<pre><code class="language-python">import re 
+
+text = """hi,how r u,i'm fine,3ku
+&lt;a href="/"&gt;hello,cola!&lt;/a&gt;
+&lt;a href="https://baidu.com/"&gt;shit&lt;/a&gt;
+bye,bro
+"""
+# 捕获组(pattern)
+pattern = r'&lt;a href="(https?://[\w-]+\.[a-z]{2,}/?)"'
+matches = re.findall(pattern,text)
+for match in matches:
+    print(match)</code></pre>
+<p>参考：</p>
+<ul>
+<li>[【Python编程快速上手--让繁琐工作自动化]</li>
+</ul>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>notes</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#正则表达式</span>
+                            </span>
+            </div>
+    </article>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>

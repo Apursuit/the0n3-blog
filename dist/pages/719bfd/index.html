@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - php常见代码命令执行/后门函数</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>php常见代码命令执行/后门函数</h1>
+    <p>
+        <span class="meta">发布于: 2024-10-05 01:25</span>
+    </p>
+    <div class="post-body">
+        <p>简单记录一些php常用rce/后门/代码命令执行函数</p>
+<!-- more -->
+<h2>eval语言构造器</h2>
+<p>官方定义</p>
+<p><img src="/images/phpfunc/1.png" alt="1" /></p>
+<p><code>eval(string $code)</code></p>
+<p>php会执行一个<strong>php语句</strong></p>
+<pre><code class="language-php">&lt;?php 
+eval($_GET[1]);
+?&gt;</code></pre>
+<p>php官方认为<code>eval()是语言构造器</code>，不属于函数，编译器将执行的代码视为单独 included 后的文件</p>
+<p>官方的说法是：eval语言构造器会把传入的字符串作为一个拼接<code>&lt;?php</code>的php文件包含进来执行</p>
+<pre><code class="language-php">&lt;?php
+eval("/*hello */phpinfo();# world!*/");
+?&gt;</code></pre>
+<p>所以可以等效为下面：</p>
+<pre><code class="language-php">&lt;?php
+/*hello */phpinfo();# world!*/
+?&gt;</code></pre>
+<p>在ctf web方向中，<strong>eval执行的还是php语句</strong>，不能直接执行linux系统命令例如<code>ls /</code>,<code>cat /flag</code>等，需要使用可以执行系统命令的函数，例如system,passthru,shell_exec等等或者可以用用反引号`包裹系统命令来执行，不会返回执行结果</p>
+<p>可以使用<code>echo</code>打印返回结果</p>
+<pre><code class="language-php">&lt;?php
+eval("echo `ls`;");
+?&gt;</code></pre>
+<h2>assert</h2>
+<p>官方定义</p>
+<p><img src="/images/phpfunc/2.png" alt="2" /></p>
+<p><code>assert(mixed $assertion)</code></p>
+<p>最初的作用看起来是当作if判断的，条件为真就往下走，条件为假就抛出异常停止运行。听起来比较鸡肋，不合理的地方出现了，他怎么判断这个字符串是真是假，
+他把字符串又传给<code>eval</code>函数执行了一下，看一下返回值，所以<code>assert</code>函数等效<code>eval</code>，后面的参数<code>description</code>经常省略</p>
+<pre><code class="language-php">&lt;?php
+assert($_GET[1]);
+?&gt;</code></pre>
+<h2>system</h2>
+<p>官方定义</p>
+<p>执行外部程序，并且显示输出（执行系统命令并回显）</p>
+<p><img src="/images/phpfunc/3.png" alt="3" /></p>
+<p><img src="/images/phpfunc/4.png" alt="4" /></p>
+<p><code>system(string $command)</code></p>
+<p>执行 command 参数所指定的系统命令，并且输出执行结果</p>
+<pre><code class="language-php">&lt;?php 
+system($_GET[1]);
+?&gt;</code></pre>
+<h2>passthru</h2>
+<p>官方定义 </p>
+<p>执行外部程序并且显示原始输出（执行系统命令并回显）</p>
+<p><img src="/images/phpfunc/5.png" alt="5" /></p>
+<p><code>passthru(string $command)</code></p>
+<p>执行系统命令，可以替代 system() 或 exec() 函数</p>
+<pre><code class="language-php">&lt;?php
+passthru($_GET[1]);
+?&gt;</code></pre>
+<h2>exec</h2>
+<p>exec,shell_exec函数执行命令并返回执行结果，需要主动打印才会回显</p>
+<p>官方定义 </p>
+<p>执行一个外部程序（执行系统命令）</p>
+<p><img src="/images/phpfunc/6.png" alt="6" /></p>
+<p><code>exec(string $command, array &amp;$output = null, int &amp;$result_code = null): string|false</code></p>
+<p>常用语法<code>exec(string $command)</code>，省略另外两个参数，作为无回显命令执行函数，如果存在第二个参数，会把第二个参数作为数据，回显结果放进数组</p>
+<p><img src="/images/phpfunc/7.png" alt="7" /></p>
+<pre><code class="language-php">&lt;?php
+exec($_GET[1]);
+?&gt;</code></pre>
+<h2>shell_exec</h2>
+<p>官方定义</p>
+<p>通过 <code>shell 执行命令</code>并将完整的输出以字符串的方式返回</p>
+<p><img src="/images/phpfunc/8.png" alt="8" /></p>
+<p><code>shell_exec(string $command)</code></p>
+<p>执行 command 参数所指定的系统命令，并且返回执行结果</p>
+<pre><code class="language-php">&lt;?php
+$msg = shell_exec($_GET[1]);
+echo $msg;
+?&gt;</code></pre>
+<p><img src="/images/phpfunc/9.png" alt="9" /></p>
+<h2>popen</h2>
+<p>官方定义</p>
+<p>打开进程文件指针</p>
+<p><code>popen(string $command, string $mode)</code></p>
+<p><img src="/images/phpfunc/38.png" alt="38" /></p>
+<p>popen函数执行没有返回值，没有回显。适合写文件，反弹shell，外带等</p>
+<pre><code class="language-php">&lt;?php
+highlight_file(__FILE__);
+popen($_GET[1],'r');
+?&gt;</code></pre>
+<p>类似函数，<code>proc_open()</code>,<code>pcntl_exec()</code></p>
+<h2>include</h2>
+<p>文件包含模块，php中存在语言结构include,require，以及函数include(),require(),include_once(),require_once()<br />
+例如  </p>
+<pre><code class="language-php">include"1.png";
+require"1.png";
+include("1.png");
+require("1.png");</code></pre>
+<p>包含一个任意文件，只要文件内容存在php代码就会被解析执行</p>
+<p>详细看：<a href="/pages/2ffb8a/">【文件包含】</a></p>
+<h2>preg_replace()</h2>
+<p>官方定义</p>
+<p>执行一个正则表达式的搜索和替换（在目标串里搜索指定字符串，替换为目标字符串）</p>
+<p><img src="/images/phpfunc/10.png" alt="10" /></p>
+<p><code>preg_replace($pattern,$replacement,$subject);</code></p>
+<p>在官方文档里找不到恶意利用的模式了</p>
+<p><img src="/images/phpfunc/11.png" alt="11" /></p>
+<p><code>preg_replace</code>函数也可以执行php语句，使用<code>/e</code>模式修饰符，可以把pattern替换到replacement里的php语句进行执行</p>
+<pre><code class="language-php">&lt;?php
+preg_replace($_GET[pattern],$_GET[replacement],$_GET[subject]);
+?&gt;</code></pre>
+<p><code>/e</code>修饰符已经成为过去式了，php5.5的时候弃用了，但还能用，在php7才彻底移除。换到php5测试一下</p>
+<p><img src="/images/phpfunc/12.png" alt="12" /></p>
+<p><img src="/images/phpfunc/14.png" alt="14" /></p>
+<h2>create_function</h2>
+<p>官方定义</p>
+<p>通过执行代码字符串创建动态函数（使用eval动态生成一个函数）</p>
+<p><img src="/images/phpfunc/13.png" alt="13" /></p>
+<p><code>create_function(string $args, string $code)</code></p>
+<p>这个函数会创建一个匿名函数，参数1是匿名函数的参数，参数2是匿名函数的代码</p>
+<p>用<code>create_function</code>创建匿名函数举个例子</p>
+<pre><code class="language-php">&lt;?php
+$a = create_function('$_GET[1]','echo $_GET[1];');
+echo $a("capooo");
+?&gt;</code></pre>
+<p>这个过程相当于</p>
+<pre><code class="language-php">&lt;?php
+function hello($a){
+    echo $a;
+}
+hello("capooo");
+?&gt;</code></pre>
+<p><code>create_function</code>的参数2实际是在<code>eval</code>函数里执行的</p>
+<p>这个函数在php8时被官方移除了，低于php8都还能用，试一下</p>
+<p><img src="/images/phpfunc/15.png" alt="15" /></p>
+<p>创建函数的过程存在一个漏洞，用户可以手动补全<code>}</code>花括号，闭合函数体，执行自己的php语句，最后把多出的<code>}</code>注释掉，或者直接<code>?&gt;</code>结束程序也可以，从而实现漏洞利用</p>
+<p><img src="/images/phpfunc/16.png" alt="16" /></p>
+<h2>call_user_func</h2>
+<p>官方定义</p>
+<p><img src="/images/phpfunc/17.png" alt="17" /></p>
+<p><code>call_user_func(callable $callback, mixed ...$args)</code></p>
+<pre><code class="language-php">&lt;?php
+highlight_file(__FILE__);
+var_dump(is_callable($_GET[1]));
+call_user_func($_GET[1],$_GET[2]);</code></pre>
+<p><code>call_user_func</code>函数把第一个参数作为回调函数，其他参数作为这个回调函数的参数</p>
+<p>回调函数要能够接受参数和处理后面的参数个数，否则会报错</p>
+<p><img src="/images/phpfunc/18.png" alt="18" /></p>
+<p>使用<code>is_callable()</code>函数判断一个函数是否可调</p>
+<p><img src="/images/phpfunc/19.png" alt="19" /></p>
+<p>注意<code>eval</code>是语言构造器，不算是函数</p>
+<p><img src="/images/phpfunc/20.png" alt="20" /></p>
+<h2>call_user_func_array</h2>
+<p>官方定义</p>
+<p>调用回调函数，并把一个数组参数作为回调函数的参数（使用回调函数处理一个数组）</p>
+<p>用法和<code>call_user_func</code>类似，区别在于<code>call_user_func</code>的参数是分开的，而<code>call_user_func_array</code>的参数是数组</p>
+<p><img src="/images/phpfunc/21.png" alt="21" /></p>
+<p><code>call_user_func_array(callable $callback, array $args)</code></p>
+<pre><code class="language-php">&lt;?php
+highlight_file(__FILE__);
+var_dump(is_callable($_GET[1]));
+call_user_func_array($_GET[1],$_GET[2]);</code></pre>
+<p>注意第二个参数是数组，直接传会报错</p>
+<p><img src="/images/phpfunc/22.png" alt="22" /></p>
+<p><img src="/images/phpfunc/23.png" alt="23" /></p>
+<h2>array_map</h2>
+<p>官方定义</p>
+<p>为数组的每个元素应用回调函数（使用回调函数处理每一个数组元素）</p>
+<p><img src="/images/phpfunc/24.png" alt="24" /></p>
+<p><code>array_map(?callable $callback, array $array, array ...$arrays)</code></p>
+<pre><code class="language-php">&lt;?php
+highlight_file(__FILE__);
+var_dump(is_callable($_GET[1]));
+array_map($_GET[1],$_GET[2]);</code></pre>
+<p>注意第二个参数是数组类型，每个元素都会被回调函数处理</p>
+<p><img src="/images/phpfunc/25.png" alt="25" /></p>
+<h2>array_filter</h2>
+<p>官方定义</p>
+<p>使用回调函数过滤数组的元素，如果经过回调函数处理，返回<code>true</code>，那么保留这个数组元素，否则过滤掉这个元素</p>
+<p><img src="/images/phpfunc/26.png" alt="26" /></p>
+<p><code>array_filter(array $array, callable $callback)</code></p>
+<pre><code class="language-php">&lt;?php
+highlight_file(__FILE__);
+var_dump(is_callable($_GET[2]));
+array_filter($_GET[1],$_GET[2]);</code></pre>
+<p>这个函数和上面提到的函数处理有点小变化，他把参数位置交换了</p>
+<p><img src="/images/phpfunc/27.png" alt="27" /></p>
+<h2>usort</h2>
+<p>官方定义</p>
+<p>使用用户自定义的比较函数对数组中的值进行排序（使用用户调用的函数处理数组）</p>
+<p><img src="/images/phpfunc/28.png" alt="28" /></p>
+<p><code>usort(array &amp;$array, callable $callback)</code></p>
+<pre><code class="language-php">&lt;?php
+highlight_file(__FILE__);
+var_dump(is_callable($_GET[2]));
+usort($_GET[1],$_GET[2]);</code></pre>
+<p>测试执行了数组第一个元素，第二个元素没有执行，</p>
+<p><img src="/images/phpfunc/29.png" alt="29" /></p>
+<p>试图找出一些问题，好像找不到</p>
+<p><img src="/images/phpfunc/30.png" alt="30" /></p>
+<h2>uasort</h2>
+<p>官方定义</p>
+<p>使用用户提供的比较函数对数组中的值进行排序，并保持索引关系</p>
+<p><img src="/images/phpfunc/31.png" alt="31" /></p>
+<p><code>uasort(array &amp;$array, callable $callback)</code></p>
+<pre><code class="language-php">&lt;?php
+highlight_file(__FILE__);
+var_dump(is_callable($_GET[2]));
+uasort($_GET[1],$_GET[2]);</code></pre>
+<p>命令执行效果和<code>usort</code>函数一样，测试执行了数组第一个元素，第二个元素没有执行</p>
+<p><img src="/images/phpfunc/32.png" alt="32" /></p>
+<h2>array_walk</h2>
+<p>官方定义</p>
+<p>使用用户自定义函数对数组中的每个元素做回调处理</p>
+<p><img src="/images/phpfunc/33.png" alt="33" /></p>
+<p><code>uasort(array &amp;$array, callable $callback)</code></p>
+<pre><code class="language-php">&lt;?php
+highlight_file(__FILE__);
+var_dump(is_callable($_GET[2]));
+array_walk($_GET[1],$_GET[2]);</code></pre>
+<p>测试执行了数组第一个元素，第二个元素也执行了，确实挺不错的</p>
+<p><img src="/images/phpfunc/34.png" alt="34" /></p>
+<h2>array_reduce</h2>
+<p>官方定义</p>
+<p>用回调函数迭代地将数组简化为单一的值</p>
+<p><img src="/images/phpfunc/35.png" alt="35" /></p>
+<p><code>array_reduce(array $array, callable $callback, mixed $initial = null): mixed</code></p>
+<pre><code class="language-php">&lt;?php
+highlight_file(__FILE__);
+var_dump(is_callable($_GET[2]));
+array_reduce($_GET[1],$_GET[2],$_GET[3]);</code></pre>
+<p>这个函数有3个参数，这回需要用到第三个参数，就不省略了。回调函数把第三个参数作为初始值，在它的基础上再去处理第一个数组参数</p>
+<p>可以把第三个参数初始值赋值成恶意命令，在回调函数处理他时，就可以实现命令执行</p>
+<p><img src="/images/phpfunc/36.png" alt="36" /></p>
+<h2>动态函数调用</h2>
+<p><del>动态调用似乎有玄学问题</del>，感兴趣的师傅自己挖掘一下👀</p>
+<pre><code class="language-php">&lt;?php
+highlight_file(__FILE__);
+$_GET[1]($_GET[2]);</code></pre>
+<p><img src="/images/phpfunc/37.png" alt="37" /></p>
+<h2>反引号</h2>
+<p>php 反引号执行命令严格来说属于<code>exec</code>函数，如果禁用<code>exec</code>、<code>shell_exec</code>函数，反引号执行命令的特性不会再生效</p>
+<pre><code class="language-php">&lt;?php
+highlight_file(__FILE__);
+echo `$_GET[1]`;</code></pre>
+<h2>写文件</h2>
+<p>通过写文件来实现服务器挂马，例如直接写入<code>php</code>文件，或者说写入<code>.htaccess</code>、<code>web.config</code>文件，实现文件解析漏洞</p>
+<pre><code class="language-php">&lt;?php
+highlight_file(__FILE__);
+file_put_contents($_GET[1],$_GET[2]);</code></pre>
+<h2>最后</h2>
+<p>在这些函数中，部分函数在php最新版本已经废弃或者移除，因此复现环境对版本存在依赖，可以使用phpstudy选择php5.5及更早版本复现，</p>
+<p>这里提供一套源码，希望对其他正在学习RCE的师傅有所帮助</p>
+<p>环境：php5.5</p>
+<pre><code class="language-php">&lt;?php
+header('Content-Type: text/html; charset=utf-8');
+highlight_file(__FILE__);
+
+if(isset($_POST['1'])){
+eval($_POST[1]);
+}
+
+$id = isset($_GET['id']) ? $_GET['id'] : 0;
+$code = isset($_GET['code']) ? $_GET['code'] : '';
+
+switch ($id) {
+   case 0:
+     echo 'bye!';
+     break;
+   case 1:
+     eval($code);
+     break;
+   case 2:
+     eval("# $code");
+     break;
+   case 3:
+     assert($code);
+     break;
+   case 4:
+     system($code);
+     break;
+   case 5:
+      passthru($code);
+      break;
+   case 6:
+      exec($code);
+      break;
+   case 7:
+      shell_exec($code);
+      break;
+   case 8:
+      $mode = $_GET[mode];
+      popen($code,$mode);
+      break;
+   case 9:
+      include"$code";
+      break;
+   case 10:
+      $pattern = $_GET['pattern'];
+      $replace = $_GET['replace'];
+      $subject = $_GET['subject'];
+      preg_replace($pattern,$replace,$subject);
+      break;
+   case 11:
+      $q = "if it's not fun,why do it?";
+      $func = create_function('$q',$code);
+      break;
+   case 12:
+      var_dump(is_callable($_GET['func']));
+      call_user_func($_GET['func'],$_GET['args']);
+      break;
+   case 13:
+      var_dump(is_callable($_GET['func']));
+      call_user_func_array($_GET['func'],$_GET['array']);
+      break;
+   case 14:
+      var_dump(is_callable($_GET['func']));
+      array_map($_GET['func'],$_GET['array']);
+      break;
+   case 15:
+      var_dump(is_callable($_GET['func']));
+      array_filter($_GET['func'],$_GET['array']);
+      break;
+   case 16:
+      var_dump(is_callable($_GET['func']));
+      usort($_GET['func'],$_GET['array']);
+      break;
+   case 17:
+      var_dump(is_callable($_GET['func']));
+      uasort($_GET['func'],$_GET['array']);
+      break;
+   case 18:
+      var_dump(is_callable($_GET['func']));
+      array_walk($_GET['func'],$_GET['array']);
+      break;
+   case 19:
+      $_GET['func']($_GET['args']);
+      break;
+   case 20:
+      echo `$code`;
+      break;
+   case 21:
+      file_put_contents($_GET['filename'],$_GET['content']);
+      break;
+}
+
+echo "Byebye!!"
+?&gt;</code></pre>
+<p>参考：</p>
+<ul>
+<li><a href="https://www.cnblogs.com/-mo-/p/11519447.html">代码/命令执行总结</a></li>
+<li><a href="https://www.php.net/manual/zh/">PHP官方</a></li>
+<li><a href="https://blog.csdn.net/lkbzhj/article/details/127886907">代码执行和命令执行</a></li>
+<li><a href="https://www.cnblogs.com/LeeeBoom/p/12359848.html">PHP常见代码执行后门函数</a></li>
+<li><a href="https://blog.csdn.net/u011055144/article/details/128747592">php后门木马常用命令分析与防范</a></li>
+</ul>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>web</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#php</span>
+                            </span>
+            </div>
+    </article>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>

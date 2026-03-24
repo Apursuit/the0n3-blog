@@ -1,0 +1,506 @@
+/* Base page colors and typography */
+body {
+    margin: 0;
+    background-color: var(--bgColor-default, #ffffff);
+    color: var(--fgColor-default, #1f2328);
+}
+
+/* 全文字体统一 */
+body, .markdown-body, .post-toc, header nav {
+    font-family: "Inter", "HarmonyOS Sans SC", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+/* site.css 后导入，优先级会高于github-markdown-css 存在覆盖*/
+/* 导航栏字体大小 */
+header nav{
+    font-size: 17px;
+}
+/* 覆盖 GitHub markdown 的正文排版 */
+.markdown-body {
+    font-size: 18px;
+    line-height: 1.7;
+}
+
+
+/* Smooth in-page anchor scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+html[data-theme="light"] {
+    color-scheme: light;
+}
+
+html[data-theme="dark"] {
+    color-scheme: dark;
+}
+
+/* Theme variables (shared by layout and markdown content) */
+html[data-theme="light"] {
+    --bgColor-default: #ffffff;
+    --bgColor-muted: #f6f8fa;
+    --bgColor-neutral-muted: #818b981f;
+    --fgColor-default: #1f2328;
+    --fgColor-muted: #59636e;
+    --fgColor-accent: #0969da;
+    --borderColor-default: #d1d9e0;
+    --borderColor-muted: #d1d9e0b3;
+}
+
+html[data-theme="dark"] {
+    --bgColor-default: #292a2d;
+    --bgColor-muted: #151b23;
+    --bgColor-neutral-muted: #656c7633;
+    --fgColor-default: #f0f6fc;
+    --fgColor-muted: #9198a1;
+    --fgColor-accent: #4493f8;
+    --borderColor-default: #3d444d;
+    --borderColor-muted: #3d444db3;
+}
+
+/* Main content container */
+main.markdown-body {
+    box-sizing: border-box;
+    min-width: 200px;
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 45px;
+}
+
+@media (max-width: 767px) {
+    main.markdown-body {
+        padding: 15px;
+    }
+}
+
+/* Top navigation */
+header {
+    background: transparent;
+}
+
+header nav {
+    box-sizing: border-box;
+    min-width: 200px;
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 14px 45px 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 16px;
+}
+
+@media (max-width: 767px) {
+    header nav {
+        padding: 12px 15px 0;
+    }
+}
+
+header nav .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+header nav a {
+    color: var(--fgColor-accent);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+header nav a:hover {
+    text-decoration: underline;
+}
+
+/* Minimal list styling for index/tag/category pages */
+.markdown-body .post-list,
+.markdown-body .tax-list {
+    list-style: none;
+    padding-left: 0;
+}
+
+.markdown-body .post-item,
+.markdown-body .tax-item {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 6px 0;
+}
+
+.markdown-body .post-item a,
+.markdown-body .tax-item a {
+    text-decoration: none;
+}
+
+.markdown-body .post-item a:hover,
+.markdown-body .tax-item a:hover {
+    text-decoration: underline;
+}
+
+.pagination {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: center;
+    justify-content: center;
+    margin: 24px 0 0;
+}
+
+.pagination-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 2px;
+    border: 0;
+    border-bottom: 1px solid transparent;
+    text-decoration: none;
+    color: var(--fgColor-default);
+    font-size: 0.92em;
+    letter-spacing: 0.02em;
+}
+
+.pagination-link.is-current {
+    border-bottom-color: var(--borderColor-muted, #d1d9e0b3);
+    color: var(--fgColor-default);
+    font-weight: 500;
+}
+
+.pagination-link.is-disabled {
+    color: var(--fgColor-muted);
+    border-bottom-color: transparent;
+}
+
+.pagination-link:hover {
+    border-bottom-color: var(--borderColor-default, #d1d9e0);
+}
+
+.markdown-body .meta {
+    color: var(--fgColor-muted);
+    font-size: 0.9em;
+    white-space: nowrap;
+}
+
+/* Post footer meta (category/tags) */
+.post-meta-footer {
+    margin-top: 24px;
+    padding-top: 12px;
+    border-top: 1px solid var(--borderColor-muted);
+    color: var(--fgColor-muted);
+    font-size: 0.9em;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 16px;
+}
+
+.post-meta-footer a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.post-meta-footer a:hover {
+    color: var(--fgColor-accent);
+    text-decoration: underline;
+}
+
+/* Post images: rounded + centered */
+.markdown-body img {
+    border-radius: 8px;
+    display: block;
+    margin: 0 auto;
+}
+
+/* Callouts */
+.markdown-body .callout {
+    border: none;
+    border-left: 3px solid var(--callout-accent, var(--fgColor-accent));
+    background: var(--callout-bg, var(--bgColor-muted));
+    padding: 12px 14px;
+    border-radius: 6px;
+    margin: 16px 0;
+}
+
+/* 修复 callout 内段落默认下边距导致的“空一行”视觉问题 */
+.markdown-body .callout p {
+    margin: 0.4em 0;
+}
+
+/* 首尾段落不额外撑开边距 */
+.markdown-body .callout > :first-child {
+    margin-top: 0;
+}
+
+.markdown-body .callout > :last-child {
+    margin-bottom: 0;
+}
+
+.markdown-body .callout-title {
+    font-size: 0.92em;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--callout-accent, var(--fgColor-accent));
+}
+
+.markdown-body .callout-content > :first-child {
+    margin-top: 0;
+}
+
+.markdown-body .callout-content > :last-child {
+    margin-bottom: 0;
+}
+
+.markdown-body .callout-note {
+    --callout-accent: #0969da;
+    --callout-bg: rgba(9, 105, 218, 0.06);
+}
+
+.markdown-body .callout-tip {
+    --callout-accent: #2da44e;
+    --callout-bg: rgba(45, 164, 78, 0.06);
+}
+
+.markdown-body .callout-warning {
+    --callout-accent: #d29922;
+    --callout-bg: rgba(210, 153, 34, 0.08);
+}
+
+.markdown-body .callout-important {
+    --callout-accent: #8250df;
+    --callout-bg: rgba(130, 80, 223, 0.06);
+}
+
+.markdown-body .callout-caution {
+    --callout-accent: #cf222e;
+    --callout-bg: rgba(207, 34, 46, 0.06);
+}
+
+.dark .markdown-body .callout,
+[data-theme="dark"] .markdown-body .callout {
+    background: var(--callout-bg-dark, rgba(255,255,255,0.03));
+}
+
+.dark .markdown-body .callout-note,
+[data-theme="dark"] .markdown-body .callout-note {
+    --callout-bg-dark: rgba(9, 105, 218, 0.10);
+}
+
+.dark .markdown-body .callout-tip,
+[data-theme="dark"] .markdown-body .callout-tip {
+    --callout-bg-dark: rgba(45, 164, 78, 0.10);
+}
+
+.dark .markdown-body .callout-warning,
+[data-theme="dark"] .markdown-body .callout-warning {
+    --callout-bg-dark: rgba(210, 153, 34, 0.10);
+}
+
+.dark .markdown-body .callout-important,
+[data-theme="dark"] .markdown-body .callout-important {
+    --callout-bg-dark: rgba(130, 80, 223, 0.10);
+}
+
+.dark .markdown-body .callout-caution,
+[data-theme="dark"] .markdown-body .callout-caution {
+    --callout-bg-dark: rgba(207, 34, 46, 0.10);
+}
+
+/* Page layout with sidebar TOC (outside markdown body) */
+.page-layout {
+    position: relative;
+}
+
+.page-layout .markdown-body {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 45px;
+}
+
+.post-content {
+    min-width: 0;
+}
+
+.post-toc {
+    position: fixed;
+    top: 90px;
+    left: calc(50% + 490px + 24px);
+    width: 200px;
+    padding: 8px 0 8px 14px;
+    border-left: 1px solid var(--borderColor-muted);
+    color: var(--fgColor-muted);
+    max-height: calc(100vh - 140px);
+    overflow: auto;
+}
+
+.post-toc.is-empty {
+    display: none;
+}
+
+.toc-title {
+    font-size: 0.75em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 10px;
+    color: var(--fgColor-muted);
+}
+
+.toc-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.toc-link {
+    color: var(--fgColor-muted);
+    text-decoration: none;
+    font-size: 0.9em;
+}
+
+.toc-link:hover {
+    color: var(--fgColor-default);
+    text-decoration: underline;
+}
+
+.toc-link-sub {
+    padding-left: 12px;
+    font-size: 0.86em;
+}
+
+@media (max-width: 980px) {
+    .page-layout {
+        padding: 0;
+    }
+
+    .page-layout .markdown-body {
+        padding: 15px;
+    }
+
+    .post-toc {
+        display: none;
+    }
+}
+
+/* Floating action buttons and theme toggle */
+.fab,
+.theme-toggle {
+    position: fixed;
+    right: 16px;
+    z-index: 10;
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--borderColor-default);
+    background: var(--bgColor-muted);
+    color: var(--fgColor-default);
+    border-radius: 999px;
+    font: inherit;
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+}
+
+.fab:hover,
+.theme-toggle:hover {
+    border-color: var(--borderColor-muted);
+}
+
+.theme-toggle {
+    bottom: 16px;
+}
+
+.theme-toggle {
+    position: relative;
+}
+
+.theme-toggle::before {
+    content: "";
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1px solid var(--borderColor-default);
+    background: linear-gradient(90deg, var(--fgColor-default) 0 50%, var(--bgColor-default) 50% 100%);
+    box-sizing: border-box;
+}
+
+.fab-top {
+    bottom: 68px;
+    display: none;
+}
+
+.fab-top.is-visible {
+    display: flex;
+}
+
+/* 主题切换按钮 */
+#themeToggle {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 10;
+}
+
+/* 主题样式*/
+/* 强制默认浅色（不依赖 prefers-color-scheme） */
+html[data-theme="light"] .markdown-body {
+  color-scheme: light;
+  --bgColor-default: #ffffff;
+  --fgColor-default: #1f2328;
+  --fgColor-accent: #0969da;
+  --bgColor-muted: #f6f8fa;
+  --borderColor-muted: #d1d9e0b3;
+}
+
+/* 深色主题 */
+/* 自定义：浅灰色背景 */
+/* html[data-theme="dark"] .markdown-body {
+  color-scheme: dark;
+  --bgColor-default: #292a2d;
+  --fgColor-default: #a9a9b3;
+  --fgColor-accent: #4493f8;
+  --bgColor-muted: #151b23;
+  --borderColor-muted: #3d444db3;
+} */
+
+/* 深色主题 */
+/* Github 默认深色背景 */
+html[data-theme="dark"] {
+    --bgColor-default: #0d1117;
+}
+
+/* 标题更直观 */
+html[data-theme="dark"] .markdown-body h1,
+html[data-theme="dark"] .markdown-body h2,
+html[data-theme="dark"] .markdown-body h3,
+html[data-theme="dark"] .markdown-body h4,
+html[data-theme="dark"] .markdown-body h5,
+html[data-theme="dark"] .markdown-body h6 {
+  color: #e3e6ea;
+}
+
+
+/* 移除导航栏及首页文章 a 标签默认样式 */
+/* 默认（浅色） */
+header nav a,
+.markdown-body .post-item a,
+.markdown-body .tax-item a {
+  color: #111827;
+  text-decoration: none;
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+
+/* 深色 */
+html[data-theme="dark"] header nav a,
+html[data-theme="dark"] .markdown-body .post-item a,
+html[data-theme="dark"] .markdown-body .tax-item a {
+  color: #a1a1aa;
+}
+
+/* hover */
+header nav a:hover,
+.markdown-body .post-item a:hover,
+.markdown-body .tax-item a:hover {
+  color: var(--fgColor-accent);
+}

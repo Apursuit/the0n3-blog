@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - 文件上传-BUUCTF解题记录</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>文件上传-BUUCTF解题记录</h1>
+    <p>
+        <span class="meta">发布于: 2024-05-19 06:57</span>
+    </p>
+    <div class="post-body">
+        <p>题目收集自BUUCTF等平台，如有侵权告知删除</p>
+<!-- more -->
+<h2>[极客大挑战 2019]Upload 1</h2>
+<p>题目地址<a href="https://buuoj.cn/challenges#[%E6%9E%81%E5%AE%A2%E5%A4%A7%E6%8C%91%E6%88%98%202019]Upload">[极客大挑战 2019]Upload 1</a></p>
+<p>正常上传一个简单的php文件，会提示不是图片文件</p>
+<pre><code class="language-php"># 1.php
+&lt;?= phpinfo();?&gt;</code></pre>
+<p>先从最简单的开始，尝试BP抓包修改报文中MIME类型，放行。又提示上传的是PHP文件，换一个不常见的扩展名.phtml，提示匹配到了&lt;?</p>
+<p><img src="/images/upload-practise/1.png" alt="1" /></p>
+<p>换成js脚本的写法</p>
+<pre><code class="language-php"># 1.phtml
+&lt;script language='php'&gt;phpinfo();&lt;/script&gt;</code></pre>
+<p>提示上传失败，检测到不是图片文件，给他加个图片文件头的特征</p>
+<p>参考<a href="https://blog.csdn.net/weixin_62715196/article/details/132279908">图片文件头</a></p>
+<pre><code class="language-php"># 1.phtml
+GIF89a
+&lt;script language='php'&gt;phpinfo();&lt;/script&gt;</code></pre>
+<p><img src="/images/upload-practise/2.png" alt="2" /></p>
+<p>再次上传成功,访问url/upload/1.phtml看到phpinfo()函数执行</p>
+<h2>[ACTF2020 新生赛]Upload 1</h2>
+<p>题目地址<a href="https://buuoj.cn/challenges#[ACTF2020%20%E6%96%B0%E7%94%9F%E8%B5%9B]Upload">[ACTF2020 新生赛]Upload 1</a></p>
+<p>正常上传php文件，js弹出只能上传图片</p>
+<p>禁用js，我用chrome插件禁用js</p>
+<p><img src="/images/upload-practise/3.png" alt="3" /></p>
+<p>禁用后，php文件还是上传不了，php3，php5也不行，尝试上传一个phtml文件</p>
+<pre><code class="language-php"># 1.phtml
+&lt;?php phpinfo();?&gt;</code></pre>
+<p>上传后访问，phpinfo()函数执行</p>
+<h2>[MRCTF2020]你传你🐎呢 1</h2>
+<p>题目地址<a href="https://buuoj.cn/challenges#[MRCTF2020]%E4%BD%A0%E4%BC%A0%E4%BD%A0%F0%9F%90%8E%E5%91%A2">[MRCTF2020]你传你🐎呢 1</a></p>
+<p>传php文件都失败了，看样子只能用图片了。上传.htacess文件失败，修改MIME类型，.htacesss文件上传成功。</p>
+<pre><code class="language-ini"># .htacess
+AddType application/x-httpd-php .png</code></pre>
+<blockquote>
+<p>".htaccess" 文件是 Apache Web 服务器特有的文件，用于配置服务器的行为。通过 ".htaccess" 文件，用户可以在特定目录中覆盖 Apache 服务器的全局配置，包括重定向、认证、缓存控制等。</p>
+</blockquote>
+<p>接着上传图片</p>
+<pre><code class="language-php"># 1.png
+&lt;?php phpinfo();?&gt;</code></pre>
+<p>上传成功，访问看到phpinfo()函数执行</p>
+<p><img src="/images/upload-practise/5.png" alt="5" /></p>
+<h2>[GXYCTF2019]BabyUpload 1</h2>
+<p>题目地址<a href="https://buuoj.cn/challenges#[GXYCTF2019]BabyUpload">[GXYCTF2019]BabyUpload 1</a></p>
+<p>上传php文件提示不能上传后缀名有ph的文件，这题看来要用图片。上传png，gif图片失败，修改MIME类型也不能上传，最后看大佬博客发现只能用jpeg</p>
+<p><a href="https://blog.csdn.net/weixin_47055136/article/details/131291140">【CTF】[GXYCTF 2019]BabyUpload</a></p>
+<p><a href="https://blog.csdn.net/2302_79800344/article/details/136428034">[GXYCTF2019]BabyUpload1 -- 题目分析与详解</a></p>
+<p>最后BP抓包MIME类型修改为image/jpeg竟然上传成功了。</p>
+<p>上传.htacess文件</p>
+<pre><code class="language-ini"># .htacess
+AddType application/x-httpd-php .png</code></pre>
+<p>上传png图片</p>
+<pre><code class="language-php"># 1.png
+&lt;?php phpinfo();?&gt;</code></pre>
+<p>提示还是php文件，尝试使用js格式</p>
+<pre><code class="language-php"># 1.png
+&lt;script language='php'&gt;phpinfo();&lt;/script&gt;</code></pre>
+<p>上传成功，访问看到phpinfo()函数执行</p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>web</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#文件上传</span>
+                            </span>
+            </div>
+    </article>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>

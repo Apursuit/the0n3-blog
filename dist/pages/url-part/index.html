@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - URL中的各部分参数 - http身份认证</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>URL中的各部分参数 - http身份认证</h1>
+    <p>
+        <span class="meta">发布于: 2025-04-29 08:26</span>
+    </p>
+    <div class="post-body">
+        <h2>URL中的各部分参数</h2>
+<p>CTF web手应该会都做过这个考点的题目，示例<code>http://domain@2130706433</code>，<code>@</code>符用来分隔<code>userinfo</code>、<code>host</code>，访问这个url可以直接把用户名、密码的参数值传给<code>@</code>后面要访问的主机，可以打一个重定向或者SSRF</p>
+<p>url的各部分</p>
+<pre><code class="language-http">&lt;scheme&gt;://&lt;userinfo&gt;@&lt;host&gt;:&lt;port&gt;/&lt;path&gt;?&lt;query&gt;#&lt;fragment&gt;</code></pre>
+<ul>
+<li>
+<p><strong>scheme</strong>：协议（如 <code>http</code>、<code>https</code>）</p>
+</li>
+<li>
+<p><strong>userinfo</strong>：可选的“用户名:密码”信息，用于 HTTP 认证</p>
+</li>
+<li>
+<p><strong>host</strong>：域名或 IP 地址</p>
+</li>
+<li>
+<p><strong>@</strong>：“@”符号，用来分隔参数 <code>userinfo</code> 和要访问的 <code>host</code></p>
+</li>
+<li>
+<p><strong>port</strong>：端口（可省略，则默认 80 或 443）</p>
+</li>
+<li>
+<p><strong>path、query、fragment</strong>：资源路径、查询参数和锚点</p>
+</li>
+</ul>
+<p>一直没有一个直接的机会了解<code>@</code>前的<code>userinfo</code>这部分倒带是什么，今天终于碰到了，记录一下</p>
+<p><img src="/images/http-auth/1.png" alt="1" /></p>
+<p>对于这个http认证，有多种方式进行认证，可以手动输入，也可以使用curl命令，或者hackerbar、bp里使用Authorization头进行认证。</p>
+<pre><code class="language-bash">curl -u username:password http://example.com
+curl --user username:password http://example.com
+curl -H "Authorization: Basic YWRtaW46MTIzNDU2" http://example.com
+curl http://username:password@example.com</code></pre>
+<p><img src="/images/http-auth/2.png" alt="2" /></p>
+<p>在这条命令里，curl使用<code>-H</code>参数添加了一个HTTP头部，Authorization头部的值为Basic + base64编码后的用户名:密码（admin:123456）。</p>
+<pre><code class="language-bash">curl -H "Authorization: Basic YWRtaW46MTIzNDU2" http://example.com</code></pre>
+<p>类似<code>http://admin@domain.com/</code>的url，使用用户名为<code>admin</code>，密码为空的参数访问主机<code>domain.com</code>。</p>
+<p>对于没有开启http认证的服务器，即使添加<code>userinfo</code>部分，服务器不会处理解释这个部分，相当于直接忽略掉了，直接访问后面的主机部分。</p>
+<h2>nginx配置http认证</h2>
+<p>使用nginx配置http认证，复现：</p>
+<p>准备以下3个文件</p>
+<pre><code class="language-plaintext">- nginx.conf
+- dockerfile
+- docker-compose.yml</code></pre>
+<p>nginx.conf</p>
+<pre><code class="language-nginx">events {}
+
+http {
+  server {
+    listen       80;
+    server_name  _;
+
+    # 开启 Basic Auth
+    auth_basic           "Restricted Area";
+    auth_basic_user_file /etc/nginx/.htpasswd;
+
+    location / {
+      root   /var/www/html;
+      index  index.html;
+    }
+  }
+}</code></pre>
+<p>dockerfile</p>
+<pre><code class="language-dockerfile">FROM nginx:latest
+
+# 安装 htpasswd 并生成账号 admin:123456
+RUN apt-get update \
+ &amp;&amp; apt-get install -y apache2-utils \
+ &amp;&amp; htpasswd -cb /etc/nginx/.htpasswd admin 123456 \
+ &amp;&amp; rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /var/www/html \
+ &amp;&amp; echo '&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;body&gt;Hello, admin!&lt;/body&gt;&lt;/html&gt;' \
+    &gt; /var/www/html/index.html
+
+COPY nginx.conf /etc/nginx/nginx.conf</code></pre>
+<p>docker-compose.yml</p>
+<pre><code class="language-yaml">version: '3.8'
+
+services:
+  nginx-auth:
+    # 从本目录的 Dockerfile 构建镜像
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nginx-auth-demo
+    ports:
+      - "8080:80"
+    restart: unless-stopped</code></pre>
+<p>启动环境</p>
+<pre><code class="language-bash">docker compose up -d --build</code></pre>
+<p>关闭环境</p>
+<pre><code class="language-bash">docker compose down</code></pre>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>web</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#http</span>
+                                    <span>#nginx</span>
+                            </span>
+            </div>
+    </article>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>

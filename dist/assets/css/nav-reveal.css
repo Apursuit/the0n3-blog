@@ -1,0 +1,23 @@
+/* Auto-reveal header on scroll up */
+header {
+    position: sticky;
+    top: 0;
+    z-index: 15;
+    background: var(--bgColor-default);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+header.nav-hidden {
+    transform: translateY(-100%);
+}
+
+header.nav-hidden + .page-layout,
+header.nav-hidden + main.markdown-body {
+    margin-top: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    header {
+        transition: none;
+    }
+}

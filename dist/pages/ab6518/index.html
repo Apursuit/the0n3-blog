@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - docker制作web镜像</title>
+        <meta name="description" content="the0n3">
+            <link rel="canonical" href="https://blog.the0n3.top">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+            <link rel="stylesheet" href="/assets/css/reading-progress.css">
+            <link rel="stylesheet" href="/assets/css/image-enhance.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+        <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+        <header>
+        <nav>
+            <div class="nav-right">
+                <a href="/">首页</a>
+                <a href="/archives">归档</a>
+                <a href="/categories">分类</a>
+                <a href="/tags">标签</a>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>docker制作web镜像</h1>
+    <p>
+        <span class="meta">发布于: 2024-05-16 05:53</span>
+    </p>
+    <div class="post-body">
+        <h1>使用Docker搭建CTF简单镜像</h1>
+<div class="callout callout-tip">
+<p>如果你在找lnmp相关ctf web基础镜像，推荐Github这个项目<a href="https://github.com/CTF-Archives/ctf-docker-template/tree/main">ctf-docker-template</a>，很多现成web镜像，感谢大佬们的贡献</p>
+</div>
+<p>需求：一个可以快速上手，简单配置搭建CTF靶机的镜像(<strong>php+apache</strong>)  </p>
+<p>我要打的靶机需要修改一些PHP配置，以我的过程为例了  </p>
+<blockquote>
+<p>中间php.ini配置部分按需求选做</p>
+</blockquote>
+<h2>拉取镜像</h2>
+<p>确定需求，在Dockerhub官网中搜索PHP，官方给出很多镜像，在标签页找php-apache相关镜像  </p>
+<p><img src="/images/docker_0/1.png" alt="1"></p>
+<p>选择一个没有其他组件的镜像</p>
+<p><img src="/images/docker_0/2.png" alt="2"></p>
+<p>命令行拉取镜像，在下面开启容器时，可以使用这个镜像名或者这个分配的sha256的前5位也可以</p>
+<pre><code class="language-shell">docker pull php:8.2.17-apache</code></pre>
+<h2>准备src目录</h2>
+<p>在拉取的镜像中没有图像化界面,vi等编辑器，可以简单用echo临时写个简单php测试一下，写简单靶机题目有点不够用~(实力不够)~<br>
+在主机/虚拟机中准备src目录，使用你的编辑器/vi写入题目，配置文件，这样待会可以直接复制到镜像中(<strong>没有特殊需求，不用准备配置文件，使用镜像中默认的</strong>) </p>
+<p><img src="/images/docker_0/5.png" alt="5"></p>
+<p>配置文件中<strong>修改需要的相关参数</strong>(选做)</p>
+<p><img src="/images/docker_0/6.png" alt="6"></p>
+<h2>修改PHP配置</h2>
+<p>我需要用到PHP配置中include和伪协议，需要打开配置中的allow_url_include，allow_url_fopen，如果你不需要修改配置，忽略此步</p>
+<p>在Dockerhub中PHP官方文档下找到配置相关指令</p>
+<p>找到<strong>配置文件位置</strong></p>
+<pre><code class="language-php">$php_INI_DIR/php.ini      </code></pre>
+<p><img src="/images/docker_0/4.png" alt="4"></p>
+<h2>开启容器</h2>
+<p>开启容器</p>
+<pre><code class="language-docker">docker run -d -p 8080:80 php:8.2.17-apache</code></pre>
+<p>查看正在运行的容器</p>
+<pre><code class="language-docker">docker ps</code></pre>
+<p>已经开启容器了，进去看看(滑稽)
+<img src="/images/docker_0/8.png" alt="8"></p>
+<p>没有权限访问：官方镜像/var/www/html目录下没有准备文件，所以报错了，你需要自己准备</p>
+<p>你可以记录下这个容器的id，后面使用更简单
+<img src="/images/docker_0/7.png" alt="7"></p>
+<h2>配置文件复制到容器中</h2>
+<p>将src下准备的配置文件复制到容器的临时存放目录下  </p>
+<pre><code class="language-docker">docker cp src/php.ini-development fb204:/tmp/php.ini-development</code></pre>
+<p>现在你可以将主机/虚拟机src下的ini配置文件删掉了，后面src目录下index.php，flag.php还会用</p>
+<h2>正确配置php.ini文件</h2>
+<p>上一步将PHP配置文件复制到了/tmp目录下，并不会生效，我们要进容器修改配置到正确的目录下</p>
+<pre><code class="language-docker">docker exec -it fb204 /bin/bash    # 进入容器</code></pre>
+<p>移动配置文件</p>
+<pre><code class="language-shell">mv /tmp/php.ini-development $PHP_INI_DIR/php.ini</code></pre>
+<p><img src="/images/docker_0/9.png" alt="9"></p>
+<p>现在你已经把配置文件放到正确的目录下了，看起来可以达到预期了(滑稽)</p>
+<h2>将PHP文件复制到工作目录</h2>
+<p>先退出容器</p>
+<pre><code class="language-shell">exit</code></pre>
+<p><img src="/images/docker_0/11.png" alt="11">
+将src目录下PHP文件复制到工作目录下，测试php-apache能否正确运行</p>
+<pre><code class="language-docker">docker cp src/. fb204:/var/www/html/</code></pre>
+<h2>访问测试</h2>
+<p>再访问网页看看效果，PHP文件正确解析
+<img src="/images/docker_0/12.png" alt="12"></p>
+<p>传参查看<strong>phpinfo()</strong>,发现allow_url_include没有被修改~(慌)~
+<img src="/images/docker_0/13.png" alt="13"></p>
+<p>当然，在容器中修改配置文件并不会立即生效，你需要保存镜像中的修改，所以commit将当前容器构建成新的镜像</p>
+<pre><code class="language-docker">docker commit fb204 ajay</code></pre>
+<p>~下面操作一气呵成~</p>
+<ul>
+<li>生成新镜像</li>
+<li>停止刚才的容器</li>
+<li>运行新生成的镜像(刚才容器的最后状态)</li>
+</ul>
+<p><img src="/images/docker_0/15.png" alt="15"></p>
+<p>现在再次访问测试可以发现参数已经完成修改！
+<img src="/images/docker_0/14.png" alt="14"></p>
+<h2>将镜像推送到dockerhub仓库</h2>
+<p>登录dockerhub账户</p>
+<pre><code class="language-docker">docker login</code></pre>
+<p>给本地镜像打标签</p>
+<pre><code class="language-docker">docker tag myimage:latest  mynamespace/myrepo:1.0</code></pre>
+<p>推送镜像到dockerhub仓库</p>
+<pre><code class="language-docker">docker push mynamespace/myrepo:1.0</code></pre>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>notes</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#docker</span>
+                            </span>
+            </div>
+    </article>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+        <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+        <script src="/assets/js/readingProgress.js"></script>
+            <script src="/assets/js/imageEnhance.js"></script>
+        <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+</body>
+</html>
