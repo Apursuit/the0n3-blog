@@ -15,7 +15,8 @@
 - Callout 语法（[!NOTE]/[!TIP] 等）
 - 构建过程写入 logs/build.log
 - 生成 dist/sitemap.xml（基于 config/site.php 的 url）
-
+- GitHub Action 自动构建部署到 gh-pages 分支
+- Giscus 评论系统支持（需自行配置 repo / repo_id / category / category_id）
 
 ## 快速上手
 
@@ -80,6 +81,8 @@ php -S localhost:8000 -t dist/
 功能说明：本地在 posts 目录文章书写完成后，提交到 GitHub 仓库，GitHub Action 会自动触发构建流程，构建完成后会将 dist 目录下的静态文件推送到 gh-pages 分支，实现自动部署。
 
 需要给项目开启 action 的读写权限
+
+Settings → Actions → 常规（General）下滑找到 Workflow permissions，选择 Allow GitHub Actions to read and write permissions
 
 ![](/images/blog-deployment/14.png)
 
