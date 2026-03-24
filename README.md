@@ -75,6 +75,14 @@ php -S localhost:8000 -t dist/
 如果部署在 github pages，把 dist/ 目录下的所有文件推送到 gh-pages 分支即可。
 
 
+### 自动构建
+
+功能说明：本地在 posts 目录文章书写完成后，提交到 GitHub 仓库，GitHub Action 会自动触发构建流程，构建完成后会将 dist 目录下的静态文件推送到 gh-pages 分支，实现自动部署。
+
+需要给项目开启 action 的读写权限
+
+![](/images/blog-deployment/14.png)
+
 
 ## 目录结构
 
@@ -133,6 +141,12 @@ sidebar: true
 
 - config/site.php：站点标题、作者、站点地址等
     - 其中 url 会用于生成 sitemap.xml 的站点根地址（例如 https://example.com）
+
+### Giscus 评论系统
+
+默认关闭。如需启用，请在 config/site.php 的 giscus 配置中填入你自己的参数（repo / repo_id / category / category_id）。
+
+重要：不要直接使用他人的配置，否则评论会写入对方仓库。
 
 ## 备注
 

@@ -32,6 +32,31 @@ ob_start();
 </article>
 
 <?php
+$giscus = $site['giscus'] ?? null;
+$giscusEnabled = is_array($giscus) && !empty($giscus['enabled']);
+?>
+
+<?php if ($giscusEnabled): ?>
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="<?= htmlspecialchars($giscus['repo'] ?? '') ?>"
+        data-repo-id="<?= htmlspecialchars($giscus['repo_id'] ?? '') ?>"
+        data-category="<?= htmlspecialchars($giscus['category'] ?? '') ?>"
+        data-category-id="<?= htmlspecialchars($giscus['category_id'] ?? '') ?>"
+        data-mapping="<?= htmlspecialchars($giscus['mapping'] ?? 'pathname') ?>"
+        data-strict="<?= htmlspecialchars($giscus['strict'] ?? '0') ?>"
+        data-reactions-enabled="<?= htmlspecialchars($giscus['reactions_enabled'] ?? '1') ?>"
+        data-emit-metadata="<?= htmlspecialchars($giscus['emit_metadata'] ?? '0') ?>"
+        data-input-position="<?= htmlspecialchars($giscus['input_position'] ?? 'bottom') ?>"
+        data-theme="<?= htmlspecialchars($giscus['theme'] ?? 'preferred_color_scheme') ?>"
+        data-lang="<?= htmlspecialchars($giscus['lang'] ?? 'zh-CN') ?>"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+<?php endif; ?>
+
+<?php
 $content = ob_get_clean();
 $enableReadingProgress = true;
 $enableImageEnhance = true;

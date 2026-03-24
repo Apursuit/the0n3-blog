@@ -7,4 +7,19 @@ return [
     'url' => 'https://blog.the0n3.top',
     'description' => 'the0n3',
     'canonical' => 'https://blog.the0n3.top',
+    // Giscus 评论系统（默认关闭，需填写自己的配置）
+    'giscus' => [
+        'enabled' => true,
+        'repo' => 'Apursuit/the0n3-blog',
+        'repo_id' => 'R_kgDORvPPbA',
+        'category' => 'Announcements',
+        'category_id' => 'DIC_kwDORvPPbM4C5KAt',
+        'mapping' => 'pathname',
+        'strict' => '0',
+        'reactions_enabled' => '1',
+        'emit_metadata' => '0',
+        'input_position' => 'bottom',
+        'theme' => 'preferred_color_scheme',
+        'lang' => 'zh-CN',
+    ],
 ];
