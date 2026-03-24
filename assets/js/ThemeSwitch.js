@@ -12,6 +12,15 @@ function syncButtonLabel(theme) {
   btn.textContent = '';
 }
 
+function syncGiscusTheme(theme) {
+  const iframe = document.querySelector('iframe.giscus-frame');
+  if (!iframe) return;
+  iframe.contentWindow.postMessage(
+    { giscus: { setConfig: { theme } } },
+    'https://giscus.app'
+  );
+}
+
 syncButtonLabel(root.dataset.theme);
 
 document.getElementById('themeToggle')?.addEventListener('click', () => {
@@ -20,4 +29,5 @@ document.getElementById('themeToggle')?.addEventListener('click', () => {
   root.style.colorScheme = next;
   localStorage.setItem(key, next);
   syncButtonLabel(next);
+  syncGiscusTheme(next);
 });
