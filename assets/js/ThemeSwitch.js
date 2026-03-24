@@ -14,14 +14,23 @@ function syncButtonLabel(theme) {
 
 function syncGiscusTheme(theme) {
   const iframe = document.querySelector('iframe.giscus-frame');
-  if (!iframe) return;
+  if (!iframe) return false;
   iframe.contentWindow.postMessage(
     { giscus: { setConfig: { theme } } },
     'https://giscus.app'
   );
+  return true;
 }
 
 syncButtonLabel(root.dataset.theme);
+if (!syncGiscusTheme(root.dataset.theme)) {
+  const observer = new MutationObserver(() => {
+    if (syncGiscusTheme(root.dataset.theme)) {
+      observer.disconnect();
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+}
 
 document.getElementById('themeToggle')?.addEventListener('click', () => {
   const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
