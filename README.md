@@ -43,6 +43,7 @@
 
 - PHP ≥ 7.4
 - Composer
+- git
 
 打开 PowerShell（建议以普通用户运行），执行：
 
@@ -56,7 +57,7 @@ irm get.scoop.sh | iex
 安装 PHP 和 Composer
 
 ```powershell
-scoop install php composer
+scoop install php composer git
 ```
 
 ![](/images/blog-deployment/0.png)
@@ -66,9 +67,17 @@ scoop install php composer
 ```powershell
 php -v
 composer -V
+git -v
 ```
 
 ![](/images/blog-deployment/01.png)
+
+### 克隆项目到本地：
+
+```bash
+git clone https://hk.gh-proxy.org/https://github.com/Apursuit/the0n3-blog.git
+cd the0n3-blog
+```
 
 
 ### 安装依赖
@@ -79,7 +88,7 @@ composer 依赖安装：
 composer install
 ```
 
-### 创建文章
+### 开始写作
 
 运行 main.php 生成新文章模板：
 
