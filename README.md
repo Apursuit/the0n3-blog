@@ -75,8 +75,8 @@ git -v
 ### 克隆项目到本地：
 
 ```bash
-git clone https://hk.gh-proxy.org/https://github.com/Apursuit/the0n3-blog.git
-cd the0n3-blog
+git clone https://hk.gh-proxy.org/https://github.com/Apursuit/the0n3-blog-template.git
+cd the0n3-blog-template
 ```
 
 
