@@ -96,7 +96,7 @@ composer install
 php main.php new "文章标题"
 ```
 
-在 posts/ 下会生成一个新的 Markdown 文件，把生成的模板内容复制进去
+手动在 posts/ 下会创建一个新的 Markdown 文件，把生成的模板内容复制进去
 
 **注意，--- 分隔符必须顶格、并且必须出现在文件开头**
 
