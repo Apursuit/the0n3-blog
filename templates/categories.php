@@ -21,9 +21,10 @@ ob_start();
         ?>
         <li class="tax-item" data-posts="<?= $postsJson ?>">
             <button class="tax-toggle" type="button" aria-expanded="false">
-                <?= htmlspecialchars($category) ?>
+                <span class="tax-name"><?= htmlspecialchars($category) ?></span>
+                <span class="tax-count"><?= count($posts) ?></span>
+                <span class="tax-chevron" aria-hidden="true"></span>
             </button>
-            <span class="meta"><?= count($posts) ?></span>
             <ul class="post-list" aria-hidden="true"></ul>
         </li>
     <?php endforeach; ?>

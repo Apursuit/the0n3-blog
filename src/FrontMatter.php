@@ -3,7 +3,6 @@
 namespace App;
 
 use Symfony\Component\Yaml\Yaml;
-use App\Utils;
 
 class FrontMatter
 {
@@ -20,11 +19,17 @@ class FrontMatter
             throw new \Exception("Front matter not found or invalid format.");
         }
 
-        $frontMatter = Yaml::parse($matches[1]);
+        $frontMatterRaw = $matches[1];
+        $frontMatter = Yaml::parse($frontMatterRaw);
         $markdownContent = $matches[2];
 
         if (!is_array($frontMatter)) {
             throw new \Exception('Front matter YAML must be a mapping/object.');
+        }
+
+        $rawDate = self::extractRawScalarField($frontMatterRaw, 'date');
+        if ($rawDate !== null) {
+            $frontMatter['date'] = self::normalizeRawScalarValue($rawDate);
         }
 
         // Set default values
@@ -44,5 +49,29 @@ class FrontMatter
             'frontMatter' => $frontMatter,
             'content' => $markdownContent,
         ];
+    }
+
+    private static function extractRawScalarField(string $frontMatterRaw, string $field): ?string
+    {
+        $pattern = '/^' . preg_quote($field, '/') . ':\s*(.+)\s*$/m';
+        if (!preg_match($pattern, $frontMatterRaw, $matches)) {
+            return null;
+        }
+
+        return trim($matches[1]);
+    }
+
+    private static function normalizeRawScalarValue(string $value): string
+    {
+        $length = strlen($value);
+        if ($length >= 2) {
+            $first = $value[0];
+            $last = $value[$length - 1];
+            if (($first === '"' && $last === '"') || ($first === "'" && $last === "'")) {
+                return substr($value, 1, -1);
+            }
+        }
+
+        return $value;
     }
 }

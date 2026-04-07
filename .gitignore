@@ -10,3 +10,7 @@ vendor/
 # IDE 配置（建议添加）
 .vscode/
 .idea/
+
+
+# 待发布文章
+posts/99.待发布/
