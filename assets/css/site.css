@@ -13,7 +13,7 @@ body, .markdown-body, .post-toc, header nav {
 /* site.css 后导入，优先级会高于github-markdown-css 存在覆盖*/
 /* 导航栏字体大小 */
 header nav{
-    font-size: 17px;
+    font-size: 18px;
 }
 /* 覆盖 GitHub markdown 的正文排版 */
 .markdown-body {
@@ -455,20 +455,20 @@ html[data-theme="light"] .markdown-body {
 
 /* 深色主题 */
 /* 自定义：浅灰色背景 */
-/* html[data-theme="dark"] .markdown-body {
-  color-scheme: dark;
+html[data-theme="dark"] .markdown-body {
   --bgColor-default: #292a2d;
-  --fgColor-default: #a9a9b3;
+  --fgColor-default: #d8d8db;
   --fgColor-accent: #4493f8;
   --bgColor-muted: #151b23;
   --borderColor-muted: #3d444db3;
-} */
+  background-color: var(--bgColor-default);
+}
 
 /* 深色主题 */
 /* Github 默认深色背景 */
-html[data-theme="dark"] {
+/* html[data-theme="dark"] {
     --bgColor-default: #0d1117;
-}
+} */
 
 /* 标题更直观 */
 html[data-theme="dark"] .markdown-body h1,
