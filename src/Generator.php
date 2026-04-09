@@ -67,6 +67,9 @@ class Generator
         $this->timeStep('6. 渲染页面', function () {
             $this->generatePages();
         });
+        $this->timeStep('7. 生成搜索索引', function () {
+            $this->buildSearchIndex();
+        });
 
         $endTime = microtime(true);
         $buildTime = round($endTime - $startTime, 2);
@@ -403,5 +406,66 @@ class Generator
         }
         $xml .= "</urlset>\n";
         return $xml;
+    }
+
+    // 生成搜索索引 JSON 文件
+    private function buildSearchIndex(): void
+    {
+        Utils::log("生成搜索索引...");
+        
+        $indexData = [
+            'version' => '2.0',
+            'buildTime' => date('c'),
+            'posts' => [],
+        ];
+        
+        foreach ($this->posts as $post) {
+            // 从 HTML 提取 h1-h3 标题
+            $headings = $this->extractHeadings($post['html']);
+            
+            // 获取纯文本内容（去除 HTML 标签）
+            $plainText = strip_tags($post['html']);
+            $plainText = preg_replace('/\s+/', ' ', $plainText); // 规范化空白
+            // 限制大小以减少 JSON 文件体积
+            $plainText = mb_substr($plainText, 0, 5000, 'UTF-8');
+            
+            $indexData['posts'][] = [
+                'id' => md5($post['frontMatter']['permalink']),
+                'title' => $post['frontMatter']['title'],
+                'url' => $post['frontMatter']['permalink'],
+                'date' => $post['frontMatter']['date'],
+                'content' => $plainText,
+                'tags' => array_values($post['frontMatter']['tags']),
+                'headings' => $headings,
+            ];
+        }
+        
+        // 写入 JSON 文件
+        $indexFile = $this->config['dist_path'] . '/search-index.json';
+        $json = json_encode($indexData, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        file_put_contents($indexFile, $json);
+        
+        $fileSize = round(filesize($indexFile) / 1024, 2);
+        Utils::log("搜索索引已生成：{$fileSize}KB");
+    }
+    
+    // 从 HTML 中提取 h1-h3 标题
+    private function extractHeadings(string $html): array
+    {
+        $headings = [];
+        $pattern = '/<h[1-3][^>]*>(.*?)<\/h[1-3]>/i';
+        
+        if (preg_match_all($pattern, $html, $matches)) {
+            foreach ($matches[1] as $heading) {
+                $text = strip_tags($heading);
+                $text = trim($text);
+                
+                if (!empty($text)) {
+                    $headings[] = $text;
+                }
+            }
+        }
+        
+        return array_unique($headings); // 去重
     }
 }

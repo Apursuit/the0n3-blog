@@ -37,6 +37,7 @@
     <link rel="stylesheet" href="/assets/css/image-enhance.css">
     <?php endif; ?>
     <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
     <!-- 代码高亮样式 -->
     <link rel="stylesheet" href="/assets/prism/prism.css">
 </head>
@@ -53,6 +54,19 @@
                 <a href="/archives">归档</a>
                 <a href="/categories">分类</a>
                 <a href="/tags">标签</a>
+                
+                <!-- 搜索框 -->
+                <div class="search-box">
+                    <input 
+                        id="searchInput" 
+                        type="text" 
+                        placeholder="搜索文章..."
+                        autocomplete="off"
+                    >
+                    <div id="searchResults" class="search-results" style="display:none;">
+                        <ul></ul>
+                    </div>
+                </div>
             </div>
         </nav>
     </header>
@@ -87,5 +101,8 @@
     <script src="/assets/prism/prism-line-number.js"></script>
     <!-- 主题切换 -->
     <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
 </body>
 </html>
