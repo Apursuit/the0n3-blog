@@ -1,51 +1,57 @@
 # the0n3 blog
 
+<div align="center">
+
 一个基于 Markdown 的极简博客系统，专注 Markdown 写作，自动生成静态站点并支持一键部署。
 
-👉 在线演示：https://blog.the0n3.top/
+[👉 在线演示](https://blog.the0n3.top/) · [报告 Bug](https://github.com/Apursuit/the0n3-blog-template/issues) · [提出建议](https://github.com/Apursuit/the0n3-blog-template/issues)
 
-浅色主题：
+![PHP Version](https://img.shields.io/badge/PHP-%E2%89%A5%_7.4-blue.svg)
+![License](https://img.shields.io/badge/License-MIT-green.svg)
 
-![](/images/blog-deployment/light.png)
+</div>
 
-深色主题：
+## 📸 主题预览
 
-![](/images/blog-deployment/dark.png)
-
+| 浅色主题 | 深色主题 |
+| :---: | :---: |
+| [![](/images/blog-deployment/light.png)](/images/blog-deployment/light.png) | [![](/images/blog-deployment/dark.png)](/images/blog-deployment/dark.png) |
 
 ## ✨ 特性
 
-### 界面与体验
-- 🌗 支持深浅主题切换
-- 🧭 向上滚动自动显示导航栏
-- 📖 阅读进度条与目录联动高亮
-- 🧩 文章页可选目录（基于 h2/h3 自动生成）
-- 🖼️ 图片增强（懒加载 + 点击放大）
+**🎨 界面与体验**
+* **自适应主题**：支持浅色/深色主题无缝切换。
+* **沉浸式阅读**：向上滚动自动显示导航栏，阅读进度条与目录联动高亮。
+* **自动化目录**：文章页基于 `h2`/`h3` 标签自动生成侧边栏目录。
+* **多媒体增强**：内置图片懒加载及点击放大功能。
 
-### 写作与内容
-- 📝 使用带 YAML Front Matter 的 Markdown 作为文章源
-- 🏷️ 自动生成首页、标签页、分类页、归档页、文章详情页
-- 💡 Callout 语法支持（[!NOTE] / [!TIP] 等）
+**📝 写作与内容**
+* **纯粹的 Markdown**：使用带有 YAML Front Matter 的 Markdown 文件作为文章数据源。
+* **全自动化生成**：自动生成首页、标签页、分类页、归档页及文章详情页。
+* **扩展语法支持**：内置 Callout 提示块语法（如 `[!NOTE]`, `[!TIP]` 等）。
 
-### 构建与部署
-- 🚀 GitHub Actions 自动构建并部署到 gh-pages 分支
-- 📦 构建过程写入 logs/build.log
-- 🗺️ 自动生成 dist/sitemap.xml（基于 config/site.php）
+**🚀 构建与部署**
+* **CI/CD 集成**：支持通过 GitHub Actions 自动构建并部署至 `gh-pages` 分支。
+* **SEO 友好**：基于 `config/site.php` 自动生成 `sitemap.xml`。
+* **构建日志**：构建过程会自动输出详细日志至 `logs/build.log`。
 
-### 其他
-- 💬 Giscus 评论系统支持（需自行配置 repo 等参数）
-- 🎨 Prism 代码高亮
+**🧩 扩展支持**
+* **代码高亮**：集成 Prism 代码高亮引擎。
+* **评论系统**：原生支持 Giscus 评论系统接入。
 
+## 🚀 快速开始
 
-## 🚀快速上手
+### 1. 环境准备
 
-### 环境要求
-
-- PHP ≥ 7.4
-- Composer
-- git
+确保您的本地环境已安装以下组件：
+* PHP ≥ 7.4
+* Composer
+* Git
 
 安装 PHP、Composer、git：
+
+
+windows
 
 ```bash
 # windows powershell，管理员权限运行
@@ -53,24 +59,29 @@
 Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 irm get.scoop.sh | iex
 scoop install php composer git
+```
 
+MacOS
+
+```bash
 # macOS
 brew install php composer git
+```
 
+Ubuntu/Debian
+
+```bash
 # Ubuntu/Debian  
 sudo apt-get install php composer git
 ```
 
 
-### 克隆项目到本地：
+### 2. 获取项目与安装依赖
 
 ```bash
 git clone https://hk.gh-proxy.org/https://github.com/Apursuit/the0n3-blog-template.git
 cd the0n3-blog-template
 ```
-
-
-### 安装依赖
 
 composer 依赖安装：
 
@@ -78,70 +89,83 @@ composer 依赖安装：
 composer install
 ```
 
-### 开始写作
+### 3. 开始写作
 
-运行 main.php 生成新文章模板：
+运行以下命令快速生成新文章模板：
 
 ```bash
 php main.php new "文章标题"
 ```
 
-手动在 posts/ 下会创建一个新的 Markdown 文件，把生成的模板内容复制进去
+这会打印出一个包含 Front Matter 的 Markdown 模板，你可以手动在 posts/ 下创建一个新的 Markdown 文件，把生成的模板内容复制进去
 
 **注意，--- 分隔符必须顶格、并且必须出现在文件开头**
 
-### 构建博客
+### 4. 构建博客
+
+书写完成后，执行构建命令生成静态文件：
 
 ```bash
 php main.php build
 ```
 
-构建流程:
+构建流程： 清空 dist/ ➔ 资源映射 ➔ 解析 Markdown ➔ 校验数据 ➔ 构建数据索引 ➔ 渲染页面。
 
-1. 清空 dist/
-2. 资源映射
-3. 解析 Markdown
-4. 校验数据
-5. 构建数据索引
-6. 渲染页面
-
-最终生成所有静态文件到 dist/ 目录，博客即完成构建，在 dist 目录下开启web服务即可预览。
+完成后，使用 PHP 内置服务器进行本地服务预览：
 
 ```bash
 php -S localhost:8000 -t dist/
 ```
 
-访问 http://localhost:8000 即可看到博客首页，至此，你已经成功搭建了自己的博客！后续继续在 posts/ 目录下添加 Markdown 文章，重复构建流程即可更新博客内容。
+访问 http://localhost:8000 即可看到博客首页，至此，你已经成功搭建了自己的博客！后续在 posts/ 目录下添加 Markdown 文章，重复构建流程即可更新博客内容。
 
 
 如果要让其他人可以看到你的博客，可以部署在 github pages，把 dist/ 目录下的所有文件推送到 gh-pages 分支即可。
 
 
-### Github pages 自动构建
 
-功能说明：本地在 posts 目录文章书写完成后，提交到 GitHub 仓库，GitHub Action 会自动触发构建流程，构建完成后会将 dist 目录下的静态文件推送到 gh-pages 分支，实现自动部署。
+## 🌐 部署指南 (GitHub Pages)
 
-需要给项目开启 action 的读写权限
+本模板已配置好完整的自动化部署流程。当您将本地更新推送到 GitHub 仓库时，GitHub Action 会自动触发构建流程，并将生成的静态文件推送到 gh-pages 分支，实现自动部署。
 
-Settings → Actions → 常规（General）下滑找到 Workflow permissions，选择 Allow GitHub Actions to read and write permissions
+你的Github 仓库名需要设置为 username.github.io（其中 username 替换为你的 GitHub 用户名），这样 GitHub Pages 才能正确识别并部署你的博客。
+
+权限配置步骤：
+
+在 GitHub 仓库页面，进入 Settings ➔ Actions ➔ General。
+
+向下滚动至 Workflow permissions 部分。
+
+选择 Read and write permissions 并保存。
 
 ![](/images/blog-deployment/14.png)
 
+## ⚙️ 进阶配置
+
+所有站点核心配置均位于 config/site.php。您可以在其中配置站点的 Title、Author、URL（用于生成 sitemap.xml 的站点根地址）等基础信息。
+
+## Giscus 评论系统
+
+默认关闭。如需启用，请在 config/site.php 的 giscus 配置中填入你自己的参数（repo / repo_id / category / category_id）。
+
+重要：不要直接使用他人的配置，否则评论会写入对方仓库。
+
+注意：启用 Giscus 评论系统需要在 GitHub 仓库创建 Discussions，具体步骤参考这篇文章 https://www.lixueduan.com/posts/blog/02-add-giscus-comment/
 
 ## 目录结构
 
 ```plaintext
 .
-├─ assets/      前端资源（CSS / JS / Prism）
-├─ config/      站点配置
-├─ logs/        构建日志
-├─ posts/       Markdown 文章（支持子目录）
-├─ public/      静态资源（原样拷贝到 dist/）
-├─ images/      图片资源（原样拷贝到 dist/images/）
-├─ src/         核心 PHP 逻辑
-├─ templates/   页面模板
-├─ dist/        构建输出（生成后出现）
-└─ main.php     CLI 入口
+├── assets/      # 前端资源（CSS / JS / Prism 代码高亮）
+├── config/      # 站点配置目录
+├── logs/        # 构建日志目录（默认追加写入，超过14天自动清空重写）
+├── posts/       # Markdown 文章源文件（支持子目录嵌套）
+├── public/      # 静态资源（构建时会原样拷贝至 dist/ 根目录）
+├── images/      # 图片资源（构建时会原样拷贝至 dist/images/）
+├── src/         # 核心 PHP 业务逻辑代码
+├── templates/   # HTML 页面模板
+├── dist/        # 构建后的最终静态站点输出目录（执行 build 后生成）
+└── main.php     # CLI 工具统一入口文件
 ```
 
 
@@ -180,19 +204,6 @@ sidebar: true
 - pin：置顶优先级，0-3，数字越小优先级越高，默认 0
 - draft：是否草稿，默认 false（true 时构建会跳过）
 - sidebar：是否显示文章目录侧边栏，默认 true
-
-## 配置说明
-
-- config/site.php：站点标题、作者、站点地址等
-    - 其中 url 会用于生成 sitemap.xml 的站点根地址（例如 https://example.com）
-
-### Giscus 评论系统
-
-默认关闭。如需启用，请在 config/site.php 的 giscus 配置中填入你自己的参数（repo / repo_id / category / category_id）。
-
-重要：不要直接使用他人的配置，否则评论会写入对方仓库。
-
-注意：启用 Giscus 评论系统需要在 GitHub 仓库创建 Discussions，具体步骤参考这篇文章 https://www.lixueduan.com/posts/blog/02-add-giscus-comment/
 
 ## 备注
 
