@@ -6,8 +6,11 @@ body {
 }
 
 /* 全文字体统一 */
-body, .markdown-body, .post-toc, header nav {
-    font-family: "Inter", "HarmonyOS Sans SC", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+/* 仅调整现有字体栈的顺序和回退，引入 macOS/iOS 上更柔和的中文字体优先。 */
+body {
+    font-family: "SF Pro Text", "SF Pro SC", "PingFang SC", "Helvetica Neue", 
+                 "Noto Sans CJK SC", "Microsoft YaHei", system-ui, -apple-system, 
+                 BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 /* site.css 后导入，优先级会高于github-markdown-css 存在覆盖*/
