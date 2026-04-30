@@ -538,10 +538,15 @@ header nav a,
 }
 
 /* 深色模式下导航与列表链接采用低亮灰色，减少刺眼感 */
-html[data-theme="dark"] header nav a,
+/* 文章列表标题 — 首页主内容，应清晰可读 */
 html[data-theme="dark"] .markdown-body .post-item a,
 html[data-theme="dark"] .markdown-body .tax-item a {
-  color: #a1a1aa;
+  color: #c9cdd1;
+}
+
+/* 导航链接 — 可见但克制 */
+html[data-theme="dark"] header nav a {
+  color: #b4b8bf;
 }
 
 /* 链接悬停统一切换为主题强调色 */
