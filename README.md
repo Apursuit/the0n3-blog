@@ -1,7 +1,7 @@
 # the0n3 blog
 
 <div align="center">
-一个基于 Markdown 的极简博客系统，专注 Markdown 写作，自动生成静态站点并支持一键部署。
+<h5>一个基于 Markdown 的极简博客系统，专注 Markdown 写作，自动生成静态站点并支持一键部署。</h5>
 
 ![PHP](https://img.shields.io/badge/PHP-%E2%89%A5%207.4-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
