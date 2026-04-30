@@ -1,15 +1,19 @@
 # the0n3 blog
 
 <div align="center">
-  <img src="images/blog-deployment/light.png" width="49%" />
-  <img src="images/blog-deployment/dark.png" width="49%" />
-
 一个基于 Markdown 的极简博客系统，专注 Markdown 写作，自动生成静态站点并支持一键部署。
 
 ![PHP](https://img.shields.io/badge/PHP-%E2%89%A5%207.4-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Build](https://img.shields.io/badge/build-passing-brightgreen)
 ![Posts demo](https://img.shields.io/badge/demo-186%20posts-orange)
+
+
+<img src="images/blog-deployment/light.png"/>
+
+
+<img src="images/blog-deployment/dark.png"/>
+
 
 </div>
 
