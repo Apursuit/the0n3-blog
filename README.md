@@ -6,7 +6,6 @@
 ![PHP](https://img.shields.io/badge/PHP-%E2%89%A5%207.4-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Build](https://img.shields.io/badge/build-passing-brightgreen)
-![Posts demo](https://img.shields.io/badge/demo-186%20posts-orange)
 
 
 <img src="images/blog-deployment/light.png"/>
