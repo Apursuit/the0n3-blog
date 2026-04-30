@@ -505,13 +505,15 @@ html[data-theme="light"] .markdown-body {
 
 /* 深色主题 */
 /* 自定义：浅灰色背景 */
+/* 正文提亮 10%、标题再提亮 5%、muted 色微调让层级梯度更线性，不动背景和边框。 */
 html[data-theme="dark"] .markdown-body {
-  --bgColor-default: #292a2d;
-  --fgColor-default: #d8d8db;
-  --fgColor-accent: #4493f8;
-  --bgColor-muted: #151b23;
-  --borderColor-muted: #3d444db3;
-  background-color: var(--bgColor-default);
+    --bgColor-default: #292a2d;
+    --fgColor-default: #e6edf3;      /* 原来是 #d8d8db */
+    --fgColor-accent: #58a6ff;        /* 原来是 #4493f8，轻微提亮 */
+    --fgColor-muted: #8b949e;         /* 需在此处也覆盖 muted */
+    --bgColor-muted: #151b23;
+    --borderColor-muted: #3d444db3;
+    background-color: var(--bgColor-default);
 }
 
 /* 深色主题 */
@@ -521,13 +523,8 @@ html[data-theme="dark"] .markdown-body {
 } */
 
 /* 深色主题标题颜色增强，提升层级可读性 */
-html[data-theme="dark"] .markdown-body h1,
-html[data-theme="dark"] .markdown-body h2,
-html[data-theme="dark"] .markdown-body h3,
-html[data-theme="dark"] .markdown-body h4,
-html[data-theme="dark"] .markdown-body h5,
-html[data-theme="dark"] .markdown-body h6 {
-  color: #e3e6ea;
+html[data-theme="dark"] .markdown-body h1-h6 {
+    color: #f0f6fc;
 }
 
 
