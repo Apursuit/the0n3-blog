@@ -16,11 +16,6 @@
 
 </div>
 
-## 📸 主题预览
-
-| 浅色主题 | 深色主题 |
-| :---: | :---: |
-| [![](/images/blog-deployment/light.png)](/images/blog-deployment/light.png) | [![](/images/blog-deployment/dark.png)](/images/blog-deployment/dark.png) |
 
 ## ✨ 特性
 
