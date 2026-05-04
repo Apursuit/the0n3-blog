@@ -9,14 +9,17 @@ class FrontMatter
     /**
     * 解析 Front Matter，补齐默认值并返回内容。
      * @param string $content
+     * @param string $sourcePath
      * @return array
      * @throws \Exception
      */
-    public static function parse(string $content): array
+    public static function parse(string $content, string $sourcePath = ''): array
     {
+        $prefix = $sourcePath ? "{$sourcePath}: " : '';
+
         $pattern = '/^---[\r\n]+(.*?)[\r\n]+---[\r\n]+(.*)/s';
         if (!preg_match($pattern, $content, $matches)) {
-            throw new \Exception("Front matter not found or invalid format.");
+            throw new \Exception($prefix . 'Front matter 未找到或格式无效');
         }
 
         $frontMatterRaw = $matches[1];
@@ -24,7 +27,7 @@ class FrontMatter
         $markdownContent = $matches[2];
 
         if (!is_array($frontMatter)) {
-            throw new \Exception('Front matter YAML must be a mapping/object.');
+            throw new \Exception($prefix . 'Front matter YAML 必须是 mapping/object 类型');
         }
 
         $rawDate = self::extractRawScalarField($frontMatterRaw, 'date');
@@ -53,7 +56,7 @@ class FrontMatter
 
     private static function extractRawScalarField(string $frontMatterRaw, string $field): ?string
     {
-        $pattern = '/^' . preg_quote($field, '/') . ':\s*(.+)\s*$/m';
+        $pattern = '/^' . preg_quote($field, '/') . ':[ \t]*([^\r\n]+)[ \t]*$/m';
         if (!preg_match($pattern, $frontMatterRaw, $matches)) {
             return null;
         }

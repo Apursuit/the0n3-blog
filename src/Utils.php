@@ -53,7 +53,42 @@ class Utils
     }
 
     /**
-        * 统一 Front Matter 中日期输入的格式。
+     * 将各种日期格式转为时间戳。
+     */
+    public static function dateToTimestamp(mixed $value, string $sourcePath = ''): int
+    {
+        if ($value instanceof \DateTimeInterface) {
+            return $value->getTimestamp();
+        }
+
+        if (is_int($value)) {
+            return $value;
+        }
+
+        if (is_string($value)) {
+            $trimmed = trim($value);
+            if ($trimmed === '') {
+                throw new \Exception($sourcePath ? "Post '{$sourcePath}' has empty date." : 'Date value is empty.');
+            }
+
+            if (ctype_digit($trimmed)) {
+                return (int) $trimmed;
+            }
+
+            $timestamp = strtotime($trimmed);
+            if ($timestamp !== false) {
+                return $timestamp;
+            }
+
+            throw new \Exception($sourcePath ? "Post '{$sourcePath}' has invalid date '{$trimmed}'." : "Invalid date '{$trimmed}'.");
+        }
+
+        $type = gettype($value);
+        throw new \Exception($sourcePath ? "Post '{$sourcePath}' has invalid date type '{$type}'." : "Invalid date type '{$type}'.");
+    }
+
+    /**
+     * 统一 Front Matter 中日期输入的格式。
      *
      * Supports:
      * - int (unix timestamp)
