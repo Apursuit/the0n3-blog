@@ -1,6 +1,5 @@
 <?php
 $pageTitle = 'All Tags';
-$enableTaxAccordion = true;
 ob_start();
 ?>
 

@@ -1,6 +1,5 @@
 <?php
 $pageTitle = 'All Categories';
-$enableTaxAccordion = true;
 ob_start();
 ?>
 

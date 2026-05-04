@@ -27,26 +27,29 @@
     <!-- 使用 GitHub Markdown 样式 -->
     <link rel="stylesheet" href="/assets/css/github-markdown.css">
     <link rel="stylesheet" href="/assets/css/site.css">
-    <?php if (!empty($enableTaxAccordion)): ?>
-    <link rel="stylesheet" href="/assets/css/tax-accordion.css">
-    <?php endif; ?>
-    <?php if (!empty($enableReadingProgress)): ?>
-    <link rel="stylesheet" href="/assets/css/reading-progress.css">
-    <?php endif; ?>
-    <?php if (!empty($enableImageEnhance)): ?>
-    <link rel="stylesheet" href="/assets/css/image-enhance.css">
-    <?php endif; ?>
+    <!-- 功能样式 (自动扫描 assets/features/ 目录) -->
+    <?php
+    $featuresDir = __DIR__ . '/../assets/features';
+    if (is_dir($featuresDir)):
+        foreach (glob($featuresDir . '/*', GLOB_ONLYDIR) as $fDir):
+            $fName = basename($fDir);
+            if (file_exists("{$fDir}/style.css")):
+    ?>
+    <link rel="stylesheet" href="/assets/features/<?= $fName ?>/style.css">
+    <?php
+            endif;
+        endforeach;
+    endif;
+    ?>
     <link rel="stylesheet" href="/assets/css/nav-reveal.css">
     <link rel="stylesheet" href="/assets/css/search.css">
     <!-- 代码高亮样式 -->
     <link rel="stylesheet" href="/assets/prism/prism.css">
 </head>
 <body>
-    <?php if (!empty($enableReadingProgress)): ?>
     <div class="reading-progress" aria-hidden="true">
         <div class="reading-progress__bar"></div>
     </div>
-    <?php endif; ?>
     <header>
         <nav>
             <div class="nav-right">
@@ -86,16 +89,20 @@
     <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
     <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
     <script src="/assets/js/site.js"></script>
-    <?php if (!empty($enableTaxAccordion)): ?>
-    <script src="/assets/js/taxAccordion.js"></script>
-    <?php endif; ?>
+    <!-- 功能脚本 (自动扫描 assets/features/ 目录) -->
+    <?php
+    if (is_dir($featuresDir)):
+        foreach (glob($featuresDir . '/*', GLOB_ONLYDIR) as $fDir):
+            $fName = basename($fDir);
+            if (file_exists("{$fDir}/script.js")):
+    ?>
+    <script src="/assets/features/<?= $fName ?>/script.js"></script>
+    <?php
+            endif;
+        endforeach;
+    endif;
+    ?>
     <script src="/assets/js/navReveal.js"></script>
-    <?php if (!empty($enableReadingProgress)): ?>
-    <script src="/assets/js/readingProgress.js"></script>
-    <?php endif; ?>
-    <?php if (!empty($enableImageEnhance)): ?>
-    <script src="/assets/js/imageEnhance.js"></script>
-    <?php endif; ?>
     <!-- 启动代码高亮及行号显示 -->
     <script src="/assets/prism/prism.js"></script>
     <script src="/assets/prism/prism-line-number.js"></script>

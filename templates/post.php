@@ -58,8 +58,6 @@ $giscusEnabled = is_array($giscus) && !empty($giscus['enabled']);
 
 <?php
 $content = ob_get_clean();
-$enableReadingProgress = true;
-$enableImageEnhance = true;
 $showSidebar = $post['frontMatter']['sidebar'] ?? true;
 if ($showSidebar) {
     ob_start();
