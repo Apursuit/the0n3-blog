@@ -35,6 +35,18 @@ class FrontMatter
             $frontMatter['date'] = self::normalizeRawScalarValue($rawDate);
         }
 
+        $date = $frontMatter['date'] ?? null;
+        if ($date instanceof \DateTimeInterface || is_int($date)) {
+            // valid — no action needed
+        } elseif (is_string($date)) {
+            $trimmed = trim($date);
+            if ($trimmed === '' || (!ctype_digit($trimmed) && strtotime($trimmed) === false)) {
+                throw new \Exception($prefix . "date 格式无效 '{$date}'");
+            }
+        } elseif ($date !== null) {
+            throw new \Exception($prefix . 'date 类型无效');
+        }
+
         // Set default values
         $frontMatter['tags'] = $frontMatter['tags'] ?? [];
         $frontMatter['categories'] = $frontMatter['categories'] ?? [];
