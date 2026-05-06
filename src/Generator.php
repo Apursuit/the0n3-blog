@@ -49,7 +49,7 @@ class Generator
         $this->searchIndexer = new SearchIndexer();
     }
 
-    public function run(): void
+    public function run(): int
     {
         $startTime = microtime(true);
 
@@ -88,6 +88,18 @@ class Generator
         Utils::log(" - 生成文章数：" . count($this->posts));
         Utils::log(" - 标签数：" . count($this->tags));
         Utils::log(" - 分类数：" . count($this->categories));
+
+        $exitCode = 0;
+        if ($this->postProcessor->hasParseErrors()) {
+            $exitCode = 1;
+            $parseErrors = $this->postProcessor->getParseErrors();
+            Utils::log("警告：" . count($parseErrors) . " 篇文章解析失败已被跳过，请修复：", 'warning');
+            foreach ($parseErrors as $err) {
+                Utils::log("  - {$err['file']}: {$err['error']}", 'warning');
+            }
+        }
+
+        return $exitCode;
     }
 
     private function timeStep(string $label, callable $task): void

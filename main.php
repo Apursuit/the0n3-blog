@@ -64,7 +64,8 @@ EOT;
 
         Utils::initLogging($config['logs_path']);
         $generator = new Generator($config);
-        $generator->run();
+        $exitCode = $generator->run();
+        exit($exitCode);
         break;
 
     default:

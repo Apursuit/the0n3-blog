@@ -5,6 +5,7 @@ namespace App;
 class PostProcessor
 {
     private array $config;
+    private array $parseErrors = [];
 
     public function __construct(array $config)
     {
@@ -17,8 +18,10 @@ class PostProcessor
         $loader = new Loader($this->config['posts_path']);
         $rawPosts = $loader->loadPosts();
         $processedPosts = [];
+        $this->parseErrors = [];
 
         $draftCount = 0;
+        $errorCount = 0;
         foreach ($rawPosts as $rawPost) {
             try {
                 $parsed = FrontMatter::parse($rawPost['rawContent'], $rawPost['sourcePath']);
@@ -31,14 +34,34 @@ class PostProcessor
                     $parsed
                 );
             } catch (\Exception $e) {
-                Utils::log("Error parsing '{$rawPost['sourcePath']}': " . $e->getMessage(), 'error');
-                exit(1);
+                $errorCount++;
+                $sourcePath = $rawPost['sourcePath'];
+                $this->parseErrors[] = [
+                    'file' => $sourcePath,
+                    'error' => $e->getMessage(),
+                ];
+                Utils::log("跳过无法解析的文章: {$sourcePath} — {$e->getMessage()}", 'warning');
             }
         }
+
         if ($draftCount > 0) {
             Utils::log("跳过草稿：{$draftCount} 篇。");
         }
+        if ($errorCount > 0) {
+            Utils::log("跳过解析失败的文章：{$errorCount} 篇。", 'warning');
+        }
+
         return $processedPosts;
+    }
+
+    public function hasParseErrors(): bool
+    {
+        return !empty($this->parseErrors);
+    }
+
+    public function getParseErrors(): array
+    {
+        return $this->parseErrors;
     }
 
     public function prepare(array $posts): array
