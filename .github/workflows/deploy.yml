@@ -47,7 +47,9 @@ jobs:
 
       # 5) 构建站点
       - name: Build
+        id: build
         run: php main.php build
+        continue-on-error: true
 
       # 6) 部署 dist 到 gh-pages 分支
       - name: Deploy to gh-pages
@@ -57,3 +59,8 @@ jobs:
           publish_dir: ./dist
           publish_branch: gh-pages
           force_orphan: true
+
+      # 7) 构建存在解析错误时标记 job 失败
+      - name: Check build errors
+        if: steps.build.outcome == 'failure'
+        run: exit 1
