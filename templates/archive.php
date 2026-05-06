@@ -20,5 +20,8 @@ foreach ($archives as $year => $posts): ?>
 
 <?php
 $content = ob_get_clean();
+
+$pageCanonical = rtrim($site['url'] ?? '', '/') . '/archives/';
+
 include 'layout.php';
 ?>

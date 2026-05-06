@@ -7,6 +7,8 @@ return [
     'url' => 'https://blog.the0n3.top',
     'description' => 'the0n3',
     'canonical' => 'https://blog.the0n3.top',
+    'og_image' => 'https://blog.the0n3.top/images/og-default.png',
+    'og_locale' => 'zh_CN',
     // Giscus 评论系统（默认关闭，需填写自己的配置）
     'giscus' => [
         'enabled' => true,

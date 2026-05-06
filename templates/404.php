@@ -10,5 +10,9 @@ ob_start();
 
 <?php
 $content = ob_get_clean();
+
+$pageCanonical = rtrim($site['url'] ?? '', '/') . '/404.html';
+$pageDescription = 'Page not found';
+
 include 'layout.php';
 ?>

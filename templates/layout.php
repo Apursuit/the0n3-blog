@@ -4,11 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($site['title'] ?? 'My Blog') ?><?= isset($pageTitle) ? ' - ' . htmlspecialchars($pageTitle) : '' ?></title>
-    <?php if (!empty($site['description'])): ?>
-    <meta name="description" content="<?= htmlspecialchars($site['description']) ?>">
+    <?php
+    $canonicalUrl = $pageCanonical ?? ($site['url'] ?? '/');
+    $metaDesc      = $pageDescription ?? ($site['description'] ?? '');
+    $ogTitle       = $ogTitle ?? $pageTitle ?? ($site['title'] ?? '');
+    $ogType        = $ogType ?? 'website';
+    $ogImage       = $ogImage ?? ($site['og_image'] ?? '');
+    $ogLocale      = $ogLocale ?? ($site['og_locale'] ?? 'zh_CN');
+    $twitterCard   = ($ogImage !== '') ? 'summary_large_image' : 'summary';
+    ?>
+    <meta name="description" content="<?= htmlspecialchars($metaDesc) ?>">
+    <link rel="canonical" href="<?= htmlspecialchars($canonicalUrl) ?>">
+    <!-- Open Graph -->
+    <meta property="og:title" content="<?= htmlspecialchars($ogTitle) ?>">
+    <meta property="og:description" content="<?= htmlspecialchars($metaDesc) ?>">
+    <meta property="og:url" content="<?= htmlspecialchars($canonicalUrl) ?>">
+    <meta property="og:type" content="<?= htmlspecialchars($ogType) ?>">
+    <meta property="og:site_name" content="<?= htmlspecialchars($site['title'] ?? '') ?>">
+    <meta property="og:locale" content="<?= htmlspecialchars($ogLocale) ?>">
+    <?php if ($ogImage !== ''): ?>
+    <meta property="og:image" content="<?= htmlspecialchars($ogImage) ?>">
     <?php endif; ?>
-    <?php if (!empty($site['canonical'])): ?>
-    <link rel="canonical" href="<?= htmlspecialchars($site['canonical']) ?>">
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="<?= $twitterCard ?>">
+    <meta name="twitter:title" content="<?= htmlspecialchars($ogTitle) ?>">
+    <meta name="twitter:description" content="<?= htmlspecialchars($metaDesc) ?>">
+    <?php if ($ogImage !== ''): ?>
+    <meta name="twitter:image" content="<?= htmlspecialchars($ogImage) ?>">
     <?php endif; ?>
     <script>
         (function () {

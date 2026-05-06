@@ -40,5 +40,10 @@ ob_start();
 
 <?php
 $content = ob_get_clean();
+
+$siteUrl = rtrim($site['url'] ?? '', '/');
+$current = (int)($pagination['current'] ?? 1);
+$pageCanonical = $current <= 1 ? $siteUrl . '/' : $siteUrl . '/page/' . $current . '/';
+
 include 'layout.php';
 ?>

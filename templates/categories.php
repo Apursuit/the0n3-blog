@@ -31,5 +31,8 @@ ob_start();
 
 <?php
 $content = ob_get_clean();
+
+$pageCanonical = rtrim($site['url'] ?? '', '/') . '/categories/';
+
 include 'layout.php';
 ?>

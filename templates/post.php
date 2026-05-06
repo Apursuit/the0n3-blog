@@ -58,6 +58,31 @@ $giscusEnabled = is_array($giscus) && !empty($giscus['enabled']);
 
 <?php
 $content = ob_get_clean();
+
+$siteUrl = rtrim($site['url'] ?? '', '/');
+$pageCanonical = $siteUrl . $post['frontMatter']['permalink'];
+
+$plain = trim(strip_tags($post['html']));
+$plain = preg_replace('/\s+/', ' ', $plain);
+$pageDescription = mb_substr($plain, 0, 160);
+if (mb_strlen($plain) > 160) {
+    $pageDescription .= '…';
+}
+
+$ogType = 'article';
+$ogTitle = $post['frontMatter']['title'];
+
+if (preg_match('/<img[^>]+src=["\']([^"\']+)["\']/i', $post['html'], $m)) {
+    $src = $m[1];
+    if ($src !== '' && $src[0] === '/') {
+        $ogImage = $siteUrl . $src;
+    } elseif ($src !== '' && !preg_match('/^https?:\/\//', $src)) {
+        $ogImage = $siteUrl . '/' . $src;
+    } elseif ($src !== '') {
+        $ogImage = $src;
+    }
+}
+
 $showSidebar = $post['frontMatter']['sidebar'] ?? true;
 if ($showSidebar) {
     ob_start();
