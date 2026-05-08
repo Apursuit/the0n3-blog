@@ -13,6 +13,10 @@ concurrency:
   group: pages-deploy
   cancel-in-progress: true
 
+# 强制使用 Node.js 24 版本，测试 JavaScript Actions 的兼容性
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
