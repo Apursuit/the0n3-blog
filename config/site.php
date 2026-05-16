@@ -21,7 +21,7 @@ return [
         'reactions_enabled' => '1',
         'emit_metadata' => '0',
         'input_position' => 'bottom',
-        'theme' => 'preferred_color_scheme',
+        'theme' => 'light',
         'lang' => 'zh-CN',
     ],
 ];
