@@ -49,7 +49,7 @@
     <!-- 使用 GitHub Markdown 样式 -->
     <link rel="stylesheet" href="/assets/css/github-markdown.css">
     <link rel="stylesheet" href="/assets/css/site.css">
-    <!-- 功能样式 (自动扫描 assets/features/ 目录) -->
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
     <?php
     $featuresDir = __DIR__ . '/../assets/features';
     if (is_dir($featuresDir)):
@@ -79,19 +79,21 @@
                 <a href="/archives">归档</a>
                 <a href="/categories">分类</a>
                 <a href="/tags">标签</a>
-                
-                <!-- 搜索框 -->
-                <div class="search-box">
-                    <input 
-                        id="searchInput" 
-                        type="text" 
-                        placeholder="搜索文章..."
-                        autocomplete="off"
-                    >
-                    <div id="searchResults" class="search-results" style="display:none;">
-                        <ul></ul>
-                    </div>
-                </div>
+
+                <!-- 搜索入口：
+                     导航栏只保留触发按钮，具体搜索交互放进全局弹层 -->
+                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
             </div>
         </nav>
     </header>
@@ -108,10 +110,60 @@
             <?= $content ?? '' ?>
         </main>
     <?php endif; ?>
+
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
     <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
     <script src="/assets/js/site.js"></script>
-    <!-- 功能脚本 (自动扫描 assets/features/ 目录) -->
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
     <?php
     if (is_dir($featuresDir)):
         foreach (glob($featuresDir . '/*', GLOB_ONLYDIR) as $fDir):
