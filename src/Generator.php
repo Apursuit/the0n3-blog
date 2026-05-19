@@ -65,7 +65,7 @@ class Generator
             $this->posts = $this->postProcessor->load();
         });
         $this->timeStep('4. 校验数据', function () {
-            $this->validator->validate($this->posts);
+            $this->posts = $this->validator->validate($this->posts);
         });
         $this->timeStep('5. 构建数据索引', function () {
             $result = $this->postProcessor->prepare($this->posts);
@@ -96,6 +96,15 @@ class Generator
             Utils::log("警告：" . count($parseErrors) . " 篇文章解析失败已被跳过，请修复：", 'warning');
             foreach ($parseErrors as $err) {
                 Utils::log("  - {$err['file']}: {$err['error']}", 'warning');
+            }
+        }
+
+        if ($this->validator->hasErrors()) {
+            $exitCode = 1;
+            $validationErrors = $this->validator->getErrors();
+            Utils::log("警告：" . count($validationErrors) . " 个校验错误，相关文章已被跳过，请修复：", 'warning');
+            foreach ($validationErrors as $err) {
+                Utils::log("  - {$err}", 'warning');
             }
         }
 
