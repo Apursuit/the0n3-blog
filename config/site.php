@@ -9,6 +9,12 @@ return [
     'canonical' => 'https://blog.the0n3.top',
     'og_image' => 'https://blog.the0n3.top/images/og-default.png',
     'og_locale' => 'zh_CN',
+    'nav' => [
+        ['label' => '首页', 'url' => '/', 'order' => 10],
+        ['label' => '归档', 'url' => '/archives/', 'order' => 20],
+        ['label' => '分类', 'url' => '/categories/', 'order' => 30],
+        ['label' => '标签', 'url' => '/tags/', 'order' => 40],
+    ],
     // Giscus 评论系统（默认关闭，需填写自己的配置）
     'giscus' => [
         'enabled' => true,

@@ -75,6 +75,18 @@
     <header>
         <nav>
             <div class="nav-right">
+                <?php
+                $navItems = $navItems ?? ($site['nav'] ?? []);
+                foreach ($navItems as $navItem):
+                    $navLabel = $navItem['label'] ?? '';
+                    $navUrl = $navItem['url'] ?? '#';
+                    if ($navLabel === '') {
+                        continue;
+                    }
+                ?>
+                <a href="<?= htmlspecialchars($navUrl) ?>"><?= htmlspecialchars($navLabel) ?></a>
+                <?php endforeach; ?>
+                <?php if (false): ?>
                 <a href="/">首页</a>
                 <a href="/archives">归档</a>
                 <a href="/categories">分类</a>
@@ -82,6 +94,7 @@
 
                 <!-- 搜索入口：
                      导航栏只保留触发按钮，具体搜索交互放进全局弹层 -->
+                <?php endif; ?>
                 <button
                     id="searchTrigger"
                     class="search-trigger"

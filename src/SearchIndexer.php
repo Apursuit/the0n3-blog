@@ -6,8 +6,6 @@ class SearchIndexer
 {
     public function build(array $posts, string $distPath): void
     {
-        Utils::log("生成搜索索引...");
-
         $indexData = [
             'version' => '2.0',
             'buildTime' => date('c'),
@@ -36,8 +34,8 @@ class SearchIndexer
         $json = json_encode($indexData, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
         file_put_contents($indexFile, $json);
 
-        $fileSize = round(filesize($indexFile) / 1024, 2);
-        Utils::log("搜索索引已生成：{$fileSize}KB");
+        $fileSize = number_format(filesize($indexFile) / 1024, 2);
+        Utils::log("搜索索引已生成：{$fileSize} KB");
     }
 
     private function extractHeadings(string $html): array

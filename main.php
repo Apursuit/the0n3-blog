@@ -53,6 +53,7 @@ EOT;
     case 'build':
         $config = [
             'posts_path' => __DIR__ . '/posts',
+            'pages_path' => __DIR__ . '/pages',
             'assets_path' => __DIR__ . '/assets',
             'public_path' => __DIR__ . '/public',
             'images_path' => __DIR__ . '/images',

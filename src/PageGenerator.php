@@ -13,15 +13,15 @@ class PageGenerator
         $this->config = $config;
     }
 
-    public function generate(array $posts, array $tags, array $categories, array $archives): void
+    public function generate(array $posts, array $pages, array $tags, array $categories, array $archives): void
     {
-        Utils::log("生成页面...");
         $siteData = $this->config['site'] ?? [];
-        $siteUrl = $siteData['url'] ?? '';
-        $siteUrl = rtrim($siteUrl, '/');
+        $siteUrl = rtrim($siteData['url'] ?? '', '/');
         if ($siteUrl === '') {
-            Utils::log('未配置站点 url，跳过 sitemap 生成。', 'warning');
+            Utils::log('站点 url 未配置，已跳过 sitemap 生成。', 'warning');
         }
+
+        $navItems = $this->buildNavItems($siteData, $pages);
         $buildTimestamp = date('c');
         $sitemapEntries = [];
 
@@ -34,10 +34,63 @@ class PageGenerator
             if (!is_dir($path)) {
                 mkdir($path, 0755, true);
             }
-            $html = $this->renderer->render('post', ['post' => $post, 'site' => $siteData]);
+            $html = $this->renderer->render('post', [
+                'post' => $post,
+                'site' => $siteData,
+                'navItems' => $navItems,
+            ]);
             file_put_contents($path . 'index.html', $html);
         }
 
+        foreach ($pages as $page) {
+            $this->generateStandalonePage($page, $siteData, $navItems);
+            if ($siteUrl !== '') {
+                $sitemapEntries[$page['frontMatter']['permalink']] = $buildTimestamp;
+            }
+        }
+
+        $this->generateIndexPages($posts, $siteData, $navItems, $sitemapEntries, $buildTimestamp, $siteUrl);
+        $this->generateTaxonomyPages($tags, $categories, $archives, $siteData, $navItems, $sitemapEntries, $buildTimestamp, $siteUrl);
+
+        $notFoundHtml = $this->renderer->render('404', [
+            'site' => $siteData,
+            'navItems' => $navItems,
+        ]);
+        file_put_contents($this->config['dist_path'] . '/404.html', $notFoundHtml);
+
+        if ($siteUrl !== '') {
+            foreach ($posts as $post) {
+                $permalink = $post['frontMatter']['permalink'] ?? '';
+                if ($permalink === '') {
+                    continue;
+                }
+                $lastmod = Utils::formatDate($post['frontMatter']['date'] ?? '', 'c');
+                $sitemapEntries[$permalink] = $lastmod !== '' ? $lastmod : $buildTimestamp;
+            }
+
+            $sitemapXml = $this->buildSitemapXml($siteUrl, $sitemapEntries);
+            file_put_contents($this->config['dist_path'] . '/sitemap.xml', $sitemapXml);
+        }
+    }
+
+    private function generateStandalonePage(array $page, array $siteData, array $navItems): void
+    {
+        $path = $this->config['dist_path'] . $page['frontMatter']['permalink'];
+        if (!is_dir($path)) {
+            mkdir($path, 0755, true);
+        }
+
+        $template = $page['frontMatter']['template'] ?? 'page';
+        $html = $this->renderer->render($template, [
+            'page' => $page,
+            'site' => $siteData,
+            'navItems' => $navItems,
+        ]);
+        file_put_contents($path . 'index.html', $html);
+    }
+
+    private function generateIndexPages(array $posts, array $siteData, array $navItems, array &$sitemapEntries, string $buildTimestamp, string $siteUrl): void
+    {
         $pageSize = 15;
         $pinnedPosts = array_filter($posts, function ($post) {
             return ($post['frontMatter']['pin'] ?? 0) > 0;
@@ -65,6 +118,7 @@ class PageGenerator
         $totalItems = count($remainingPosts) + $pinnedCount;
         $totalPages = max(1, (int) ceil($totalItems / $pageSize));
         $firstPageRemainingCount = max(0, $pageSize - $pinnedCount);
+
         for ($page = 1; $page <= $totalPages; $page++) {
             if ($page === 1) {
                 $pagePosts = array_merge(
@@ -75,14 +129,15 @@ class PageGenerator
                 $offset = $firstPageRemainingCount + ($page - 2) * $pageSize;
                 $pagePosts = array_slice($remainingPosts, $offset, $pageSize);
             }
-            $pagination = [
-                'current' => $page,
-                'total' => $totalPages,
-            ];
+
             $indexHtml = $this->renderer->render('index', [
                 'posts' => $pagePosts,
-                'pagination' => $pagination,
+                'pagination' => [
+                    'current' => $page,
+                    'total' => $totalPages,
+                ],
                 'site' => $siteData,
+                'navItems' => $navItems,
             ]);
 
             if ($page === 1) {
@@ -103,50 +158,72 @@ class PageGenerator
                 $sitemapEntries['/page/' . $page . '/'] = $buildTimestamp;
             }
         }
+    }
 
+    private function generateTaxonomyPages(array $tags, array $categories, array $archives, array $siteData, array $navItems, array &$sitemapEntries, string $buildTimestamp, string $siteUrl): void
+    {
         $tagsPath = $this->config['dist_path'] . '/tags/';
         mkdir($tagsPath, 0755, true);
-        $tagsHtml = $this->renderer->render('tags', ['tags' => $tags, 'site' => $siteData]);
+        $tagsHtml = $this->renderer->render('tags', [
+            'tags' => $tags,
+            'site' => $siteData,
+            'navItems' => $navItems,
+        ]);
         file_put_contents($tagsPath . 'index.html', $tagsHtml);
-
-        if ($siteUrl !== '') {
-            $sitemapEntries['/tags/'] = $buildTimestamp;
-        }
 
         $categoriesPath = $this->config['dist_path'] . '/categories/';
         mkdir($categoriesPath, 0755, true);
-        $categoriesHtml = $this->renderer->render('categories', ['categories' => $categories, 'site' => $siteData]);
+        $categoriesHtml = $this->renderer->render('categories', [
+            'categories' => $categories,
+            'site' => $siteData,
+            'navItems' => $navItems,
+        ]);
         file_put_contents($categoriesPath . 'index.html', $categoriesHtml);
-
-        if ($siteUrl !== '') {
-            $sitemapEntries['/categories/'] = $buildTimestamp;
-        }
 
         $archivePath = $this->config['dist_path'] . '/archives/';
         mkdir($archivePath, 0755, true);
-        $archiveHtml = $this->renderer->render('archive', ['archives' => $archives, 'site' => $siteData]);
+        $archiveHtml = $this->renderer->render('archive', [
+            'archives' => $archives,
+            'site' => $siteData,
+            'navItems' => $navItems,
+        ]);
         file_put_contents($archivePath . 'index.html', $archiveHtml);
 
         if ($siteUrl !== '') {
+            $sitemapEntries['/tags/'] = $buildTimestamp;
+            $sitemapEntries['/categories/'] = $buildTimestamp;
             $sitemapEntries['/archives/'] = $buildTimestamp;
         }
+    }
 
-        $notFoundHtml = $this->renderer->render('404', ['site' => $siteData]);
-        file_put_contents($this->config['dist_path'] . '/404.html', $notFoundHtml);
+    private function buildNavItems(array $siteData, array $pages): array
+    {
+        $navItems = $siteData['nav'] ?? [];
 
-        if ($siteUrl !== '') {
-            foreach ($posts as $post) {
-                $permalink = $post['frontMatter']['permalink'] ?? '';
-                if ($permalink === '') {
-                    continue;
-                }
-                $lastmod = Utils::formatDate($post['frontMatter']['date'] ?? '', 'c');
-                $sitemapEntries[$permalink] = $lastmod !== '' ? $lastmod : $buildTimestamp;
+        foreach ($pages as $page) {
+            $frontMatter = $page['frontMatter'] ?? [];
+            if (($frontMatter['nav'] ?? false) !== true) {
+                continue;
             }
 
-            $sitemapXml = $this->buildSitemapXml($siteUrl, $sitemapEntries);
-            file_put_contents($this->config['dist_path'] . '/sitemap.xml', $sitemapXml);
+            $navItems[] = [
+                'label' => $frontMatter['nav_title'] ?? ($frontMatter['title'] ?? ''),
+                'url' => $frontMatter['permalink'] ?? '#',
+                'order' => $frontMatter['nav_order'] ?? 100,
+            ];
         }
+
+        usort($navItems, function ($a, $b) {
+            $aOrder = (int) ($a['order'] ?? 100);
+            $bOrder = (int) ($b['order'] ?? 100);
+            if ($aOrder !== $bOrder) {
+                return $aOrder <=> $bOrder;
+            }
+
+            return strcmp($a['label'] ?? '', $b['label'] ?? '');
+        });
+
+        return $navItems;
     }
 
     private function buildSitemapXml(string $siteUrl, array $entries): string

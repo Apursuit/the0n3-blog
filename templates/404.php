@@ -1,5 +1,7 @@
 <?php
-http_response_code(404);
+if (!headers_sent()) {
+    http_response_code(404);
+}
 $pageTitle = '404 Not Found';
 ob_start();
 ?>

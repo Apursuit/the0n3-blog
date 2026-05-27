@@ -14,7 +14,6 @@ class PostProcessor
 
     public function load(): array
     {
-        Utils::log("加载并处理文章...");
         $loader = new Loader($this->config['posts_path']);
         $rawPosts = $loader->loadPosts();
         $processedPosts = [];
@@ -40,15 +39,15 @@ class PostProcessor
                     'file' => $sourcePath,
                     'error' => $e->getMessage(),
                 ];
-                Utils::log("跳过无法解析的文章: {$sourcePath} — {$e->getMessage()}", 'warning');
+                Utils::log("跳过无法解析的文章：{$sourcePath}，原因：{$e->getMessage()}", 'warning');
             }
         }
 
         if ($draftCount > 0) {
-            Utils::log("跳过草稿：{$draftCount} 篇。");
+            Utils::log("跳过草稿文章：{$draftCount} 篇");
         }
         if ($errorCount > 0) {
-            Utils::log("跳过解析失败的文章：{$errorCount} 篇。", 'warning');
+            Utils::log("跳过解析失败的文章：{$errorCount} 篇", 'warning');
         }
 
         return $processedPosts;
@@ -66,8 +65,6 @@ class PostProcessor
 
     public function prepare(array $posts): array
     {
-        Utils::log("准备数据...");
-
         foreach ($posts as &$post) {
             $post['html'] = Markdown::toHtml($post['content']);
         }

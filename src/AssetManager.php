@@ -13,7 +13,6 @@ class AssetManager
 
     public function cleanup(): void
     {
-        Utils::log("清理 dist 目录...");
         if (is_dir($this->config['dist_path'])) {
             Utils::deleteDirectory($this->config['dist_path']);
         }
@@ -22,7 +21,6 @@ class AssetManager
 
     public function copy(): void
     {
-        Utils::log("复制静态资源...");
         if (is_dir($this->config['assets_path'])) {
             Utils::copyDirectory($this->config['assets_path'], $this->config['dist_path'] . '/assets');
         }
