@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const container = document.querySelector('article.post-content');
+    const container = document.querySelector('main.markdown-body');
     if (!container) return;
 
     const images = container.querySelectorAll('img');
@@ -29,20 +29,20 @@ document.addEventListener('DOMContentLoaded', () => {
         return overlay;
     }
 
-    images.forEach((img) => {
-        if (!img.hasAttribute('loading')) {
+    images.forEach((img, index) => {
+        if (index > 0 && !img.hasAttribute('loading')) {
             img.setAttribute('loading', 'lazy');
         }
         if (!img.hasAttribute('decoding')) {
             img.setAttribute('decoding', 'async');
         }
 
+        if (img.dataset.noLightbox === 'true') return;
+
         const block = img.closest('p') || img.parentElement;
         if (block) {
             block.classList.add('image-block');
         }
-
-        if (img.dataset.noLightbox === 'true') return;
 
         img.addEventListener('click', () => {
             const overlay = ensureOverlay();

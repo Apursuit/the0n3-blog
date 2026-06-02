@@ -23,7 +23,8 @@ class Markdown
     public static function toHtml(string $markdown): string
     {
         $html = self::getInstance()->text($markdown);
-        return self::transformCallouts($html);
+        $html = self::transformCallouts($html);
+        return self::enhanceImages($html);
     }
 
     // 解析并转换 [!NOTE] 等标记为 callout 结构。
@@ -91,6 +92,47 @@ class Markdown
             }
 
             $blockquote->parentNode->replaceChild($callout, $blockquote);
+        }
+
+        $container = $doc->getElementsByTagName('div')->item(0);
+        $output = '';
+        if ($container) {
+            foreach ($container->childNodes as $child) {
+                $output .= $doc->saveHTML($child);
+            }
+        }
+
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+
+        return $output ?: $html;
+    }
+
+    private static function enhanceImages(string $html): string
+    {
+        if (stripos($html, '<img') === false) {
+            return $html;
+        }
+
+        $previous = libxml_use_internal_errors(true);
+
+        $doc = new \DOMDocument('1.0', 'UTF-8');
+        $wrapper = '<div>' . $html . '</div>';
+        $doc->loadHTML('<?xml encoding="UTF-8" ?>' . $wrapper, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+
+        $images = $doc->getElementsByTagName('img');
+        $imageIndex = 0;
+
+        foreach ($images as $img) {
+            if (!$img->hasAttribute('decoding')) {
+                $img->setAttribute('decoding', 'async');
+            }
+
+            if ($imageIndex > 0 && !$img->hasAttribute('loading')) {
+                $img->setAttribute('loading', 'lazy');
+            }
+
+            $imageIndex++;
         }
 
         $container = $doc->getElementsByTagName('div')->item(0);

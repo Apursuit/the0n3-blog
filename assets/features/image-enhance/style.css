@@ -1,5 +1,5 @@
 /* Image enhancement: wider image blocks and lightbox */
-article.post-content img {
+.markdown-body img:not([data-no-lightbox="true"]) {
     cursor: zoom-in;
 }
 
