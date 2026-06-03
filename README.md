@@ -23,7 +23,7 @@
 * **自适应主题**：支持浅色/深色主题无缝切换。
 * **沉浸式阅读**：向上滚动自动显示导航栏，阅读进度条与目录联动高亮。
 * **自动化目录**：文章页基于 `h2`/`h3` 标签自动生成侧边栏目录。
-* **多媒体增强**：内置图片懒加载及点击放大功能。
+* **多媒体增强**：构建期自动补全图片加载提示，并内置图片点击放大功能。
 
 **📝 写作与内容**
 * **纯粹的 Markdown**：使用带有 YAML Front Matter 的 Markdown 文件作为文章数据源。
@@ -205,14 +205,32 @@ sidebar: true
 - draft：是否草稿，默认 false（true 时构建会跳过）
 - sidebar：是否显示文章目录侧边栏，默认 true
 
+## 图片加载策略
+
+构建时会对 Markdown 与页面 HTML 中的图片做统一后处理：
+
+- 所有图片都会补充 `decoding="async"`，减少图片解码对页面渲染的阻塞。
+- 每篇文章或独立页面中的第一张图片不会自动补充 `loading="lazy"`，避免首屏图片或 LCP 图片被延后加载。
+- 从第二张图片开始，如果没有手动声明 `loading`，会自动补充 `loading="lazy"`，降低长文章中大量截图的首屏加载压力。
+- 如果图片已经手动写了 `loading` 或 `decoding`，构建器会保留原值，不会覆盖。
+- 图片点击放大由 `assets/features/image-enhance/` 提供；给图片添加 `data-no-lightbox="true"` 可以跳过灯箱，例如友链头像。
+
+示例：
+
+```html
+<img src="/images/example/cover.png" alt="cover" decoding="async">
+<img src="/images/example/step-1.png" alt="step 1" decoding="async" loading="lazy">
+<img src="/images/friends/logo.png" alt="friend avatar" data-no-lightbox="true" loading="lazy" decoding="async">
+```
+
 ## 备注
 
 - 主题与排版变量在 assets/css/site.css 中
 - 目录由前端脚本根据 h2/h3 生成
 - 阅读进度条：assets/js/readingProgress.js + assets/css/reading-progress.css
-- 图片增强：assets/js/imageEnhance.js + assets/css/image-enhance.css
+- 图片增强：assets/features/image-enhance/script.js + assets/features/image-enhance/style.css
 - 导航栏自动显示：assets/js/navReveal.js + assets/css/nav-reveal.css
-- Callout 支持由后处理完成（src/Markdown.php）
+- Callout 与图片加载属性由 Markdown 后处理完成（src/Markdown.php）
 - 构建日志写入 logs/build.log（默认追加写入；超过 14 天会自动清空重写；每次构建会写入分隔线）
 - main.php 固定时区为 Asia/Shanghai，保证日志与日期输出为北京时间
 - permalink 会做冲突校验：不能与系统页（/tags/、/categories/、/archives/）或 public/images 下已有文件路径冲突
