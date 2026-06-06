@@ -98,6 +98,14 @@ nav_order: 50
             <span class="friend-link">tlgjm.site</span>
         </span>
     </a>
+    <a class="friend-card" href="https://c1trus.top/" target="_blank" rel="noopener noreferrer">
+        <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/c1trus.jpg" alt="c1trus avatar" loading="lazy">
+        <span class="friend-info">
+            <span class="friend-name">c1trus</span>
+            <span class="friend-desc">学而不思则罔，思而不学则殆</span>
+            <span class="friend-link">c1trus.top</span>
+        </span>
+    </a>
     <a class="friend-card" href="https://www.sunsetaction.top/" target="_blank" rel="noopener noreferrer">
         <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/sunset.png" alt="Sunset's Blog avatar" loading="lazy">
         <span class="friend-info">
