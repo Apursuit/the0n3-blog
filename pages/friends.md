@@ -14,7 +14,7 @@ nav_order: 50
         <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/mazesec.png" alt="Maze-sec avatar" loading="lazy">
         <span class="friend-info">
             <span class="friend-name">Maze-sec</span>
-            <span class="friend-desc">专为攻防而生的靶机世界</span>
+            <span class="friend-desc">迷踪安全 — 网络安全技术社区</span>
             <span class="friend-link">maze-sec.com</span>
         </span>
     </a>
