@@ -15,7 +15,7 @@ nav_order: 50
         <span class="friend-info">
             <span class="friend-name">Maze-sec</span>
             <span class="friend-desc">迷踪安全 — 网络安全技术社区</span>
-            <span class="friend-link">maze-sec.com</span>
+            <span class="friend-link">QQ 公开群：321948805</span>
         </span>
     </a>
     <a class="friend-card" href="https://space.bilibili.com/20805349" target="_blank" rel="noopener noreferrer">
