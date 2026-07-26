@@ -68,7 +68,7 @@ class FrontMatter
 
     private static function extractRawScalarField(string $frontMatterRaw, string $field): ?string
     {
-        $pattern = '/^' . preg_quote($field, '/') . ':[ \t]*([^\r\n]+)[ \t]*$/m';
+        $pattern = '/^' . preg_quote($field, '/') . ':\s*(.+)\s*$/m';
         if (!preg_match($pattern, $frontMatterRaw, $matches)) {
             return null;
         }
