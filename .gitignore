@@ -11,6 +11,10 @@ vendor/
 .vscode/
 .idea/
 
+# Python 字节码缓存
+__pycache__/
+*.pyc
+
 
 # 待发布文章
 posts/99.待发布/

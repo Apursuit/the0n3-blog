@@ -57,6 +57,7 @@ jobs:
 
       # 6) 提交新增 URL 到 IndexNow
       - name: Submit URLs to IndexNow
+        if: steps.build.outcome == 'success'
         run: |
           pip install requests
           python .github/deploy/indexnow.py
@@ -64,6 +65,7 @@ jobs:
 
       # 7) 部署 dist 到 gh-pages 分支
       - name: Deploy to gh-pages
+        if: steps.build.outcome == 'success'
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
