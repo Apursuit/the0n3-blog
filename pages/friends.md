@@ -50,20 +50,12 @@ nav_order: 50
             <span class="friend-link">7r1umphk.github.io</span>
         </span>
     </a>
-    <a class="friend-card" href="https://faabbi.github.io/" target="_blank" rel="noopener noreferrer">
-        <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/mj.png" alt="MJ avatar" loading="lazy">
+    <a class="friend-card" href="https://vortex.blog.csdn.net/" target="_blank" rel="noopener noreferrer">
+        <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/vortex5.jpg" alt="vortex avatar" loading="lazy">
         <span class="friend-info">
-            <span class="friend-name">MJ</span>
-            <span class="friend-desc">嫉妒能让你前进，但也能让你陷入深渊。</span>
-            <span class="friend-link">faabbi.github.io</span>
-        </span>
-    </a>
-    <a class="friend-card" href="https://xiaozhihua.top/" target="_blank" rel="noopener noreferrer">
-        <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/xzh.png" alt="咲之花 avatar" loading="lazy">
-        <span class="friend-info">
-            <span class="friend-name">咲之花</span>
-            <span class="friend-desc">Try to be better.</span>
-            <span class="friend-link">xiaozhihua.top</span>
+            <span class="friend-name">vortex</span>
+            <span class="friend-desc">知其攻，守其防；知其黑，守其白。</span>
+            <span class="friend-link">vortex.blog.csdn.net</span>
         </span>
     </a>
     <a class="friend-card" href="https://skyarrow416.github.io/" target="_blank" rel="noopener noreferrer">
@@ -72,6 +64,30 @@ nav_order: 50
             <span class="friend-name">Skyarrow</span>
             <span class="friend-desc">没有术力口和邦邦的生活是不可想象的</span>
             <span class="friend-link">skyarrow416.github.io</span>
+        </span>
+    </a>
+    <a class="friend-card" href="https://faabbi.github.io/" target="_blank" rel="noopener noreferrer">
+        <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/mj.png" alt="MJ avatar" loading="lazy">
+        <span class="friend-info">
+            <span class="friend-name">MJ</span>
+            <span class="friend-desc">嫉妒能让你前进，但也能让你陷入深渊。</span>
+            <span class="friend-link">faabbi.github.io</span>
+        </span>
+    </a>
+    <a class="friend-card" href="https://tlgjm.site/" target="_blank" rel="noopener noreferrer">
+        <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/tonglinggejimo.jpg" alt="tonglinggejimo avatar" loading="lazy">
+        <span class="friend-info">
+            <span class="friend-name">tonglinggejimo</span>
+            <span class="friend-desc">很高兴见到你！</span>
+            <span class="friend-link">tlgjm.site</span>
+        </span>
+    </a>
+    <a class="friend-card" href="https://xiaozhihua.top/" target="_blank" rel="noopener noreferrer">
+        <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/xzh.png" alt="咲之花 avatar" loading="lazy">
+        <span class="friend-info">
+            <span class="friend-name">咲之花</span>
+            <span class="friend-desc">Try to be better.</span>
+            <span class="friend-link">xiaozhihua.top</span>
         </span>
     </a>
     <a class="friend-card" href="https://www.aristore.top/" target="_blank" rel="noopener noreferrer">
@@ -90,14 +106,6 @@ nav_order: 50
             <span class="friend-link">hyhforever.top</span>
         </span>
     </a>
-    <a class="friend-card" href="https://tlgjm.site/" target="_blank" rel="noopener noreferrer">
-        <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/tonglinggejimo.jpg" alt="tonglinggejimo avatar" loading="lazy">
-        <span class="friend-info">
-            <span class="friend-name">tonglinggejimo</span>
-            <span class="friend-desc">很高兴见到你！</span>
-            <span class="friend-link">tlgjm.site</span>
-        </span>
-    </a>
     <a class="friend-card" href="https://c1trus.top/" target="_blank" rel="noopener noreferrer">
         <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/c1trus.jpg" alt="c1trus avatar" loading="lazy">
         <span class="friend-info">
@@ -106,20 +114,20 @@ nav_order: 50
             <span class="friend-link">c1trus.top</span>
         </span>
     </a>
+        <a class="friend-card" href="https://flowerwitch.github.io/" target="_blank" rel="noopener noreferrer">
+        <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/flower.png" alt="Flower avatar" loading="lazy">
+        <span class="friend-info">
+            <span class="friend-name">Flower</span>
+            <span class="friend-desc">Hi Im Flower</span>
+            <span class="friend-link">flowerwitch.github.io</span>
+        </span>
+    </a>
     <a class="friend-card" href="https://www.sunsetaction.top/" target="_blank" rel="noopener noreferrer">
         <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/sunset.png" alt="Sunset's Blog avatar" loading="lazy">
         <span class="friend-info">
             <span class="friend-name">Sunset's Blog</span>
             <span class="friend-desc">Records of life and study at sunset.</span>
             <span class="friend-link">sunsetaction.top</span>
-        </span>
-    </a>
-    <a class="friend-card" href="https://flowerwitch.github.io/" target="_blank" rel="noopener noreferrer">
-        <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/flower.png" alt="Flower avatar" loading="lazy">
-        <span class="friend-info">
-            <span class="friend-name">Flower</span>
-            <span class="friend-desc">Hi Im Flower</span>
-            <span class="friend-link">flowerwitch.github.io</span>
         </span>
     </a>
     <a class="friend-card" href="https://www.geekery.cn/" target="_blank" rel="noopener noreferrer">
