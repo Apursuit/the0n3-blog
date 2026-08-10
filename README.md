@@ -1,3 +1,5 @@
+
+
 # the0n3 blog
 
 <div align="center">
@@ -128,7 +130,7 @@ php -S localhost:8000 -t dist/
 
 本模板已配置好完整的自动化部署流程。当您将本地更新推送到 GitHub 仓库时，GitHub Action 会自动触发构建流程，并将生成的静态文件推送到 gh-pages 分支，实现自动部署。
 
-你的Github 仓库名需要设置为 username.github.io（其中 username 替换为你的 GitHub 用户名），这样 GitHub Pages 才能正确识别并部署你的博客。
+仓库名称无特殊限制，GitHub Actions 已配置自动将构建产物推送到 gh-pages 分支进行托管，适用于任意名称的仓库。
 
 权限配置步骤：
 
