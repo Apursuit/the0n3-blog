@@ -3,8 +3,33 @@ header {
     position: sticky;
     top: 0;
     z-index: 15;
+    /* 半透明浮动材质层（Apple Design §12）：
+       内容在其下方滚动时自然产生边缘模糊，而非硬分割线 */
     background: var(--bgColor-default);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    background: color-mix(in srgb, var(--bgColor-default) 68%, transparent);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 250ms ease;
+}
+
+header.nav-scrolled {
+    box-shadow: 0 6px 24px -12px rgba(15, 23, 42, 0.18);
+}
+
+/* 无 backdrop-filter 支持时回退为实心背景 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    header {
+        background: var(--bgColor-default);
+    }
+}
+
+/* 减弱透明度偏好：去掉毛玻璃，转为实心（Apple Design §14） */
+@media (prefers-reduced-transparency: reduce) {
+    header {
+        background: var(--bgColor-default);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
 }
 
 header.nav-hidden {

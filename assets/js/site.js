@@ -2,6 +2,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const backToTop = document.getElementById('backToTop');
     if (!backToTop) return;
 
+    const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
     const isPostPage = !!document.querySelector('main.markdown-body article');
     if (!isPostPage) {
         backToTop.classList.remove('is-visible');
@@ -54,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (el) {
                     event.preventDefault();
                     try {
-                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        el.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth', block: 'start' });
                     } catch (e) {
                         el.scrollIntoView(true);
                     }
@@ -87,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     backToTop.addEventListener('click', () => {
         try {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
         } catch (e) {
             window.scrollTo(0, 0);
         }

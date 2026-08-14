@@ -67,6 +67,9 @@ body.search-open {
     inset: 0;
     background: rgba(15, 23, 42, 0.42);
     backdrop-filter: blur(8px);
+    /* 遮罩用简单的 opacity 过渡即可（背景变暗不应回弹，Apple Design §4） */
+    opacity: 0;
+    transition: opacity 200ms ease;
 }
 
 .search-modal__dialog {
@@ -87,6 +90,10 @@ body.search-open {
     background: color-mix(in srgb, var(--bgColor-default, #fff) 96%, var(--bgColor-muted, #f6f8fa));
     box-shadow: 0 28px 80px rgba(15, 23, 42, 0.2);
     overflow: hidden;
+    /* 初始态：由 JS 弹簧驱动进出场（Apple Design §3/§4/§7） */
+    opacity: 0;
+    transform: scale(0.92);
+    will-change: transform, opacity;
 }
 
 .search-modal__header {
@@ -333,6 +340,19 @@ body.search-open {
     background: rgba(88, 166, 255, 0.12);
     border-color: rgba(88, 166, 255, 0.36);
     box-shadow: 0 10px 26px rgba(0, 0, 0, 0.28);
+}
+
+/* 减弱透明度偏好：遮罩与面板转为实心，去掉模糊（Apple Design §14） */
+@media (prefers-reduced-transparency: reduce) {
+    .search-modal__overlay {
+        background: rgba(15, 23, 42, 0.5);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+
+    .search-modal__panel {
+        background: var(--bgColor-default, #ffffff);
+    }
 }
 
 /* 响应式：

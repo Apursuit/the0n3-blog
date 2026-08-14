@@ -195,6 +195,8 @@
     <script src="/assets/prism/prism-line-number.js"></script>
     <!-- 主题切换 -->
     <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
     <!-- 搜索功能 -->
     <script src="/assets/js/fuse.js"></script>
     <script src="/assets/js/search.js"></script>

@@ -19,8 +19,8 @@
    - 保持单文件维护，后续优先改这里
    ============================================ */
 :root {
-    --font-family-ui: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Segoe UI", sans-serif;
-    --font-family-reading: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+    --font-family-ui: system-ui, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Segoe UI", sans-serif;
+    --font-family-reading: system-ui, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
     --font-family-mono: ui-monospace, "SFMono-Regular", "Cascadia Mono", "Cascadia Code", Consolas, monospace;
 
     --font-size-body: 17px;
@@ -105,6 +105,12 @@ html {
     scroll-behavior: smooth;
 }
 
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+}
+
 body {
     margin: 0;
     background-color: var(--bgColor-default, #ffffff);
@@ -112,9 +118,18 @@ body {
     font-family: var(--font-family-ui);
     line-height: 1.75;
     font-weight: 400;
+    font-optical-sizing: auto;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* 深浅主题切换时避免瞬间亮度跳变（Apple Design §14） */
+    transition: background-color 250ms ease, color 250ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body {
+        transition: none;
+    }
 }
 
 /* ============================================
@@ -210,6 +225,8 @@ main.markdown-body,
     line-height: var(--line-height-body);
     letter-spacing: normal;
     word-break: break-word;
+    /* 主题切换过渡（与 body 同步，避免亮度跳变） */
+    transition: background-color 250ms ease, color 250ms ease;
 }
 
 .markdown-body h1,
@@ -219,11 +236,18 @@ main.markdown-body,
 .markdown-body h5,
 .markdown-body h6 {
     font-family: var(--font-family-ui);
-    letter-spacing: 0.01em;
+    font-optical-sizing: auto;
 }
 
+/* 字号相关的 tracking（Apple Design §15）：
+   大标题负向收紧，正文趋近 0，永不使用单一固定值 */
+.markdown-body h1 { letter-spacing: -0.02em; }
+.markdown-body h2 { letter-spacing: -0.015em; }
+.markdown-body h3 { letter-spacing: -0.01em; }
+.markdown-body h4 { letter-spacing: -0.005em; }
+
 .markdown-body h1 {
-    font-size: 2em;
+    font-size: clamp(1.5rem, 1.2rem + 3vw, 2.2rem);
     font-weight: 700;
     line-height: 1.28;
     margin-top: 1.2rem;
@@ -231,7 +255,7 @@ main.markdown-body,
 }
 
 .markdown-body h2 {
-    font-size: 1.56em;
+    font-size: clamp(1.3rem, 1.1rem + 1.6vw, 1.75rem);
     font-weight: 650;
     line-height: 1.38;
     margin-top: var(--space-heading-mt);
@@ -610,6 +634,7 @@ html[data-theme="dark"] .markdown-body .tax-item a {
     line-height: 1;
     cursor: pointer;
     padding: 0;
+    transition: border-color 0.15s ease, background-color 0.15s ease, transform 100ms ease-out;
 }
 
 .fab:hover,
@@ -646,6 +671,36 @@ html[data-theme="dark"] .markdown-body .tax-item a {
     right: 16px;
     bottom: 16px;
     z-index: 10;
+}
+
+/* 按压反馈（Apple Design §1）：
+   在 pointer-down 即响应，按下瞬间缩小，反馈不只在结束时出现 */
+.search-trigger:active,
+.search-modal__close:active,
+.code-fold-btn:active,
+.search-result-item:active {
+    transform: scale(0.97);
+    transition: transform 100ms ease-out;
+}
+
+.theme-toggle:active,
+.fab:active {
+    transform: scale(0.94);
+    transition: transform 100ms ease-out;
+}
+
+.friend-card:active {
+    transform: translateY(0) scale(0.99);
+    transition: transform 100ms ease-out;
+}
+
+/* 键盘焦点可见（Apple Design §16 Craft）：全站统一的焦点环 */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+[tabindex]:focus-visible {
+    outline: 2px solid var(--fgColor-accent);
+    outline-offset: 2px;
 }
 
 html[data-theme="dark"] .markdown-body h1,
@@ -785,14 +840,7 @@ html[data-theme="dark"] .markdown-body .friend-card:hover {
         padding: var(--content-padding-y) var(--content-padding-x);
     }
 
-    .markdown-body h1 {
-        font-size: 1.82em;
-    }
-
-    .markdown-body h2 {
-        font-size: 1.42em;
-    }
-
+    /* h1/h2 由 clamp() 随视口自动缩放，这里只微调 h3 */
     .markdown-body h3 {
         font-size: 1.18em;
     }

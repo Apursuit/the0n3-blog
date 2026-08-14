@@ -9,6 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const y = window.scrollY;
         const delta = y - lastY;
 
+        header.classList.toggle('nav-scrolled', y > 4);
+
         if (y > 120) {
             if (delta > 4) {
                 header.classList.add('nav-hidden');

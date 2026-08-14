@@ -23,6 +23,44 @@
         return;
     }
 
+    const panel = modal.querySelector('.search-modal__panel');
+    const overlay = modal.querySelector('.search-modal__overlay');
+    let panelSpring = null;
+
+    // 弹簧进出场（Apple Design §3/§4/§7）：
+    // 面板从触发器位置缩放进入（锚定来源），退出沿同路径逆向、可随时被打断。
+    function animatePanel(from, to, onDone) {
+        if (typeof Spring === 'undefined' || Spring.prefersReducedMotion()) {
+            if (panelSpring) {
+                panelSpring.stop();
+                panelSpring = null;
+            }
+            panel.style.transform = '';
+            panel.style.opacity = to === 1 ? '1' : '0';
+            if (onDone) onDone();
+            return;
+        }
+
+        if (panelSpring) {
+            panelSpring.stop();
+        }
+        panelSpring = Spring.createSpring({
+            from: from,
+            to: to,
+            damping: 1.0,
+            response: 0.35,
+            onUpdate: function (v) {
+                panel.style.transform = 'scale(' + (0.9 + v * 0.1) + ') translateY(' + ((1 - v) * -6) + 'px)';
+                panel.style.opacity = String(v);
+            },
+            onComplete: function () {
+                panelSpring = null;
+                if (onDone) onDone();
+            },
+        });
+        panelSpring.start();
+    }
+
     let fuse = null;
     let loadPromise = null;
     let indexReady = false;
@@ -53,6 +91,21 @@
         modal.hidden = false;
         trigger.setAttribute('aria-expanded', 'true');
         document.body.classList.add('search-open');
+
+        // 锚定来源：让面板从触发器所在位置缩放进入（Apple Design §7）
+        const trect = trigger.getBoundingClientRect();
+        const prect = panel.getBoundingClientRect();
+        panel.style.transformOrigin =
+            ((trect.left + trect.width / 2) - prect.left) + 'px ' +
+            ((trect.top + trect.height / 2) - prect.top) + 'px';
+
+        overlay.style.transition = 'opacity 200ms ease';
+        overlay.style.opacity = '1';
+
+        // 从中断处续跑：若正在关闭途中被再次打开，从当前屏上值出发
+        const current = parseFloat(panel.style.opacity) || 0;
+        animatePanel(current, 1);
+
         window.setTimeout(() => input.focus(), 0);
 
         if (!query) {
@@ -66,13 +119,22 @@
         }
 
         isOpen = false;
-        modal.hidden = true;
         trigger.setAttribute('aria-expanded', 'false');
         document.body.classList.remove('search-open');
         activeIndex = -1;
         results.innerHTML = '';
         setState(query ? '搜索已关闭，再次打开可继续输入' : '输入关键词开始搜索');
         trigger.focus();
+
+        overlay.style.transition = 'opacity 200ms ease';
+        overlay.style.opacity = '0';
+
+        // 沿进入路径逆向退出（Apple Design §7 对称路径），完成后隐藏
+        const current = parseFloat(panel.style.opacity) || 1;
+        animatePanel(current, 0, () => {
+            modal.hidden = true;
+            panel.style.transform = '';
+        });
     }
 
     function renderResults(items) {
