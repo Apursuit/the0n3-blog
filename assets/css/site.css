@@ -44,6 +44,9 @@
 
     --post-toc-width: 200px;
     --post-toc-gap: 28px;
+
+    /* 吸顶导航高度 + 呼吸余量：目录/锚点跳转时标题避让导航的预留距离 */
+    --scroll-offset: 60px;
 }
 
 /* ============================================
@@ -237,6 +240,8 @@ main.markdown-body,
 .markdown-body h6 {
     font-family: var(--font-family-ui);
     font-optical-sizing: auto;
+    /* 跳转目标避让吸顶导航：scrollIntoView、原生 #hash、:target 均生效 */
+    scroll-margin-top: var(--scroll-offset);
 }
 
 /* 字号相关的 tracking（Apple Design §15）：

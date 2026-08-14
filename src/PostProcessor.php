@@ -66,7 +66,7 @@ class PostProcessor
     public function prepare(array $posts): array
     {
         foreach ($posts as &$post) {
-            $post['html'] = Markdown::toHtml($post['content']);
+            $post['html'] = Markdown::toHtml($post['content'], $this->config);
         }
         unset($post);
 

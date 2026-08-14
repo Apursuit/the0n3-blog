@@ -54,7 +54,7 @@ class PageProcessor
 
             $permalink = $page['frontMatter']['permalink'];
             $permalinkMap[$permalink][] = $source;
-            $page['html'] = Markdown::toHtml($page['content']);
+            $page['html'] = Markdown::toHtml($page['content'], $this->config);
             $pages[] = $page;
         }
 

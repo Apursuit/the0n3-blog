@@ -20,11 +20,12 @@ class Markdown
     }
 
     // 将 Markdown 转为 HTML，并进行自定义后处理。
-    public static function toHtml(string $markdown): string
+    // $imageBases 可传入 config（含 images_path / public_path），用于给本地图片注入真实宽高。
+    public static function toHtml(string $markdown, ?array $imageBases = null): string
     {
         $html = self::getInstance()->text($markdown);
         $html = self::transformCallouts($html);
-        return self::enhanceImages($html);
+        return self::enhanceImages($html, $imageBases);
     }
 
     // 解析并转换 [!NOTE] 等标记为 callout 结构。
@@ -108,7 +109,7 @@ class Markdown
         return $output ?: $html;
     }
 
-    private static function enhanceImages(string $html): string
+    private static function enhanceImages(string $html, ?array $imageBases = null): string
     {
         if (stripos($html, '<img') === false) {
             return $html;
@@ -132,6 +133,16 @@ class Markdown
                 $img->setAttribute('loading', 'lazy');
             }
 
+            // 注入本地图片真实宽高，浏览器据 width/height 预留 aspect-ratio 空间，
+            // 避免懒加载图片撑开内容导致目录跳转/阅读进度偏移（CLS）。
+            if (!$img->hasAttribute('width') && !$img->hasAttribute('height')) {
+                $size = self::resolveLocalImageSize($img->getAttribute('src'), $imageBases);
+                if ($size !== null) {
+                    $img->setAttribute('width', (string) $size[0]);
+                    $img->setAttribute('height', (string) $size[1]);
+                }
+            }
+
             $imageIndex++;
         }
 
@@ -147,5 +158,35 @@ class Markdown
         libxml_use_internal_errors($previous);
 
         return $output ?: $html;
+    }
+
+    // 将图片 src 解析为本地文件并读取真实尺寸；外部图/缺失/失败一律返回 null。
+    private static function resolveLocalImageSize(string $src, ?array $bases): ?array
+    {
+        if ($bases === null || $src === '' || strpos($src, 'data:') === 0 || preg_match('#^(https?:)?//#', $src)) {
+            return null;
+        }
+
+        if (strpos($src, '?') !== false) {
+            $src = strtok($src, '?');
+        }
+
+        $path = null;
+        if (strpos($src, '/images/') === 0 && !empty($bases['images_path'])) {
+            $path = rtrim($bases['images_path'], '/\\') . '/' . ltrim(rawurldecode(substr($src, 8)), '/');
+        } elseif ($src[0] === '/' && !empty($bases['public_path'])) {
+            $path = rtrim($bases['public_path'], '/\\') . '/' . ltrim(rawurldecode(substr($src, 1)), '/');
+        }
+
+        if ($path === null || !is_file($path)) {
+            return null;
+        }
+
+        $size = @getimagesize($path);
+        if (is_array($size) && ($size[0] ?? 0) > 0 && ($size[1] ?? 0) > 0) {
+            return [$size[0], $size[1]];
+        }
+
+        return null;
     }
 }

@@ -52,7 +52,14 @@ document.addEventListener('DOMContentLoaded', () => {
         tocContainer.addEventListener('click', (event) => {
             const target = event.target;
             if (target && target.tagName === 'A' && target.hash) {
-                const el = document.getElementById(target.hash.slice(1));
+                // .hash 返回 URL 编码片段（中文 id 如 %E6%B5%81...），需解码后定位元素
+                let id = target.hash.slice(1);
+                try {
+                    id = decodeURIComponent(id);
+                } catch (e) {
+                    id = target.hash.slice(1);
+                }
+                const el = document.getElementById(id);
                 if (el) {
                     event.preventDefault();
                     try {
