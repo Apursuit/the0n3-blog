@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - MazeSec BabyPass</title>
+        <meta name="description" content="靶机说明 关键词：密码复用、MD5 彩虹表破解、MySQL 凭证泄露、SSH 横向移动、Web 目录遍历 摘要：本文记录了 MazeSec BabyPass 靶机的渗透过程。选手通过目录扫描发现 tms 系统中的 Readme.txt 文件，获取到 admin 与 anuj 用户的明文密码 Test@123；利用密码复…">
+    <link rel="canonical" href="https://the0n3.top/pages/maze-babypass/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="MazeSec BabyPass">
+    <meta property="og:description" content="靶机说明 关键词：密码复用、MD5 彩虹表破解、MySQL 凭证泄露、SSH 横向移动、Web 目录遍历 摘要：本文记录了 MazeSec BabyPass 靶机的渗透过程。选手通过目录扫描发现 tms 系统中的 Readme.txt 文件，获取到 admin 与 anuj 用户的明文密码 Test@123；利用密码复…">
+    <meta property="og:url" content="https://the0n3.top/pages/maze-babypass/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/maze-babypass/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="MazeSec BabyPass">
+    <meta name="twitter:description" content="靶机说明 关键词：密码复用、MD5 彩虹表破解、MySQL 凭证泄露、SSH 横向移动、Web 目录遍历 摘要：本文记录了 MazeSec BabyPass 靶机的渗透过程。选手通过目录扫描发现 tms 系统中的 Readme.txt 文件，获取到 admin 与 anuj 用户的明文密码 Test@123；利用密码复…">
+        <meta name="twitter:image" content="https://the0n3.top/images/maze-babypass/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>MazeSec BabyPass</h1>
+    <p>
+        <span class="meta">发布于: 2025-11-11 00:01</span>
+    </p>
+    <div class="post-body">
+        <h2>靶机说明</h2>
+<p><strong>关键词</strong>：密码复用、MD5 彩虹表破解、MySQL 凭证泄露、SSH 横向移动、Web 目录遍历</p>
+<p><strong>摘要</strong>：本文记录了 MazeSec BabyPass 靶机的渗透过程。选手通过目录扫描发现 tms 系统中的 Readme.txt 文件，获取到 admin 与 anuj 用户的明文密码 Test@123；利用密码复用特性，直接通过 SSH 成功登录 anuj 与 admin 两个低权限用户；在 anuj 用户环境下读取 Web 目录下的配置文件 config.php，获取 MySQL 数据库凭证并登录本地数据库，从 tblusers 表中发现 root 用户的 MD5 哈希值；通过在线彩虹表查询成功破解出明文密码 Root@456，最终使用该密码通过 SSH 登录 root 用户完成权限提升。该靶机重点考察了开发人员的不良操作习惯（明文凭证泄露、密码复用）、数据库哈希值的破解利用以及从 Web 应用到系统权限的横向移动思路。</p>
+<h2>信息收集</h2>
+<h3>存活主机发现与ARP扫描</h3>
+<p>存活主机发现</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/mazesec/BabyPass]
+└─$ sudo arp-scan -I eth1 192.168.56.0/24
+
+192.168.56.1    0a:00:27:00:00:11       (Unknown: locally administered)
+192.168.56.127  08:00:27:05:a7:19       PCS Systemtechnik GmbH</code></pre>
+<h3>端口扫描</h3>
+<p>TCP全端口扫描</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/mazesec/BabyPass]
+└─$ nmap -p- -sT 192.168.56.127
+
+PORT   STATE SERVICE
+22/tcp open  ssh
+80/tcp open  http</code></pre>
+<h3>80 端口服务探测</h3>
+<p>注释提示<code>不同用户不要使用相同密码</code></p>
+<p><img src="/images/maze-babypass/1.png" alt="" decoding="async" width="745" height="248"></p>
+<p>gobuster目录扫描</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/mazesec/BabyPass]
+└─$ gobuster dir -u http://192.168.56.127 -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -x php,html,asp,txt,bak
+
+/index.html           (Status: 200) [Size: 82]
+/tms                  (Status: 301) [Size: 314] [--&gt; http://192.168.56.127/tms/]</code></pre>
+<p>扫描子目录<code>tms</code></p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/mazesec/BabyPass]
+└─$ gobuster dir -u http://192.168.56.127/tms/ -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -x php,html,asp,txt,bak
+
+/images               (Status: 301) [Size: 321] [--&gt; http://192.168.56.127/tms/images/]
+/index.php            (Status: 200) [Size: 16471]
+/profile.php          (Status: 302) [Size: 0] [--&gt; index.php]
+/page.php             (Status: 200) [Size: 11094]
+/admin                (Status: 301) [Size: 320] [--&gt; http://192.168.56.127/tms/admin/]
+/css                  (Status: 301) [Size: 318] [--&gt; http://192.168.56.127/tms/css/]
+/includes             (Status: 301) [Size: 323] [--&gt; http://192.168.56.127/tms/includes/]
+/js                   (Status: 301) [Size: 317] [--&gt; http://192.168.56.127/tms/js/]
+/logout.php           (Status: 302) [Size: 1] [--&gt; index.php]
+/fonts                (Status: 301) [Size: 320] [--&gt; http://192.168.56.127/tms/fonts/]
+/thankyou.php         (Status: 200) [Size: 10832]
+/forgot-password.php  (Status: 200) [Size: 12461]
+/enquiry.php          (Status: 200) [Size: 12292]
+/Readme.txt           (Status: 200) [Size: 663]
+/check_availability.php (Status: 200) [Size: 0]</code></pre>
+<h2>密码复用</h2>
+<p>在tms子目录的扫描结果里，readme.txt泄露关键信息</p>
+<p><img src="/images/maze-babypass/2.png" alt="" decoding="async" loading="lazy" width="1267" height="482"></p>
+<pre><code class="language-plaintext">管理员登录信息：
+打开浏览器，在浏览器中输入“http://localhost/tms/admin”
+用户名：admin
+密码：Test@123
+
+用户登录信息：
+打开浏览器，在浏览器中输入“http://localhost/tms/”
+用户名：anuj@gmail.com
+密码：Test@123</code></pre>
+<p>使用 admin/Test@123 可以成功登录管理员后台，但没用</p>
+<p>使用 anuj@gmail.com/Test@123 可以成功登录用户前台，但没用</p>
+<p><img src="/images/maze-babypass/3.png" alt="" decoding="async" loading="lazy" width="538" height="299"></p>
+<p>尝试使用密码<code>Test@123</code> ssh 登录 admin用户，成功</p>
+<p><img src="/images/maze-babypass/4.png" alt="" decoding="async" loading="lazy" width="747" height="317"></p>
+<p>尝试使用密码<code>Test@123</code> ssh 登录 anuj用户，成功</p>
+<p><img src="/images/maze-babypass/5.png" alt="" decoding="async" loading="lazy" width="717" height="316"></p>
+<h2>root</h2>
+<h3>sudo 权限枚举</h3>
+<p>两个用户都没有 sudo 权限</p>
+<p>anuj 用户</p>
+<pre><code class="language-bash">anuj@BabyPass:~$ sudo -l
+[sudo] password for anuj: 
+Sorry, user anuj may not run sudo on BabyPass.</code></pre>
+<p>admin 用户</p>
+<pre><code class="language-bash">admin@BabyPass:~$ sudo -l
+Sorry, user admin may not run sudo on BabyPass.</code></pre>
+<h2>彩虹表攻击</h2>
+<p>查看开放端口，开放了 mysql 端口，没有对外开放</p>
+<pre><code class="language-bash">anuj@BabyPass:~$ ss -tupln
+Netid                   State                    Recv-Q                   Send-Q                                     Local Address:Port                                     Peer Address:Port
+udp                     UNCONN                   0                        0                                                0.0.0.0:68                                            0.0.0.0:*
+tcp                     LISTEN                   0                        128                                              0.0.0.0:22                                            0.0.0.0:*
+tcp                     LISTEN                   0                        80                                             127.0.0.1:3306                                          0.0.0.0:*
+tcp                     LISTEN                   0                        128                                                 [::]:22                                               [::]:*
+tcp                     LISTEN                   0                        128                                                    *:80                                                  *:*</code></pre>
+<p>尝试查看web目录 /var/www/html，有 tms 的站点文件</p>
+<pre><code class="language-bash">anuj@BabyPass:/var/www/html/tms$ ls -alh
+total 144K
+drwxr-xr-x 2 www-data www-data 4.0K Nov  4 04:42 includes   
+anuj@BabyPass:/var/www/html/tms$ ls -lah includes/
+total 32K
+-rw-r--r-- 1 www-data www-data  407 Nov  4 04:42 config.php  
+anuj@BabyPass:/var/www/html/tms$ cat includes/config.php 
+&lt;?php
+// DB credentials.
+define('DB_HOST','localhost');      
+define('DB_USER','tms_user');       
+define('DB_PASS','secure_password');
+define('DB_NAME','tms');</code></pre>
+<p>mysql 疑似储存 root 密码md5值</p>
+<pre><code class="language-bash">MariaDB [(none)]&gt; show databases;
++--------------------+   
+| Database           |   
++--------------------+   
+| information_schema |   
+| tms                |   
++--------------------+   
+2 rows in set (0.000 sec)
+
+MariaDB [(none)]&gt; use tms;
+Reading table information for completion of table and column names
+You can turn off this feature to get a quicker startup with -A    
+
+Database changed
+MariaDB [tms]&gt; show tables;
++-----------------+      
+| Tables_in_tms   |      
++-----------------+      
+| admin           |      
+| tblbooking      |      
+| tblenquiry      |      
+| tblissues       |      
+| tblpages        |      
+| tbltourpackages |      
+| tblusers        |      
++-----------------+      
+7 rows in set (0.000 sec)
+
+MariaDB [tms]&gt; select * from tblusers;
++----+----------------+--------------+------------------+----------------------------------+---------------------+---------------------+
+| id | FullName       | MobileNumber | EmailId          | Password                         | RegDate             | UpdationDate        |
++----+----------------+--------------+------------------+----------------------------------+---------------------+---------------------+
+|  1 | Manju Srivatav | 4456464654   | manju@gmail.com  | 202cb962ac59075b964b07152d234b70 | 2020-07-08 02:33:20 | NULL                |
+|  2 | Kishan         | 9871987979   | kishan@gmail.com | 202cb962ac59075b964b07152d234b70 | 2020-07-08 02:33:56 | NULL                |
+|  3 | Salvi Chandra  | 1398756416   | salvi@gmail.com  | 202cb962ac59075b964b07152d234b70 | 2020-07-08 02:34:20 | NULL                |
+|  4 | Abir           | 4789756456   | abir@gmail.com   | 202cb962ac59075b964b07152d234b70 | 2020-07-08 02:34:38 | NULL                |
+|  5 | Test           | 1987894654   | anuj@gmail.com   | f925916e2754e5e03f75dd58a5733251 | 2020-07-08 02:35:06 | 2021-05-11 00:37:41 |
+|  6 | root           | 123456789    | root@gmail.com   | fd50619cd7026f0f32272f77f4da6e92 | 2020-07-08 02:35:06 | 2021-05-11 00:37:41 |
++----+----------------+--------------+------------------+----------------------------------+---------------------+---------------------+
+6 rows in set (0.000 sec)</code></pre>
+<p>somd5 找到 root 密码为<code>Root@456</code></p>
+<p><img src="/images/maze-babypass/6.png" alt="" decoding="async" loading="lazy" width="818" height="380"></p>
+<p>ssh 登录 root 用户成功</p>
+<p><img src="/images/maze-babypass/7.png" alt="" decoding="async" loading="lazy" width="735" height="307"></p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>MazeSec</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#密码复用</span>
+                                    <span>#彩虹表攻击</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

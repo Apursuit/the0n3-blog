@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - 任意盘安装WSL2</title>
+        <meta name="description" content="任意盘安装WSL2 本文介绍如何将WSL2安装在任意盘，发行版使用Ubuntu 22.04 ltsc 前提条件 必须运行 Windows 10 版本 2004 及更高版本（内部版本 19041 及更高版本）或 Windows 11 才能使用以下命令 验证：win+r打开运行，输入winver 需要开启的功能 hyper…">
+    <link rel="canonical" href="https://the0n3.top/pages/dwsl2/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="任意盘安装WSL2">
+    <meta property="og:description" content="任意盘安装WSL2 本文介绍如何将WSL2安装在任意盘，发行版使用Ubuntu 22.04 ltsc 前提条件 必须运行 Windows 10 版本 2004 及更高版本（内部版本 19041 及更高版本）或 Windows 11 才能使用以下命令 验证：win+r打开运行，输入winver 需要开启的功能 hyper…">
+    <meta property="og:url" content="https://the0n3.top/pages/dwsl2/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/dwsl2/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="任意盘安装WSL2">
+    <meta name="twitter:description" content="任意盘安装WSL2 本文介绍如何将WSL2安装在任意盘，发行版使用Ubuntu 22.04 ltsc 前提条件 必须运行 Windows 10 版本 2004 及更高版本（内部版本 19041 及更高版本）或 Windows 11 才能使用以下命令 验证：win+r打开运行，输入winver 需要开启的功能 hyper…">
+        <meta name="twitter:image" content="https://the0n3.top/images/dwsl2/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>任意盘安装WSL2</h1>
+    <p>
+        <span class="meta">发布于: 2025-06-12 12:45</span>
+    </p>
+    <div class="post-body">
+        <h1>任意盘安装WSL2</h1>
+<p>本文介绍如何将WSL2安装在任意盘，发行版使用Ubuntu 22.04 ltsc</p>
+<h2>前提条件</h2>
+<p>必须运行 Windows 10 版本 2004 及更高版本（内部版本 19041 及更高版本）或 Windows 11 才能使用以下命令</p>
+<p>验证：<code>win+r</code>打开运行，输入<code>winver</code></p>
+<p><img src="/images/dwsl2/1.png" alt="1" decoding="async" width="677" height="366"></p>
+<h2>需要开启的功能</h2>
+<ul>
+<li>hyper-v</li>
+<li>虚拟机平台</li>
+<li>Windows 子系统 Linux</li>
+</ul>
+<p>按<code>win</code>键，搜索"应用"，回车打开</p>
+<p><img src="/images/dwsl2/2.png" alt="2" decoding="async" loading="lazy" width="961" height="378"></p>
+<p>不同win10版本，排版可能不同，找到应用里的”功能“</p>
+<p><img src="/images/dwsl2/3.png" alt="3" decoding="async" loading="lazy" width="922" height="684"></p>
+<p>找到“启用或关闭 Windows 功能“，点击打开</p>
+<p><img src="/images/dwsl2/4.png" alt="4" decoding="async" loading="lazy" width="502" height="217"></p>
+<p>勾选以下功能：</p>
+<ul>
+<li>Hyper-V</li>
+<li>虚拟机平台</li>
+<li>适用于 linux 的 Windows 子系统</li>
+</ul>
+<p>勾选后确定，重启电脑</p>
+<h2>D盘安装WSL2</h2>
+<p>选择发行版<code>ubuntu 22.04 ltsc</code>，访问<a href="https://aka.ms/wslubuntu2204">https://aka.ms/wslubuntu2204</a>下载</p>
+<p>得到一个<code>.AppxBundle</code>文件</p>
+<p><img src="/images/dwsl2/5.png" alt="5" decoding="async" loading="lazy" width="131" height="187"></p>
+<div class="callout callout-tip">
+<p>.AppxBundle 文件是 Windows 应用程序包的一种格式，打包了不同平台的版本，本质就是一个压缩包</p>
+</div>
+<p>改扩展名为<code>.zip</code>，解压到 D 盘，也可以直接7z解压到 D 盘</p>
+<p><img src="/images/dwsl2/6.png" alt="6" decoding="async" loading="lazy" width="714" height="263"></p>
+<p>找到打包好的<code>x64</code>版本的<code>appx</code>文件，解压到 D 盘 ubuntu 要安装的目录下，这里我解压到 D:\ubuntu</p>
+<p><img src="/images/dwsl2/7.png" alt="7" decoding="async" loading="lazy" width="915" height="399"></p>
+<p>进入解压目录，运行<code>ubuntu.exe</code>，就可以根据安装引导，正常安装wsl2 ubuntu 22.04 ltsc了</p>
+<p><img src="/images/dwsl2/8.png" alt="8" decoding="async" loading="lazy" width="820" height="496"></p>
+<h2>其他</h2>
+<ul>
+<li>微软商店安装windows terminal</li>
+<li>换源</li>
+<li>安装1panel</li>
+<li>安装docker</li>
+<li>...</li>
+</ul>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>linux</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#wsl2</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

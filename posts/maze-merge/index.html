@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - MazeSec Merge靶机设计流程</title>
+        <meta name="description" content="攻击链 命令注入（www-data） opt目录泄露mono密码（www-data&amp;gt;mono） sudo -u lnnn PATH劫持（mono&amp;gt;lnnn） /opt/admin/ 目录放置 admin 用户suid curl（lnnn&amp;gt;admin） /etc/group可写（admin&amp;gt;sud…">
+    <link rel="canonical" href="https://the0n3.top/posts/maze-merge/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="MazeSec Merge靶机设计流程">
+    <meta property="og:description" content="攻击链 命令注入（www-data） opt目录泄露mono密码（www-data&amp;gt;mono） sudo -u lnnn PATH劫持（mono&amp;gt;lnnn） /opt/admin/ 目录放置 admin 用户suid curl（lnnn&amp;gt;admin） /etc/group可写（admin&amp;gt;sud…">
+    <meta property="og:url" content="https://the0n3.top/posts/maze-merge/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/maze-merge/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="MazeSec Merge靶机设计流程">
+    <meta name="twitter:description" content="攻击链 命令注入（www-data） opt目录泄露mono密码（www-data&amp;gt;mono） sudo -u lnnn PATH劫持（mono&amp;gt;lnnn） /opt/admin/ 目录放置 admin 用户suid curl（lnnn&amp;gt;admin） /etc/group可写（admin&amp;gt;sud…">
+        <meta name="twitter:image" content="https://the0n3.top/images/maze-merge/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>MazeSec Merge靶机设计流程</h1>
+    <p>
+        <span class="meta">发布于: 2026-05-22 16:53</span>
+    </p>
+    <div class="post-body">
+        <h2>攻击链</h2>
+<p>命令注入（www-data）</p>
+<p>opt目录泄露mono密码（www-data&gt;mono）</p>
+<p>sudo -u lnnn PATH劫持（mono&gt;lnnn）</p>
+<p>/opt/admin/ 目录放置 admin 用户suid curl（lnnn&gt;admin）</p>
+<p>/etc/group可写（admin&gt;sudo组+已知密码=任意命令执行 或 disk 组提权）</p>
+<p>流程图</p>
+<p><img src="/images/maze-merge/1.png" alt="" decoding="async" width="1611" height="903"></p>
+<p><strong>关键词</strong>：命令注入、PATH劫持、SUID滥用、/etc/group可写、Linux提权链</p>
+<p><strong>摘要</strong>：本文为 MazeSec Merge 靶机的设计文档，展示了一条从 Web 入口到 Root 权限的完整权限提升路径。通过构建一个多层嵌套的漏洞链来实现这一目标：首先在 Nginx/PHP 环境下利用 IP 查询工具的参数过滤缺陷触发命令注入，获取 www-data 权限；随后利用 /opt 目录下的密码泄露文件横向移动到 mono 用户；借助 sudo 配置缺陷（保留 PATH 环境变量）实施 PATH 劫持，以 lnnn 用户身份执行恶意程序；进而利用 lnnn 对 admin 用户所有的 SUID curl 程序的访问权限，通过 --config 参数读取敏感文件；最终利用 /etc/group 文件的可写权限将当前用户加入 sudo 组，结合已知的 admin 密码完成提权。该靶机重点考察了 Linux 下环境变量控制、特殊权限位利用及系统配置文件权限配置不当的综合利用技巧。</p>
+<h2>基础环境</h2>
+<p>安装环境</p>
+<pre><code class="language-bash">apt update
+apt install -y nginx php-fpm</code></pre>
+<h2>创建 mono、lnnn、admin用户</h2>
+<pre><code class="language-bash"># 创建用户mono
+useradd -m -s /bin/bash mono
+# 生成密码
+openssl rand -base64 18
+0ysP8axqGSAkvXnkvxxukVnz
+# 设置密码（手动输入上面生成的密码）
+passwd mono
+
+# 创建用户lnnn
+useradd -m -s /bin/bash lnnn
+# 生成密码
+openssl rand -base64 18
+vdvv2HGFv7tVEXNXqqaQh2Sl
+passwd lnnn
+
+
+# 创建用户
+useradd -m -s /bin/bash admin
+# 生成密码
+openssl rand -base64 18
+eF27DvosNkei1RyqDzF8IkL7
+passwd admin
+
+
+# 生成密码
+openssl rand -base64 18
+7NIKKVqcuzE3UkYLVlqSTLZ7
+# 修改root密码
+passwd</code></pre>
+<h2>修改主机名</h2>
+<pre><code class="language-bash">hostname="Merge"
+hostnamectl set-hostname $hostname
+cat &gt;/etc/hosts &lt;&lt;EOF
+127.0.0.1   localhost
+127.0.1.1   $hostname
+::1         localhost ip6-localhost ip6-loopback
+EOF
+su</code></pre>
+<h2>配置 Web 环境</h2>
+<p>创建目录结构</p>
+<pre><code class="language-bash">mkdir -p /var/www/html
+mkdir -p /var/www/tool/.nali
+chown -R www-data:www-data /var/www
+
+# 下载nali工具（检查最新版本）
+wget "https://ghfile.geekertao.top/https://github.com/zu1k/nali/releases/download/v0.8.1/nali-linux-amd64-v0.8.1.gz" -O /tmp/nali.gz
+gunzip /tmp/nali.gz
+
+# 移动到tool目录
+mv /tmp/nali /var/www/tool/nali
+chmod +x /var/www/tool/nali
+chmod 755 /var/www/tool/nali
+chown www-data:www-data /var/www/tool/nali
+
+# 下载nali数据库（qqwry.dat）
+wget https://ghfile.geekertao.top/https://github.com/FW27623/qqwry/releases/download/2024-09-25/qqwry.dat -O /tmp/qqwry.dat
+cp /tmp/qqwry.dat /var/www/tool/.nali/qqwry.dat
+chown www-data:www-data /var/www/tool/.nali/qqwry.dat
+
+# 检查PHP socket路径
+ls /var/run/php/  # 查看PHP版本，记下socket文件名，例如 php8.4-fpm.sock</code></pre>
+<p>配置Nginx（手动编辑 /etc/nginx/sites-available/default）</p>
+<pre><code class="language-bash">vim /etc/nginx/sites-available/default</code></pre>
+<p>Nginx配置参考：</p>
+<pre><code class="language-nginx">server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+
+    root /var/www/html;
+    # 添加index.php
+    index index.php index.html;
+    server_name _;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php8.4-fpm.sock;  # 根据实际socket文件名修改
+    }
+}</code></pre>
+<pre><code class="language-bash"># 测试Nginx配置
+nginx -t
+
+# 重启Nginx
+systemctl restart nginx
+systemctl enable nginx</code></pre>
+<h2>创建漏洞 Web 页面</h2>
+<pre><code class="language-bash"># 创建index.php
+vim /var/www/html/index.php</code></pre>
+<p>index.php内容：</p>
+<pre><code class="language-php">&lt;?php
+putenv('NALI_DB_IP4=qqwry');
+putenv('NALI_HOME=/var/www/tool/.nali');
+$output = '';
+$error = '';
+$input_val = '';
+$blacklist = [' ', ';', '&amp;', '|', '$','`'];
+if (isset($_POST['ip']) &amp;&amp; $_POST['ip'] !== '') {
+    $input_val = $_POST['ip'];
+    $input = $_POST['ip'];
+    foreach ($blacklist as $char) {
+        if (strpos($input, $char) !== false) {
+            $error = 'Invalid characters detected';
+            break;
+        }
+    }
+    if ($error === '') {
+        $cmd = '/var/www/tool/nali ' . $input . ' 2&gt;&amp;1';
+        $output = shell_exec($cmd);
+        if ($output === null || $output === '') {
+            $error = 'Query failed or no result';
+        }
+    }
+}
+?&gt;
+&lt;!DOCTYPE html&gt;
+&lt;html lang="zh"&gt;
+&lt;head&gt;
+&lt;meta charset="UTF-8"&gt;
+&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+&lt;title&gt;离线IP地址查询&lt;/title&gt;
+&lt;style&gt;
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d1117;color:#c9d1d9;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;flex-direction:column}
+.main{width:100%;max-width:600px;padding:2rem;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-top:-8vh}
+.form-group{width:100%;display:flex;gap:0.5rem}
+.form-group input{flex:1;background:#161b22;border:1px solid #30363d;border-radius:6px;padding:0.75rem 1rem;color:#c9d1d9;font-size:0.95rem;outline:none;transition:border-color 0.2s}
+.form-group input:focus{border-color:#58a6ff}
+.form-group button{background:#238636;color:#fff;border:none;border-radius:6px;padding:0.75rem 1.5rem;font-size:0.9rem;cursor:pointer;transition:background 0.2s;white-space:nowrap}
+.form-group button:hover{background:#2ea043}
+.result{width:100%;margin-top:1.5rem;padding:1rem;border-radius:6px;min-height:3rem}
+.result-success{background:#161b22;border:1px solid #238636}
+.result-error{background:#161b22;border:1px solid #da3633;color:#f85149}
+.result pre{font-size:0.9rem;white-space:pre-wrap;word-break:break-all}
+.placeholder-result{width:100%;margin-top:1.5rem;min-height:3rem;visibility:hidden}
+.footer{position:fixed;bottom:0;left:0;right:0;padding:1.5rem 0;text-align:center;width:100%}
+.footer a{display:inline-block;font-size:0.7rem;color:#8b949e;border:1px solid #30363d;padding:2px 8px;border-radius:12px;letter-spacing:0.5px;text-decoration:none;transition:color 0.2s,border-color 0.2s}
+.footer a:hover{color:#58a6ff;border-color:#58a6ff}
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;div class="main"&gt;
+&lt;form class="form-group" method="POST" action=""&gt;
+&lt;input type="text" name="ip" id="ipInput" placeholder="输入IP地址查询" value="&lt;?php echo htmlspecialchars($input_val); ?&gt;" autofocus&gt;
+&lt;button type="submit"&gt;查询&lt;/button&gt;
+&lt;/form&gt;
+&lt;?php if ($error !== ''): ?&gt;
+&lt;div class="result result-error"&gt;&lt;pre&gt;&lt;?php echo htmlspecialchars($error); ?&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;?php elseif ($output !== ''): ?&gt;
+&lt;div class="result result-success"&gt;&lt;pre&gt;&lt;?php echo htmlspecialchars(trim($output)); ?&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;?php else: ?&gt;
+&lt;div class="placeholder-result"&gt;&lt;/div&gt;
+&lt;?php endif; ?&gt;
+&lt;/div&gt;
+&lt;div class="footer"&gt;
+&lt;a href="https://maze-sec.com" target="_blank"&gt;maze-sec&lt;/a&gt;
+&lt;/div&gt;
+&lt;script&gt;
+document.addEventListener('keydown', function(e) {
+    if (e.key === '/' &amp;&amp; document.activeElement !== document.getElementById('ipInput')) {
+        e.preventDefault();
+        document.getElementById('ipInput').focus();
+    }
+});
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+<pre><code class="language-bash"># 设置权限
+chown www-data:www-data /var/www/html/index.php
+chmod 644 /var/www/html/index.php</code></pre>
+<h2>opt目录密码泄露</h2>
+<pre><code class="language-bash">echo 'mono:0ysP8axqGSAkvXnkvxxukVnz' &gt; /opt/pass.txt
+chmod 644 /opt/pass.txt</code></pre>
+<h2>部署dirty_merge</h2>
+<pre><code class="language-bash"># 克隆 Dirty-Merge
+mkdir /opt/Dirty-Merge
+cd /opt/Dirty-Merge
+wget 192.168.6.156/dirty_merge -O dirty_merge
+wget 192.168.6.156/ethtool -O ethtool
+wget 192.168.6.156/gro_fragnesia.c -O gro_fragnesia.c
+vim README.md
+chmod +x dirty_merge ethtool
+mv ethtool /usr/local/bin/ethtool</code></pre>
+<h2>sudo -u lnnn path劫持</h2>
+<pre><code class="language-bash"># 添加sudo权限
+vim /etc/sudoers.d/mono</code></pre>
+<p>内容：</p>
+<pre><code class="language-conf">Defaults env_keep += "PATH"
+Defaults !secure_path
+mono ALL=(lnnn) NOPASSWD: /opt/Dirty-Merge/dirty_merge</code></pre>
+<p>权限收紧</p>
+<pre><code class="language-bash">chmod 700 /etc/sudoers.d</code></pre>
+<p>放置flag</p>
+<pre><code class="language-bash">echo 'flag{user-b67448e8af484d5f8958f307b3d57f09}' &gt; /home/lnnn/user.txt
+chown lnnn:lnnn /home/lnnn/user.txt
+chmod 600 /home/lnnn/user.txt</code></pre>
+<h2>suid跳板curl</h2>
+<p>通过 admin 用户的 suid curl实现 lnnn&gt;admin</p>
+<pre><code class="language-bash">mkdir -p /opt/admin
+chown admin:lnnn /opt/admin
+chmod 750 /opt/admin
+cp $(which curl) /opt/admin/curl
+chown admin:admin /opt/admin/curl
+sudo -u admin chmod +s /opt/admin/curl
+
+printf "\033[1;32m关注详细的参数帮助信息\033[0m\n" &gt; /opt/admin/hint.txt
+printf "\033[1;32mFocus on the detailed parameter help information\033[0m\n" &gt;&gt; /opt/admin/hint.txt
+
+printf "\033[1;32mman,what can i do\033[0m\n" &gt; /home/admin/hint.txt</code></pre>
+<h2>修改group配置权限</h2>
+<pre><code class="language-bash">chown root:admin /etc/group
+chmod 664 /etc/group</code></pre>
+<h2>放置flag</h2>
+<pre><code class="language-bash">flag{user-b67448e8af484d5f8958f307b3d57f09}
+flag{root-1b5f527b85d84d80816879c8044b0ea9}</code></pre>
+<pre><code class="language-bash">echo 'flag{root-1b5f527b85d84d80816879c8044b0ea9}' &gt; /root/root.txt</code></pre>
+<h2>清理痕迹</h2>
+<pre><code class="language-bash"># 清理痕迹
+rm -rf /tmp/*
+# 清理 root 家目录下的临时文件
+rm -f /root/.lesshst
+rm -f /root/.viminfo
+# 清理apt缓存
+apt clean
+# 清理日志
+journalctl --vacuum-size=10M
+find /var/log -type f -name "*.log" -exec truncate -s 0 {} \;
+# 清除 shell 历史和登录记录
+truncate -s 0 /root/.bash_history
+truncate -s 0 /var/log/wtmp /var/log/btmp /var/log/lastlog</code></pre>
+<h2>压缩镜像</h2>
+<pre><code class="language-bash"># 用零填充空闲空间，便于压缩
+dd if=/dev/zero of=/zero bs=1M || true; rm -f /zero</code></pre>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>MazeSec</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#PATH</span>
+                                    <span>#suid</span>
+                                    <span>#group</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

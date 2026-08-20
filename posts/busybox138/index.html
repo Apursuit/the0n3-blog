@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - Alpine Linux 下 SUID Bash 获取 euid=0 Shell 后 BusyBox 降权机制分析</title>
+        <meta name="description" content="0. 快速了解 摘要：在大多数 Linux 发行版中，从 SUID Bash 拿到 ruid=1000,euid=0 的进程的 shell 后，此时已经具备执行大多数 root 权限操作的能力，但在 Alpine Linux 下，大多数工具都是 busybox 的链接文件，通过查阅 busybox 源码了解到入口处的 …">
+    <link rel="canonical" href="https://the0n3.top/posts/busybox138/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="Alpine Linux 下 SUID Bash 获取 euid=0 Shell 后 BusyBox 降权机制分析">
+    <meta property="og:description" content="0. 快速了解 摘要：在大多数 Linux 发行版中，从 SUID Bash 拿到 ruid=1000,euid=0 的进程的 shell 后，此时已经具备执行大多数 root 权限操作的能力，但在 Alpine Linux 下，大多数工具都是 busybox 的链接文件，通过查阅 busybox 源码了解到入口处的 …">
+    <meta property="og:url" content="https://the0n3.top/posts/busybox138/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/badbox/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Alpine Linux 下 SUID Bash 获取 euid=0 Shell 后 BusyBox 降权机制分析">
+    <meta name="twitter:description" content="0. 快速了解 摘要：在大多数 Linux 发行版中，从 SUID Bash 拿到 ruid=1000,euid=0 的进程的 shell 后，此时已经具备执行大多数 root 权限操作的能力，但在 Alpine Linux 下，大多数工具都是 busybox 的链接文件，通过查阅 busybox 源码了解到入口处的 …">
+        <meta name="twitter:image" content="https://the0n3.top/images/badbox/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>Alpine Linux 下 SUID Bash 获取 euid=0 Shell 后 BusyBox 降权机制分析</h1>
+    <p>
+        <span class="meta">发布于: 2026-06-27 20:59</span>
+    </p>
+    <div class="post-body">
+        <h2>0. 快速了解</h2>
+<p><strong>摘要：</strong>在大多数 Linux 发行版中，从 SUID Bash 拿到 ruid=1000,euid=0 的进程的 shell 后，此时已经具备执行大多数 root 权限操作的能力，但在 Alpine Linux 下，大多数工具都是 busybox 的链接文件，通过查阅 busybox 源码了解到入口处的 check_suid 函数会首先做权限检查，发现 ruid!=0 时，大多数工具按照编译时的策略主动放弃特权，主动放弃特权，降权后以普通用户权限执行操作，出现一些提权操作失败的情况，此时可以通过使用独立编译的二进制程序，或利用 shell 自身的文件操作能力绕过 BusyBox 的权限处理逻辑完成权限利用。</p>
+<p>本文基于 Alpine Linux 3.20.0 、默认 BusyBox 版本为 1.36.1 ，源码分析部分参考 BusyBox 1.38.0，上游版本之间 check_suid() 核心逻辑保持一致，本文重点关注其权限处理机制</p>
+<p>写作过程中使用 AI 工具辅助发现可能遗漏的问题、审查逻辑链条以及优化表达，但最终结论均以源码验证和实验结果为准，并已由作者逐项复核，若存在错误欢迎指出</p>
+<p>问题：<strong>在Alpine Linux 环境下，从 SUID Bash 拿到 euid=0 的 shell 后，为什么看起来提权失败了</strong></p>
+<p><img src="/images/badbox/1.png" alt="" decoding="async" width="931" height="328"></p>
+<h2>1. 实验现象与分析</h2>
+<h3>1.1 现象：SUID Bash 下的 "提权失败"</h3>
+<p>实验环境：Alpine Linux 3.20.0、默认 BusyBox 版本为 1.36.1、/var/tmp 非 nosuid 挂载，准备有 suid bash</p>
+<pre><code class="language-bash"># 安装 bash 并设置 suid 位
+apk add bash
+cp /bin/bash /var/tmp/bash
+chmod +s /var/tmp/bash</code></pre>
+<p>Alpine 以 BusyBox 作为核心系统工具集，<code>/bin/sh</code>、<code>/bin/ls</code>、<code>/bin/id</code> 等绝大多数基础命令均为指向 <code>/bin/busybox</code> 的符号链接。每个这样的命令称为一个 <strong>applet</strong>——BusyBox 通过 <code>argv[0]</code> 识别要执行哪个 applet，并在其 <code>main()</code> 之前运行统一的 <code>check_suid()</code> 进行特权管理</p>
+<p>以普通用户 <code>demo</code>（uid=1000）运行suid bash并使用<code>-p</code>选项保留特权：</p>
+<pre><code class="language-bash">demo@localhost:/var/tmp$ ./bash -p
+bash-5.3#    # prompt 为 #，说明 euid=0</code></pre>
+<p>在另一个终端中查看进程状态，也能观察到 <code>bash -p</code> 的进程是root权限在运行</p>
+<p><img src="/images/badbox/2.png" alt="" decoding="async" loading="lazy" width="788" height="302"></p>
+<p><code>./bash</code> 的 setuid 位使 <code>exec</code> 后的进程处于 <code>ruid=1000, euid=0, suid=0</code>。bash 的 <code>-p</code> 选项禁止 bash 自行 <code>setuid(getuid())</code> 降权。</p>
+<p>此时执行id 命令实际为 BusyBox 的 <code>id</code> applet：</p>
+<pre><code class="language-bash">bash-5.3# id
+uid=1000(demo) gid=1000(demo) groups=1000(demo)</code></pre>
+<p><strong>shell 提示符是 <code>#</code>，但 <code>id</code> 输出却是 <code>uid=1000(demo)</code></strong>。原因在于 BusyBox 1.38.0 的 <code>coreutils/id.c</code> 第 28 行声明：</p>
+<pre><code class="language-c">//applet:IF_ID(APPLET_NOEXEC(id, id, BB_DIR_USR_BIN, BB_SUID_DROP, id))</code></pre>
+<p>进入 id_main() 前，check_suid() 根据该 applet 的权限策略执行 setuid(ruid) 降权。整个调用链如下——<strong>主动特权的是 <code>id</code> 这个 applet 自己，不是 <code>bash -p</code> 那个 shell</strong>：</p>
+<pre><code class="language-plaintext">bash -p 进程 (ruid=1000, euid=0, suid=0)
+  → exec /usr/bin/id → /bin/busybox
+    → check_suid()
+        ruid=1000 ≠ 0
+        APPLET_SUID(id) == BB_SUID_DROP
+        → setuid(1000)    # euid 降为 1000, suid 也降为 1000
+    → id_main()
+        getuid()=1000, geteuid()=1000
+        euid == ruid → 不打印 euid 行
+uid=1000(demo) gid=1000(demo) groups=1000(demo)</code></pre>
+<div class="callout callout-tip">
+<p><strong>实验陷阱</strong>：在 BusyBox 环境中，<code>cat</code>、<code>id</code>、<code>ls</code> 等命令本身就是 BusyBox applet。使用这些工具观察 UID 状态时，你观察到的是 applet 自身被 <code>check_suid()</code> 处理后的身份，而非调用者（如 <code>bash -p</code>）的原始 UID。所以，要验证当前 shell 的真正权限，不能经过busybox的降权处理，可以通过编译独立程序来实现或使用非 BusyBox 的链接工具</p>
+</div>
+<p>可以发现，最早可以在 Busybox 1_8_stable 版本中引入了 check_suid 函数 <a href="https://github.com/mirror/busybox/blob/1_8_stable/libbb/appletlib.c#L444">https://github.com/mirror/busybox/blob/1_8_stable/libbb/appletlib.c#L444</a>，后面版本在变量名等细节上有所调整，核心逻辑没有变化。</p>
+<h3>1.2 绕过 BusyBox 验证真实状态</h3>
+<p>编译独立程序，直接打印 <code>getuid()</code> 和 <code>geteuid()</code>：</p>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;errno.h&gt;
+
+int main()
+{
+    printf("before: r=%d e=%d\n", getuid(), geteuid());
+    int ret = setuid(0);
+    printf("ret=%d errno=%d\n", ret, errno);
+    printf("after : r=%d e=%d\n", getuid(), geteuid());
+}</code></pre>
+<pre><code class="language-bash">bash-5.3# ./b
+before: r=1000 e=0
+ret=0 errno=0
+after : r=0 e=0</code></pre>
+<p>确认 <code>bash -p</code> 后的进程确实处于 <code>ruid=1000, euid=0, suid=0</code>。且 <code>setuid(0)</code> 调用成功（<code>ret=0</code>）——在当前实验环境中，由于进程具有有效 UID 0，因此调用 setuid(0) 会同时修改 real/effective/saved UID</p>
+<p>对比 BusyBox <code>id</code> 的输出与 <code>./b</code> 的输出：同一个 bash -p 中，<code>id</code> 只显示 <code>uid=1000</code>（因为 <code>check_suid()</code> 已经降权），而 <code>./b</code> 直接输出 <code>r=1000 e=0</code>（绕过了 BusyBox）。这正是本实验的核心教训——在 BusyBox 环境中验证 shell 权限，必须用独立程序而非 BusyBox 工具</p>
+<h3>1.3 setuid(0) 实验</h3>
+<p>另一个实验：在 <code>bash -p</code> 中运行仅含 <code>setuid(0)</code> 的 <code>./a</code>，然后调用 BusyBox 的 <code>id</code> 观察效果：</p>
+<pre><code class="language-bash">bash-5.3# ./a
+/var/tmp # id
+uid=0(root) gid=1000(demo) egid=0(root) groups=1000(demo)</code></pre>
+<p>此时 <code>id</code> 输出 <code>uid=0(root)</code>——与之前 <code>uid=1000(demo)</code> 截然不同。两次 <code>id</code> 调用的都是同一个 BusyBox applet，输出却完全相反</p>
+<p><strong>拆解</strong></p>
+<pre><code class="language-plaintext">执行 ./a 前:   ruid=1000, euid=0, suid=0
+
+setuid(0):     当前进程 euid=0，具备 CAP_SETUID。
+               Linux 将此次视为特权 UID 切换，
+               setuid() 会同时修改 ruid、euid、suid 三者。
+
+执行 ./a 后:   ruid=0, euid=0, suid=0   ← 全部三个 UID 被同步为 0</code></pre>
+<p>之后进程中 <code>ruid == 0</code>。BusyBox 的 <code>check_suid()</code> 看到 <code>ruid == 0</code>，直接 <code>return</code>，跳过所有检查。因此再次执行 <code>busybox id</code> 时，整个进程已是完整 root 身份，输出 <code>uid=0(root)</code></p>
+<h2>2. 恢复完整 Root 身份</h2>
+<p>通过 SUID Bash 获得的 shell 处于 <code>ruid=1000, euid=0, suid=0</code>。此时大量 BusyBox applet 会触发 DROP 降权。三种绕过方案：</p>
+<h3>2.1 方案一：输出重定向</h3>
+<p>POSIX 规定 Shell 在执行命令前完成重定向。当输出重定向使用 <code>O_CREAT</code> 创建新文件时，POSIX 要求新文件的属主设为调用进程的 effective user ID。Linux 内核在执行 <code>open()</code> 的访问权限检查时使用 fsuid，普通情况下 fsuid 与 euid 相同。因此，对于保留 euid=0 的 <code>bash -p</code>，输出重定向仍以 root 身份执行</p>
+<p>参考：<a href="https://pubs.opengroup.org/onlinepubs/9799919799/utilities/V3_chap02.html">POSIX Redirection</a> | <a href="https://pubs.opengroup.org/onlinepubs/9799919799/functions/open.html">POSIX open</a></p>
+<p>验证：</p>
+<pre><code class="language-bash"># 安装 coreutils 后的独立id工具，不经过 BusyBox 的 check_suid() 降权
+bash-5.3# id
+uid=1000(demo) gid=1000(demo) euid=0(root)
+bash-5.3# cat &lt;&lt;'EOF' &gt; /tmp/test
+hello
+EOF
+bash-5.3# ls -l /tmp/test
+-rw-r--r-- 1 root root 6 Jul 2 04:45 /tmp/test</code></pre>
+<p>直接提权：</p>
+<pre><code class="language-bash">cat &gt; /etc/sudoers.d/a &lt;&lt; EOF
+ALL ALL=(ALL) NOPASSWD: ALL
+EOF</code></pre>
+<p><img src="/images/badbox/3.png" alt="" decoding="async" loading="lazy" width="1196" height="826"></p>
+<h3>2.2 方案二：编译 setuid(0) 程序</h3>
+<pre><code class="language-c">#include &lt;unistd.h&gt;
+int main() {
+    setgid(0);
+    setuid(0);
+    execl("/bin/sh", "sh", NULL);
+}</code></pre>
+<p>静态编译（应对靶机无编译环境）：</p>
+<pre><code class="language-bash">gcc --static -o s s.c</code></pre>
+<p>目标机上执行 <code>./s</code> 即可获得完整 root shell。</p>
+<p><img src="/images/badbox/4.png" alt="" decoding="async" loading="lazy" width="943" height="517"></p>
+<h3>2.3 方案三：非 BusyBox 独立工具</h3>
+<p>使用独立的二进制文件，不经过 BusyBox 的<code>check_suid()</code>的降权操作：</p>
+<p>在 Alpine Linux 中，apk 是独立的二进制文件，非 BusyBox applet，能够直接看到继承来的 euid=0 状态，是否接受该权限取决于程序自身实现，测试允许执行，这意味着我们可以安装独立的GNU版本工具覆盖 BusyBox 的链接文件</p>
+<pre><code class="language-bash">apk add setpriv
+setpriv --reuid=0 --regid=0 --init-groups /bin/bash
+# 安装 coreutils 获取独立的 id、ls 等工具
+apk add coreutils</code></pre>
+<p><img src="/images/badbox/5.png" alt="" decoding="async" loading="lazy" width="1847" height="710"></p>
+<h2>3. busybox执行流程分析</h2>
+<p>Linux 前置内容补充</p>
+<p>每个 进程维护以下 UID 属性：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>含义</th>
+<th>获取方式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ruid</strong></td>
+<td>真实用户 ID，原始登录用户</td>
+<td><code>getuid()</code></td>
+</tr>
+<tr>
+<td><strong>euid</strong></td>
+<td>有效用户 ID，传统 DAC 权限检查依据</td>
+<td><code>geteuid()</code></td>
+</tr>
+<tr>
+<td><strong>suid</strong></td>
+<td>保存的设置用户 ID，用于临时降权后恢复特权</td>
+<td><code>getresuid()</code> 第三字段</td>
+</tr>
+</tbody>
+</table>
+<p>setuid 位（<code>chmod u+s</code>）的作用——当可执行文件 setuid 位置位且属主为 root 时，<code>exec</code> 后：</p>
+<pre><code class="language-plaintext">ruid = 调用者原有 ruid (例如 1000)
+euid = 文件属主 (0, root)
+suid = 0 (root)</code></pre>
+<p>即 <strong>euid 和 suid 都被设为文件属主的值</strong>，ruid 保持为原用户。这正是实验中 <code>./bash -p</code> 之后的状态</p>
+<h3>3.1 执行流程</h3>
+<p>main() — 解析名字、准备环境</p>
+<pre><code class="language-c">libbb/appletlib.c:1042-1143：
+int main(int argc UNUSED_PARAM, char **argv)
+{
+    // ...
+    lbb_prepare("busybox" IF_FEATURE_INDIVIDUAL(, argv));  // 1112: 初始化
+
+    applet_name = argv[0];          // 1120: "cat" 或 "id" 或 "su" 等
+    if (applet_name[0] == '-')      // 1121: 去除登录 shell 的 "-sh" 前缀
+        applet_name++;
+    applet_name = bb_basename(applet_name);  // 1123: "/bin/ls" → "ls"
+
+    parse_config_file();            // 1140: 若 FEATURE_SUID_CONFIG，读 /etc/busybox.conf
+                                    //       无论如何都会执行 ruid = getuid()
+    run_applet_and_exit(applet_name, argv);  // 1141: 进入分发
+}
+parse_config_file() 里关键的一行（appletlib.c:532）：
+IF_FEATURE_SUID(ruid = getuid();)   // ← 记录"谁在按键"</code></pre>
+<p>run_applet_and_exit() — 找到 applet</p>
+<pre><code class="language-c">appletlib.c:987-1007：
+static NORETURN void run_applet_and_exit(const char *name, char **argv)
+{
+    if (is_prefixed_with(name, "busybox"))     // 990: "busybox cat" → 进 busybox_main
+        exit(busybox_main(0, argv));
+
+    int applet = find_applet_by_name(name);     // 996: 在 applets[] 表里二分查找 "cat"
+    if (applet &gt;= 0)
+        run_applet_no_and_exit(applet, name, argv);  // 998: 找到了，进入
+
+    // 没找到 → 输出 "xxx: applet not found"，exit(127)
+}</code></pre>
+<p>run_applet_no_and_exit() — 降权检查点</p>
+<pre><code class="language-c">appletlib.c:963-983：
+void FAST_FUNC run_applet_no_and_exit(int applet_no, const char *name, char **argv)
+{
+    applet_name = name;
+
+    show_usage_if_dash_dash_help(applet_no, argv);  // 973: 处理 --help
+
+    if (ENABLE_FEATURE_SUID)
+        check_suid(applet_no);           // 976: ← ★ 所有 DROP 类 applet 的降权都发生在这里，早于 applet 的业务逻辑
+
+    argc = string_array_len(argv);
+    xfunc_error_retval = applet_main[applet_no](argc, argv);  // 979: 进入业务逻辑
+}</code></pre>
+<p>关键：所有 BB_SUID_DROP 类的 applet，在进入业务逻辑的 main() 之前，euid 已经被降到 ruid，因此 applet 自身看到的永远是降权后的身份</p>
+<p>check_suid() 内部有两层决策：若有 /etc/busybox.conf，按配置文件做运行时鉴权和 uid/gid 切换；若无，则退回到编译期声明的 BB_SUID_REQUIRE/BB_SUID_DROP/BB_SUID_MAYBE 逻辑。Alpine Linux 默认不启 FEATURE_SUID_CONFIG，因此本实验全程走回退路径，下文代码仅展示该路径。</p>
+<pre><code class="language-c">appletlib.c:555-651，已精简：
+static void check_suid(int applet_no)
+{
+    gid_t rgid;
+
+    // ── 分支 0：已是 root → 直接跳过 ──
+    if (ruid == 0)
+        return;                          // 559: root 登录，不需要任何处理
+
+    rgid = getgid();                     // 561: 记录真实 gid
+
+    // ── 分支 1：BB_SUID_REQUIRE → 必须有 root，否则拒绝 ──
+    if (APPLET_SUID(applet_no) == BB_SUID_REQUIRE) {
+        if (geteuid())                   // 625: euid 不是 0?
+            bb_simple_error_msg_and_die(
+                "must be suid to work properly");  // 626: 报错退出
+        // euid==0 → 通过，保留 root 权限进入 main()
+    }
+
+    // ── 分支 2：BB_SUID_DROP → 主动丢弃特权 ──
+    else if (APPLET_SUID(applet_no) == BB_SUID_DROP) {
+        setgid(rgid);                    // 641: rgid = demo 的真实 gid
+        setuid(ruid);                    // 642: ruid = demo 的真实 uid
+        // 此时: ruid=demo, euid=demo, suid=demo  ← euid、suid均被丢弃
+    }
+
+    // ── 分支 3：BB_SUID_MAYBE → 什么都不做，保留当前状态 ──
+    // (ping、traceroute 等：euid=0 就留着用，euid=demo 也接受)
+}</code></pre>
+<p><code>check_suid()</code> 入口判断是 <code>if (ruid == 0) return;</code>——检查的是 <strong>real uid</strong>，而非 effective uid。这意味着即使 euid=0，只要 ruid≠0，检查继续执行。ruid≠0 时，根据每个 applet 在注册时声明一个编译期策略，由 <code>check_suid()</code> 统一执行。以下为 BusyBox 1.38.0 默认配置下的代表性分类：</p>
+<table>
+<thead>
+<tr>
+<th>Applet</th>
+<th style="text-align: center;">模式</th>
+<th>运行时行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>passwd</td>
+<td style="text-align: center;">REQUIRE</td>
+<td>euid=0 放行；非 root 仅可改自己密码，写入 <code>/etc/passwd</code> 前 <code>xsetuid(0)</code> 恢复</td>
+</tr>
+<tr>
+<td>su</td>
+<td style="text-align: center;">REQUIRE</td>
+<td>euid=0 放行；<code>getuid()</code> 非 root 须认证密码</td>
+</tr>
+<tr>
+<td>login</td>
+<td style="text-align: center;">REQUIRE</td>
+<td>euid=0 放行；认证后 <code>change_identity()</code> 切换</td>
+</tr>
+<tr>
+<td>vlock</td>
+<td style="text-align: center;">REQUIRE</td>
+<td>euid=0 放行；以 <code>getuid()</code> 身份锁定</td>
+</tr>
+<tr>
+<td>crontab</td>
+<td style="text-align: center;">REQUIRE</td>
+<td>euid=0 放行；<code>sanitize_env_if_suid()</code> 后以 <code>getuid()</code> 确定操作对象</td>
+</tr>
+<tr>
+<td>wall</td>
+<td style="text-align: center;">REQUIRE</td>
+<td>euid=0 放行；<code>xopen_as_uid_gid(..., getuid(), ...)</code> 以真实用户读文件</td>
+</tr>
+<tr>
+<td>crond</td>
+<td style="text-align: center;">DROP</td>
+<td>降权后 fork，以目标用户执行任务</td>
+</tr>
+<tr>
+<td>adduser / deluser / addgroup</td>
+<td style="text-align: center;">DROP</td>
+<td>降权后 <code>geteuid()!=0</code> 拒绝，实际需 root 直接运行</td>
+</tr>
+<tr>
+<td>chpasswd</td>
+<td style="text-align: center;">DROP</td>
+<td>同上</td>
+</tr>
+<tr>
+<td>httpd / tcpsvd / udpsvd</td>
+<td style="text-align: center;">DROP</td>
+<td>降权后 bind，再降权到指定用户</td>
+</tr>
+<tr>
+<td><strong>cat / ls / id / ash / vi ...</strong></td>
+<td style="text-align: center;"><strong>DROP</strong></td>
+<td><strong>直接降权为 ruid 运行</strong></td>
+</tr>
+<tr>
+<td>traceroute / ping / findfs</td>
+<td style="text-align: center;">MAYBE</td>
+<td>不主动降权；实际权限取决于编译选项与 capability 设置</td>
+</tr>
+<tr>
+<td>mount</td>
+<td style="text-align: center;">MAYBE/DROP</td>
+<td>DESKTOP 版本为 MAYBE，否则 DROP</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><code>BB_SUID_DROP</code> 的 applet（如 adduser）通过 <code>geteuid() != 0</code> 自查，但这发生在 <code>check_suid()</code> 已执行 <code>setuid(ruid)</code> 之后。所以这些 applet 实际上要求的是<strong>以 root 身份直接运行</strong>（而非通过 setuid 位），因为 setuid 来的特权在进入 main() 之前就被丢弃了</p>
+</blockquote>
+<p>check_suid 这个函数本质上是 SUID 特权状态的统一管理，不管 busybox 有没有 suid 位，它只根据进程当前的 uid 状态和每个 applet 声明的需求，决定是否允许执行、是否放弃特权</p>
+<ul>
+<li>对于 BB_SUID_DROP 模式的applet，进入 busybox 的 check_suid() 并调用 setuid(ruid)，该进程的 euid 和 suid 同时被设为 ruid，再进入 applet 业务逻辑</li>
+<li>对于 BB_SUID_REQUIRE 模式的applet，check_suid() 会检查 euid 是否为 0，如果不是则报错退出；如果是，则允许继续执行，保持原有的 euid=0 状态</li>
+</ul>
+<p>那么常见情况 busybox 并没有 suid 位，那么对于 BB_SUID_REQUIRE 的 applet，该怎么正确运行？</p>
+<p>如passwd、su等场景涉及权限问题，在常见发行版会給 passwd、su设置suid位，而 Busybox 是一个集成了众多工具的单一二进制文件，如果給busybox设置suid位，所有工具都会受到影响，虽然可以通过 check_suid和applet的drop策略来控制，但仍然可能会引入安全问题。Alpine 选择了更简单、更激进的另一条路径：<a href="https://github.com/alpinelinux/aports/blob/3.24-stable/main/busybox/bbsuid.c">写 100 行 C </a>做 SUID 代理，白名单硬编码，攻击面压缩到极致，剩下全部交给 /bin/busybox + check_suid()，bbsuid 凭借自己的 SUID bit 获得 euid=0，然后把这个 euid 通过 execv 传给 /bin/busybox，让 BusyBox 的 check_suid() 看到 euid=0，放行 su、passwd 等 applet</p>
+<h3>3.2 sanitize_env_if_suid() — 环境变量清理</h3>
+<p>当检测到 <code>getuid() != geteuid()</code>（即处于 setuid 场景），BusyBox 会在进入 applet 前清理以下危险环境变量：</p>
+<p><code>ENV</code> <code>BASH_ENV</code> <code>HOME</code> <code>IFS</code> <code>SHELL</code> <code>LD_LIBRARY_PATH</code> <code>LD_PRELOAD</code> <code>LD_TRACE_LOADED_OBJECTS</code> <code>LD_BIND_NOW</code> <code>LD_AOUT_LIBRARY_PATH</code> <code>LD_AOUT_PRELOAD</code> <code>LD_NOWARN</code> <code>LD_KEEPDIR</code></p>
+<p>该函数并非全局自动调用，只有<code>crontab</code>、<code>login</code>、<code>mount</code> 3 个 applet 显式调用它</p>
+<pre><code class="language-c">miscutils/crontab.c:107   → sanitize_env_if_suid()
+loginutils/login.c:357    → sanitize_env_if_suid()
+util-linux/mount.c:2293   → sanitize_env_if_suid()</code></pre>
+<p>同时会重置 <code>PATH</code>，阻止通过环境变量注入实现提权</p>
+<h2>4. Docker复现实验</h2>
+<p>本实验可以使用基于 Alpine Linux 轻量级容器环境快速复现。初始实验在 Alpine Linux 虚拟机环境中完成，后续为了降低复现成本，整理为基于 Alpine Docker 的最小化环境。两者在 BusyBox SUID 处理逻辑、文件系统权限模型等关键行为上保持一致。</p>
+<p>heredoc 语法写入 Dockerfile：</p>
+<pre><code class="language-dockerfile">cat &gt; Dockerfile &lt;&lt; 'EOF'
+FROM alpine:3.20
+
+# 1. 换源：官方源兜底
+RUN cat &gt; /etc/apk/repositories &lt;&lt; 'REPO'
+http://mirrors.cloud.tencent.com/alpine/v3.20/main
+http://mirrors.cloud.tencent.com/alpine/v3.20/community
+http://mirrors.aliyun.com/alpine/v3.20/main
+http://mirrors.aliyun.com/alpine/v3.20/community
+https://dl-cdn.alpinelinux.org/alpine/v3.20/main
+https://dl-cdn.alpinelinux.org/alpine/v3.20/community
+REPO
+
+# 2. 更新索引并装包
+RUN apk update &amp;&amp; \
+    apk add --no-cache bash gcc musl-dev setpriv sudo
+
+# 3. 准备 SUID bash
+RUN cp /bin/bash /var/tmp/bash &amp;&amp; chmod 4755 /var/tmp/bash
+
+# 4. 切普通用户
+USER nobody
+WORKDIR /var/tmp
+
+CMD ["/var/tmp/bash", "-p"]
+EOF</code></pre>
+<p>heredoc 语法写入 docker-compose.yml：</p>
+<pre><code class="language-yaml">cat &gt; docker-compose.yml &lt;&lt; 'EOF'
+version: "3.8"
+services:
+  alpine-suid:
+    build: .
+    container_name: alpine-suid-test
+    tty: true
+    stdin_open: true
+EOF</code></pre>
+<p>启动进入</p>
+<pre><code class="language-bash">docker-compose up -d --build
+docker exec -it alpine-suid-test /var/tmp/bash -p</code></pre>
+<p><img src="/images/badbox/7.png" alt="" decoding="async" loading="lazy" width="1601" height="869"></p>
+<p>参考：</p>
+<ul>
+<li><a href="https://busybox.net/downloads/busybox-1.38.0.tar.bz2">busybox-1.38.0.tar.bz2 源码</a></li>
+<li><a href="https://github.com/mirror/busybox/blob/1_8_stable/libbb/appletlib.c#L444">BusyBox check_suid 函数1.8.x版本首次引入 - Github 2009</a></li>
+<li><a href="https://pubs.opengroup.org/onlinepubs/9799919799/utilities/V3_chap02.html">POSIX Redirection</a> | <a href="https://pubs.opengroup.org/onlinepubs/9799919799/functions/open.html">POSIX open</a></li>
+<li><a href="https://github.com/alpinelinux/aports/blob/3.24-stable/main/busybox/bbsuid.c"> Alpine Linux bbsuid.c 实现 </a></li>
+</ul>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>busybox</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#suid</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

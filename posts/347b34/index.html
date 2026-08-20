@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - 项目结构与实现细节</title>
+        <meta name="description" content="项目概览 这是一个基于 PHP 的静态博客生成器。它读取带 YAML Front Matter 的 Markdown 文章，转换为 HTML，并生成首页、文章页、标签页、分类页、归档页等静态页面。构建结果输出到 dist/ 目录，可直接部署到任意静态服务器。 核心特点： 文章源为 Markdown，支持 Front M…">
+    <link rel="canonical" href="https://the0n3.top/posts/347b34/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="项目结构与实现细节">
+    <meta property="og:description" content="项目概览 这是一个基于 PHP 的静态博客生成器。它读取带 YAML Front Matter 的 Markdown 文章，转换为 HTML，并生成首页、文章页、标签页、分类页、归档页等静态页面。构建结果输出到 dist/ 目录，可直接部署到任意静态服务器。 核心特点： 文章源为 Markdown，支持 Front M…">
+    <meta property="og:url" content="https://the0n3.top/posts/347b34/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/og-default.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="项目结构与实现细节">
+    <meta name="twitter:description" content="项目概览 这是一个基于 PHP 的静态博客生成器。它读取带 YAML Front Matter 的 Markdown 文章，转换为 HTML，并生成首页、文章页、标签页、分类页、归档页等静态页面。构建结果输出到 dist/ 目录，可直接部署到任意静态服务器。 核心特点： 文章源为 Markdown，支持 Front M…">
+        <meta name="twitter:image" content="https://the0n3.top/images/og-default.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>项目结构与实现细节</h1>
+    <p>
+        <span class="meta">发布于: 2026-03-24 14:14</span>
+    </p>
+    <div class="post-body">
+        <h2>项目概览</h2>
+<p>这是一个基于 PHP 的静态博客生成器。它读取带 YAML Front Matter 的 Markdown 文章，转换为 HTML，并生成首页、文章页、标签页、分类页、归档页等静态页面。构建结果输出到 dist/ 目录，可直接部署到任意静态服务器。</p>
+<p>核心特点：</p>
+<ul>
+<li>文章源为 Markdown，支持 Front Matter</li>
+<li>生成首页、文章页、标签页、分类页、归档页</li>
+<li>主题切换、代码高亮、目录、阅读进度、图片增强等前端能力</li>
+<li>构建过程有日志输出</li>
+</ul>
+<h2>运行方式</h2>
+<p>生成新文章模板（输出到标准输出）：</p>
+<pre><code class="language-bash">php main.php new "文章标题"</code></pre>
+<p>构建静态站点：</p>
+<pre><code class="language-bash">php main.php build</code></pre>
+<p>构建后，dist/ 目录下会生成所有静态文件，在 dist 目录下开启 web 服务，访问 <a href="http://localhost:8000">http://localhost:8000</a> 进行预览：</p>
+<pre><code class="language-bash">php -S localhost:8000 -t dist/</code></pre>
+<h2>目录结构与职责</h2>
+<ul>
+<li>assets/<ul>
+<li>前端静态资源（CSS/JS/Prism）。构建时复制到 dist/assets/</li>
+</ul>
+</li>
+<li>config/<ul>
+<li>站点配置（如标题、描述等）</li>
+</ul>
+</li>
+<li>logs/<ul>
+<li>构建日志输出目录</li>
+</ul>
+</li>
+<li>posts/<ul>
+<li>Markdown 文章源文件，支持子目录</li>
+</ul>
+</li>
+<li>public/<ul>
+<li>原样拷贝的静态资源（构建时复制到 dist/ 根目录）</li>
+</ul>
+</li>
+<li>images/<ul>
+<li>文章图片目录（构建时复制到 dist/images/）</li>
+</ul>
+</li>
+<li>src/<ul>
+<li>核心 PHP 逻辑（解析、校验、渲染、生成）</li>
+</ul>
+</li>
+<li>templates/<ul>
+<li>页面模板（首页、文章、标签、分类、归档等）</li>
+</ul>
+</li>
+<li>dist/<ul>
+<li>构建输出目录（生成后出现）</li>
+</ul>
+</li>
+<li>main.php<ul>
+<li>CLI 入口</li>
+</ul>
+</li>
+</ul>
+<h2>构建流程</h2>
+<p>入口：main.php</p>
+<ol>
+<li>初始化配置</li>
+<li>创建 Generator 实例</li>
+<li>执行 Generator::run()</li>
+</ol>
+<p>Generator::run() 主要步骤：</p>
+<ol>
+<li>cleanup<ul>
+<li>删除 dist/ 目录并重新创建</li>
+</ul>
+</li>
+<li>copyStaticAssets<ul>
+<li>assets/ -&gt; dist/assets/</li>
+<li>public/ -&gt; dist/</li>
+<li>images/ -&gt; dist/images/</li>
+</ul>
+</li>
+<li>loadAndProcessPosts<ul>
+<li>读取 posts/ 下 Markdown</li>
+<li>解析 Front Matter</li>
+<li>过滤 draft: true 的文章</li>
+</ul>
+</li>
+<li>validatePosts<ul>
+<li>校验必填字段与类型</li>
+<li>校验 permalink 合法性和冲突</li>
+</ul>
+</li>
+<li>prepareData<ul>
+<li>Markdown 转 HTML</li>
+<li>按日期排序</li>
+<li>聚合 tags/categories/archives</li>
+</ul>
+</li>
+<li>generatePages<ul>
+<li>生成文章页</li>
+<li>生成首页分页</li>
+<li>生成标签页、分类页、归档页、404</li>
+<li>（可选）生成 sitemap.xml（依赖 config/site.php 的 site.url）</li>
+</ul>
+</li>
+</ol>
+<p>说明：如果 site.url 未配置或为空，会跳过 sitemap 生成并输出 warning 日志。</p>
+<h2>Front Matter 规范</h2>
+<p>必需字段：</p>
+<ul>
+<li>title: 标题</li>
+<li>date: 日期（字符串或可解析格式）</li>
+<li>permalink: 固定链接（如 /posts/hello-world/）</li>
+</ul>
+<p>可选字段：</p>
+<ul>
+<li>tags: 标签数组</li>
+<li>categories: 分类数组（支持单个字符串）</li>
+<li>pin: 置顶优先级，0-3，数字越小越靠前</li>
+<li>draft: 草稿，true 表示构建时跳过</li>
+<li>sidebar: 是否显示文章目录侧边栏</li>
+</ul>
+<p>示例：</p>
+<pre><code>    ---
+    title: Hello World
+    date: 2026-03-20 12:00:00
+    permalink: /posts/hello-world/
+    tags:
+        - 示例
+    categories:
+        - 笔记
+    pin: 1
+    draft: false
+    sidebar: true
+    ---</code></pre>
+<h2>分类与标签逻辑</h2>
+<ul>
+<li>tags: 每篇文章可多个，聚合为标签页数据</li>
+<li>categories: 每篇文章可多个，聚合为分类页数据</li>
+<li>分类与标签页面为下拉式展开列表（不跳转）</li>
+</ul>
+<h2>置顶逻辑</h2>
+<ul>
+<li>pin &gt; 0 表示置顶，1 优先级最高</li>
+<li>置顶文章最多 3 篇</li>
+<li>首页分页仅第一页显示置顶文章</li>
+<li>置顶文章按 pin 升序、日期降序排序</li>
+</ul>
+<h2>分页逻辑</h2>
+<ul>
+<li>首页分页大小为 15 篇</li>
+<li>/index.html 为第一页</li>
+<li>/page/{n}/index.html 为后续分页</li>
+<li>分页导航为上一页 / 当前页 / 下一页</li>
+</ul>
+<h2>Sitemap</h2>
+<p>构建时会在 dist/ 下生成 sitemap.xml，用于 SEO。</p>
+<ul>
+<li>域名来源：config/site.php 的 site.url（会自动去掉末尾的 /）</li>
+<li>输出位置：dist/sitemap.xml</li>
+<li>收录的页面：<ul>
+<li>首页：/</li>
+<li>分页：/page/{n}/（从第 2 页开始，第一页为 /）</li>
+<li>系统页：/tags/、/categories/、/archives/</li>
+<li>全部文章 permalink（Front Matter 的 permalink）</li>
+</ul>
+</li>
+<li>lastmod 规则：<ul>
+<li>文章：优先用文章 date 转 ISO8601（format 'c'），不可解析则退回构建时间</li>
+<li>系统页/分页：使用构建时间</li>
+</ul>
+</li>
+</ul>
+<h2>模板结构</h2>
+<ul>
+<li>templates/layout.php<ul>
+<li>基础布局，包含导航、主题切换、脚本样式引入</li>
+</ul>
+</li>
+<li>templates/index.php<ul>
+<li>首页文章列表 + 分页</li>
+</ul>
+</li>
+<li>templates/post.php<ul>
+<li>文章页，支持目录与元信息显示</li>
+</ul>
+</li>
+<li>templates/tags.php / templates/categories.php<ul>
+<li>标签/分类页（下拉展示文章列表）</li>
+</ul>
+</li>
+<li>templates/archive.php<ul>
+<li>归档页</li>
+</ul>
+</li>
+<li>templates/404.php<ul>
+<li>404 页面</li>
+</ul>
+</li>
+</ul>
+<h2>前端能力</h2>
+<ul>
+<li>assets/js/site.js<ul>
+<li>返回顶部 + 文章页目录生成与滚动定位</li>
+</ul>
+</li>
+<li>assets/js/navReveal.js<ul>
+<li>滚动时导航栏显隐</li>
+</ul>
+</li>
+<li>assets/js/readingProgress.js<ul>
+<li>阅读进度条</li>
+</ul>
+</li>
+<li>assets/js/imageEnhance.js<ul>
+<li>图片增强（懒加载/点击放大）</li>
+</ul>
+</li>
+<li>assets/js/ThemeSwitch.js<ul>
+<li>主题切换</li>
+</ul>
+</li>
+</ul>
+<p>样式入口：assets/css/site.css</p>
+<h2>博客样式自定义</h2>
+<p>博客文章由 markdown 转 html 后，样式大多数由 /assets/css/github-markdown-css.css 直接提供，部分博客样式在 /assets/css/site.css 中定义，site.css导入顺序位于 /assets/css/github-markdown-css.css 之后，因此，可以在 site.css 中覆盖或自定义样式来调整博客的外观。</p>
+<h2>静态资源映射</h2>
+<ul>
+<li>assets/ -&gt; dist/assets/</li>
+<li>public/ -&gt; dist/</li>
+<li>images/ -&gt; dist/images/</li>
+</ul>
+<p>文章中推荐使用绝对路径：</p>
+<ul>
+<li>/images/xxx/1.png</li>
+</ul>
+<h2>日志</h2>
+<ul>
+<li>构建日志写入 logs/build.log</li>
+<li>控制台输出带时间戳与中文等级</li>
+</ul>
+<p>补充：</p>
+<ul>
+<li>日志默认追加写入，并在每次构建开始写入分隔线（便于区分多次构建）。</li>
+<li>默认保留 14 天：当 build.log 文件超过 14 天未更新，会自动清空重写。</li>
+<li>入口 main.php 固定时区为 Asia/Shanghai，保证日志与日期输出为北京时间。</li>
+</ul>
+<h2>permalink 冲突校验</h2>
+<p>构建时会校验文章 permalink 不与以下路径冲突：</p>
+<ul>
+<li>系统页：/tags/、/categories/、/archives/</li>
+<li>public/ 下的静态文件路径（会被视为站点根路径下的真实文件）</li>
+<li>images/ 下的静态文件路径（会被视为 /images/... 的真实文件）</li>
+</ul>    </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

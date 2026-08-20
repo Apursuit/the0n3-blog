@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - Scoop 使用</title>
+        <meta name="description" content="介绍 Scoop 是一款专为 Windows 平台设计的开源命令行软件包管理工具（包管理器），类似于 Linux 上的 apt 或 macOS 上的 Homebrew。它通过命令行实现软件的快速安装、更新、卸载及环境配置，特别适合开发者管理开源工具和开发环境。 优点 简洁明了：操作简单，通过 scoop install…">
+    <link rel="canonical" href="https://the0n3.top/posts/8fe212/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="Scoop 使用">
+    <meta property="og:description" content="介绍 Scoop 是一款专为 Windows 平台设计的开源命令行软件包管理工具（包管理器），类似于 Linux 上的 apt 或 macOS 上的 Homebrew。它通过命令行实现软件的快速安装、更新、卸载及环境配置，特别适合开发者管理开源工具和开发环境。 优点 简洁明了：操作简单，通过 scoop install…">
+    <meta property="og:url" content="https://the0n3.top/posts/8fe212/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/Scoop/0.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Scoop 使用">
+    <meta name="twitter:description" content="介绍 Scoop 是一款专为 Windows 平台设计的开源命令行软件包管理工具（包管理器），类似于 Linux 上的 apt 或 macOS 上的 Homebrew。它通过命令行实现软件的快速安装、更新、卸载及环境配置，特别适合开发者管理开源工具和开发环境。 优点 简洁明了：操作简单，通过 scoop install…">
+        <meta name="twitter:image" content="https://the0n3.top/images/Scoop/0.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>Scoop 使用</h1>
+    <p>
+        <span class="meta">发布于: 2026-03-26 14:32</span>
+    </p>
+    <div class="post-body">
+        <h2>介绍</h2>
+<p>Scoop 是一款专为 Windows 平台设计的开源命令行软件包管理工具（包管理器），类似于 Linux 上的 apt 或 macOS 上的 Homebrew。它通过命令行实现软件的快速安装、更新、卸载及环境配置，特别适合开发者管理开源工具和开发环境。</p>
+<h2>优点</h2>
+<ul>
+<li>简洁明了：操作简单，通过 scoop install &lt;软件名&gt; 即可安装。</li>
+<li>绿色无污染：倾向于在非管理员权限下安装软件，软件集中管理，不乱写注册表。</li>
+<li>版本管理：支持方便地在软件的不同版本之间进行切换。</li>
+<li>自动化：自动配置好环境路径（Path），减少配置环境的繁琐步骤。</li>
+</ul>
+<h2>网络环境（可选）</h2>
+<p>一些新手用户可能会遇到网络问题，访问 Github 速度较慢，导致 Scoop 安装或更新软件包失败。可以通过以下方法解决：</p>
+<p>安装 <code>Watt Toolkit</code>，作为一款 steam 游戏加速器，它也提供了全局加速功能，可以加速访问 Github 等国外网站。安装后启用全局加速即可改善网络环境，提升 Scoop 的使用体验。</p>
+<p>可以在 微软商店 搜索并安装 <code>Watt Toolkit</code>，安装完成后打开应用，启用 GitHub 加速功能即可。</p>
+<p><img src="/images/Scoop/0.png" alt="" decoding="async" width="1415" height="1040"></p>
+<p><img src="/images/Scoop/1.png" alt="" decoding="async" loading="lazy" width="1204" height="830"></p>
+<h2>安装 Scoop</h2>
+<ol>
+<li>打开 PowerShell（以管理员身份运行）并执行以下命令，选择“Y”确认安装：</li>
+</ol>
+<pre><code class="language-powershell">Set-ExecutionPolicy RemoteSigned -Scope CurrentUser</code></pre>
+<ol start="2">
+<li>设置环境变量：</li>
+</ol>
+<p>设置 Scoop 的安装路径（这里以 D:\Scoop 为例）：</p>
+<pre><code class="language-powershell">setx SCOOP D:\Scoop</code></pre>
+<p>后续安装的软件将默认安装在 D:\Scoop\apps 目录下。</p>
+<ol start="3">
+<li>安装 Scoop：</li>
+</ol>
+<pre><code class="language-powershell">irm get.scoop.sh | iex</code></pre>
+<h2>安装路径说明</h2>
+<p>默认安装路径：</p>
+<ul>
+<li>用户软件：C:\Users\&lt;用户名&gt;\scoop\apps</li>
+<li>全局软件：C:\ProgramData\scoop\apps</li>
+</ul>
+<p>用户自定义环境变量 SCOOP 后的安装路径：</p>
+<ul>
+<li>用户软件：D:\Scoop\apps</li>
+<li>全局软件：D:\ScoopGlobal\apps</li>
+</ul>
+<h2>添加仓库</h2>
+<p>Scoop 默认使用主仓库（main），但也可以添加其他仓库来获取更多的软件包。例如，添加 versions 仓库：</p>
+<pre><code class="language-powershell">scoop bucket add versions</code></pre>
+<p>列出所有可用的仓库：</p>
+<pre><code class="language-powershell">scoop bucket list</code></pre>
+<p>main：基础软件（默认）<br>
+extras：GUI 软件（如 VSCode、Chrome）<br>
+versions：多版本软件（如 python310、php81）  </p>
+<h2>搜索软件</h2>
+<p>使用 Scoop 搜索软件包：</p>
+<pre><code class="language-powershell">scoop search &lt;软件名&gt;</code></pre>
+<p>例如 搜索 PHP：</p>
+<pre><code class="language-powershell">scoop search php</code></pre>
+<p><img src="/images/Scoop/2.png" alt="" decoding="async" loading="lazy" width="1113" height="626"></p>
+<p>搜索python</p>
+<pre><code class="language-powershell">scoop search python</code></pre>
+<p><img src="/images/Scoop/3.png" alt="" decoding="async" loading="lazy" width="1113" height="626"></p>
+<h2>安装软件</h2>
+<p>使用 Scoop 安装软件包：</p>
+<pre><code class="language-powershell">scoop install &lt;软件名&gt;</code></pre>
+<p>例如 安装 PHP：</p>
+<pre><code class="language-powershell">scoop install php</code></pre>
+<p>默认会安装最新版本的 PHP，如果需要安装特定版本，可以使用以下命令：</p>
+<p>这个版本应该是你在 scoop search 的第一列的 name 值</p>
+<pre><code class="language-powershell">scoop install php81</code></pre>
+<p>切换到目标版本：</p>
+<pre><code class="language-powershell">scoop reset php81</code></pre>
+<h2>查看已安装的软件</h2>
+<pre><code class="language-powershell">scoop list</code></pre>
+<h2>卸载软件</h2>
+<pre><code class="language-powershell">scoop uninstall &lt;软件名&gt;</code></pre>
+<h2>更新 Scoop 和软件包</h2>
+<pre><code class="language-powershell">scoop update
+scoop update *
+scoop update &lt;软件名&gt;</code></pre>    </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

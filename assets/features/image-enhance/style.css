@@ -1,0 +1,47 @@
+/* Image enhancement: wider image blocks and lightbox */
+.markdown-body img:not([data-no-lightbox="true"]) {
+    cursor: zoom-in;
+}
+
+.markdown-body .image-block {
+    margin: 16px 0;
+}
+
+.markdown-body .image-block img {
+    display: block;
+    margin: 0 auto;
+    max-width: 100%;
+    height: auto;
+}
+
+.image-lightbox {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.72);
+    z-index: 30;
+    cursor: zoom-out;
+    /* 遮罩用 visibility+opacity 过渡：淡入淡出、不阻挡点击（Apple Design §12） */
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 250ms ease, visibility 250ms;
+}
+
+.image-lightbox.is-open {
+    visibility: visible;
+    opacity: 1;
+}
+
+.image-lightbox__img {
+    max-width: 92vw;
+    max-height: 92vh;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+    /* 进出场由 JS 弹簧驱动 transform/opacity（Apple Design §3/§4） */
+    will-change: transform, opacity;
+}
+
+body.is-lightbox-open {
+    overflow: hidden;
+}

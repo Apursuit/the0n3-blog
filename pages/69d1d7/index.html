@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - CTF文件上传 upload-labs pass1-10</title>
+        <meta name="description" content="upload-labs pass1-10 注：在以下做题过程中，使用phpinfo()代替了一句话木马 搭建uploadlabs环境 项目地址：upload-labs 下载zip文件，解压放在phpstudy的WWW目录下，启动apache，即可在浏览器通过localhost访问打靶 我使用的版本比较老一些，需要自取h…">
+    <link rel="canonical" href="https://the0n3.top/pages/69d1d7/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="CTF文件上传 upload-labs pass1-10">
+    <meta property="og:description" content="upload-labs pass1-10 注：在以下做题过程中，使用phpinfo()代替了一句话木马 搭建uploadlabs环境 项目地址：upload-labs 下载zip文件，解压放在phpstudy的WWW目录下，启动apache，即可在浏览器通过localhost访问打靶 我使用的版本比较老一些，需要自取h…">
+    <meta property="og:url" content="https://the0n3.top/pages/69d1d7/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/upload01-10/1-01.jpg">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="CTF文件上传 upload-labs pass1-10">
+    <meta name="twitter:description" content="upload-labs pass1-10 注：在以下做题过程中，使用phpinfo()代替了一句话木马 搭建uploadlabs环境 项目地址：upload-labs 下载zip文件，解压放在phpstudy的WWW目录下，启动apache，即可在浏览器通过localhost访问打靶 我使用的版本比较老一些，需要自取h…">
+        <meta name="twitter:image" content="https://the0n3.top/images/upload01-10/1-01.jpg">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>CTF文件上传 upload-labs pass1-10</h1>
+    <p>
+        <span class="meta">发布于: 2024-05-15 21:53</span>
+    </p>
+    <div class="post-body">
+        <h1>upload-labs pass1-10</h1>
+<h2>注：<strong>在以下做题过程中，使用phpinfo()代替了一句话木马</strong></h2>
+<h2>搭建uploadlabs环境</h2>
+<p>项目地址：<a href="https://github.com/c0ny1/upload-labs">upload-labs</a></p>
+<p>下载zip文件，解压放在<a href="https://www.xp.cn/">phpstudy</a>的WWW目录下，启动apache，即可在浏览器通过localhost访问打靶</p>
+<p>我使用的版本比较老一些，需要自取<a href="https://github.com/Apursuit/upload-labs">https://github.com/Apursuit/upload-labs</a></p>
+<p>该文章参考了<a href="https://www.cnblogs.com/chu-jian/p/15515770.html">https://www.cnblogs.com/chu-jian/p/15515770.html</a></p>
+<h2>pass-01  前端js验证</h2>
+<p>查看源码，只有前端验证</p>
+<ul>
+<li>禁用js绕过验证</li>
+<li>bp抓包，修改文件名绕过</li>
+</ul>
+<p><img src="/images/upload01-10/1-01.jpg" alt="源码" decoding="async" width="1524" height="807"></p>
+<p>可以使用禁用javascript脚本的插件或者浏览器开发者工具里自带功能，我使用扩展插件禁用js</p>
+<p><img src="/images/upload01-10/1-02.jpg" alt="禁用js" decoding="async" loading="lazy" width="874" height="403"></p>
+<p><img src="/images/upload01-10/1-04.jpg" alt="复制图片路径" decoding="async" loading="lazy" width="490" height="361">
+禁用js，成功上传文件，右键复制图片上传路径，访问文件，php语句成功解析(后续得到的此php语句解析成功的图片省略)</p>
+<p><img src="/images/upload01-10/1-03.jpg" alt="成功解析" decoding="async" loading="lazy" width="846" height="492"></p>
+<p>通过bp修改文件名的方法,将带有php语句的图片类型文件名修改为filename.php，否则图片文件是不能正确解析的</p>
+<pre><code class="language-html">------WebKitFormBoundaryiikU2gD9AZcDwcnm
+Content-Disposition: form-data; name="upload_file"; filename="1.php"     # 修改此处文件名
+Content-Type: application/octet-stream
+
+&lt;?php phpinfo();?&gt;</code></pre>
+<h2>pass-02  后端MIME验证</h2>
+<p>查看源码，服务器端会检测下文件类型</p>
+<div class="callout callout-note">
+<p>文件类型和 MIME 类型是密切相关的，文件类型可以通过文件扩展名来推断，而 MIME 类型通常用于指定网络传输中的数据类型。</p>
+</div>
+<p>bp抓包，把要上传的php文件MIME类型修改为允许的类型上传</p>
+<p><img src="/images/upload01-10/2-01.png" alt="2" decoding="async" loading="lazy" width="602" height="263"> </p>
+<p>右键复制'图片'地址，访问</p>
+<h2>pass-03  历史兼容性问题</h2>
+<p>没有过滤php2,php3,php5,phtml等扩展名的php文件，成功上传后，右键复制'图片'地址，访问</p>
+<p><img src="/images/upload01-10/3-01.jpg" alt="php3" decoding="async" loading="lazy" width="132" height="131"></p>
+<p>如果不能解析，查看apache配置文件里是否有这些扩展名,没有的话，查下资料添加进去</p>
+<h2>pass-04  apahce的配置.htacess文件</h2>
+<p><a href="https://joner11234.github.io/article/592e5fba.html">参考文章</a></p>
+<blockquote>
+<p>".htaccess" 文件是 Apache Web 服务器特有的文件，用于配置服务器的行为。通过 ".htaccess" 文件，用户可以在特定目录中覆盖 Apache 服务器的全局配置，包括重定向、认证、缓存控制等。</p>
+</blockquote>
+<p>写法一：</p>
+<pre><code class="language-ini"># FileMatch 参数即为文件名的正则匹配
+&lt;FilesMatch "png"&gt;
+  SetHandler application/x-httpd-php
+&lt;/FilesMatch&gt;</code></pre>
+<p>图片马：</p>
+<pre><code class="language-php"># 1.png
+&lt;?php phpinfo();?&gt;</code></pre>
+<p>写法二：</p>
+<pre><code class="language-ini">AddType application/x-httpd-php .png</code></pre>
+<p>图片马：</p>
+<pre><code class="language-php"># 1.png
+&lt;?php phpinfo();?&gt;</code></pre>
+<p>查看源码，它将php文件的各种扩展名完全限制了，但是没有限制.htaccess文件，可以借助.htaccess文件将其他文件类型作为php文件解析达到目的</p>
+<p>创建文件名为.htaccess文件并写入以下内容，上传</p>
+<pre><code class="language-ini">AddType application/x-httpd-php .png</code></pre>
+<p>再上传写有php语句的图片文件，成功上传后，访问文件能够解析</p>
+<p><strong>在pass05-10题目中，会规律的出现一些漏洞方法，可以在bp中修改绕过验证，他们利用了windows对文件名的处理特性，如果使用linux平台环境，则不能正确解析，</strong></p>
+<ol>
+<li>
+<p>扩展名大小写不敏感</p>
+</li>
+<li>
+<p>自动去除末尾的点</p>
+</li>
+<li>
+<p>自动去除首尾的空</p>
+</li>
+<li>
+<p>去除::$data</p>
+</li>
+<li>
+<p>过滤php扩展名</p>
+<p>其中1，2，3在windows环境下测试，将文件名修改到123的格式时，会无视修改，4文件不允许有:</p>
+<p>关于其中的::$data的作用，参考了这篇文章<a href="https://blog.csdn.net/weixin_44032232/article/details/109005766">https://blog.csdn.net/weixin_44032232/article/details/109005766</a></p>
+<p>windows系统中，在文件名中加入::$data可以避免检测扩展名</p>
+</li>
+</ol>
+<h2>pass-05  windows特性--大小写不敏感</h2>
+<p>源码中没有对扩展名大小写做要求，使用bp抓包修改扩展名大小写绕过,只要不在源码限制里都行</p>
+<p><img src="/images/upload01-10/5-01.png" alt="5-01" decoding="async" loading="lazy" width="568" height="241"></p>
+<p>上传后，复制图片地址，访问</p>
+<h2>pass-06  windows特性--自动去除首尾的空格</h2>
+<p>查看源码，没有进行首尾去空的操作</p>
+<p><img src="/images/upload01-10/6-01.png" alt="06" decoding="async" loading="lazy" width="616" height="283"></p>
+<p>使用bp抓包，在文件名末尾添加空格，成功上传，复制地址访问</p>
+<h2>pass-07 windows特性--自动去除末尾的点</h2>
+<p>查看源码，没有去除文件名末尾的点</p>
+<p><img src="/images/upload01-10/7-01.png" alt="07" decoding="async" loading="lazy" width="600" height="326"></p>
+<p>使用bp抓包，在文件名末尾添加点，成功上传，复制地址访问</p>
+<h2>pass-08  windows特性--去除::$data</h2>
+<p>查看源码，没有去除末尾的::$data</p>
+<p><img src="/images/upload01-10/8-01.png" alt="08" decoding="async" loading="lazy" width="623" height="298"></p>
+<p>使用bp抓包，在文件名末尾添加::$data，成功上传，复制地址访问</p>
+<h2>pass-09</h2>
+<p>查看源码，发现几个漏洞同时修复，但是只操作一次，可以把几个漏洞连在一起，<strong>1.php. .</strong></p>
+<p>这样它先去除末尾的点，将这个点后的内容(什么都没有)转化为小写，再去除::$data作用，最后首尾去空，得到了1.php.</p>
+<p><img src="/images/upload01-10/9-01.png" alt="9-01" decoding="async" loading="lazy" width="622" height="289"></p>
+<p>其中，末尾的点会被系统忽略</p>
+<p>成功上传，复制地址，访问</p>
+<h2>pass-10  双写绕过</h2>
+<p>看源码，定义了很多格式的扩展名，如果上传的文件中有这些扩展名，过滤掉它们。注意到，只过滤一次，替换为空，通过双写构造绕过</p>
+<p><img src="/images/upload01-10/10-01.png" alt="10-01" decoding="async" loading="lazy" width="609" height="305"></p>
+<p>所有可以通过双写扩展名，并不是规则的双写，将一个php中插入php，避免直接双写都被过滤掉，双写得到一个例如pphphp，删除第一个php时，剩下的p和hp组成php扩展名</p>
+<p>成功上传，复制图片地址，访问</p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>web</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#文件上传</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

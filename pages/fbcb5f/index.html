@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - 单网口x86升腾c92刷openwrt</title>
+        <meta name="description" content="前段时间120软妹币蹲到一个升腾c92小主机，2c4g60g只有一个千兆网口，还有1个usb3.0+5个usb2.0，看起来可玩性还是挺高的，今天刷了openwrt记录一下过程的问题 迷你主机(网图) 一个usb转网口线，充当lan口 c92刷bios 之前给这c92这老机子刷系统，每次都是进入pe时自动关机，今天刷o…">
+    <link rel="canonical" href="https://the0n3.top/pages/fbcb5f/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="单网口x86升腾c92刷openwrt">
+    <meta property="og:description" content="前段时间120软妹币蹲到一个升腾c92小主机，2c4g60g只有一个千兆网口，还有1个usb3.0+5个usb2.0，看起来可玩性还是挺高的，今天刷了openwrt记录一下过程的问题 迷你主机(网图) 一个usb转网口线，充当lan口 c92刷bios 之前给这c92这老机子刷系统，每次都是进入pe时自动关机，今天刷o…">
+    <meta property="og:url" content="https://the0n3.top/pages/fbcb5f/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/openwrt/9.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="单网口x86升腾c92刷openwrt">
+    <meta name="twitter:description" content="前段时间120软妹币蹲到一个升腾c92小主机，2c4g60g只有一个千兆网口，还有1个usb3.0+5个usb2.0，看起来可玩性还是挺高的，今天刷了openwrt记录一下过程的问题 迷你主机(网图) 一个usb转网口线，充当lan口 c92刷bios 之前给这c92这老机子刷系统，每次都是进入pe时自动关机，今天刷o…">
+        <meta name="twitter:image" content="https://the0n3.top/images/openwrt/9.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>单网口x86升腾c92刷openwrt</h1>
+    <p>
+        <span class="meta">发布于: 2024-12-17 15:06</span>
+    </p>
+    <div class="post-body">
+        <p>前段时间120软妹币蹲到一个升腾c92小主机，2c4g60g只有一个千兆网口，还有1个usb3.0+5个usb2.0，看起来可玩性还是挺高的，今天刷了openwrt记录一下过程的问题</p>
+<p><img src="/images/openwrt/9.png" alt="9" decoding="async" width="585" height="117"></p>
+<p>迷你主机(网图)</p>
+<p><img src="/images/openwrt/1.png" alt="1" decoding="async" loading="lazy" width="780" height="340"></p>
+<p>一个usb转网口线，充当lan口</p>
+<p><img src="/images/openwrt/usb.png" alt="usb" decoding="async" loading="lazy" width="640" height="474"></p>
+<h2>c92刷bios</h2>
+<p>之前给这c92这老机子刷系统，每次都是进入pe时自动关机，今天刷openwrt顺手解决了，原来是<code>纱布</code>bios的问题</p>
+<p>问题描述：c92无法进入pe系统、c92刷bios</p>
+<p>原因：牢版本bios不允许从usb启动</p>
+<p>解决：</p>
+<p>具体请参考视频<a href="https://www.bilibili.com/video/BV1PN4y1P7uW/">刷BIOS，装第三方系统，升腾C92瘦客户机折腾记</a>，刷入bios，可以解决无法进入pe的问题</p>
+<p>提供一下bios所需文件：<a href="https://www.123865.com/s/eZQJTd-r4axv">C92bios升级-123网盘分享</a></p>
+<h2>编译openwrt</h2>
+<p><a href="https://openwrt.ai/">在线编译openwrt</a></p>
+<p>选择所需软件包，我需要外接一个usb转网口，勾选<code>usb有线网卡</code>驱动，编译后下载固件</p>
+<p><img src="/images/openwrt/3.png" alt="3" decoding="async" loading="lazy" width="1211" height="913"></p>
+<h2>下载镜像烧录工具</h2>
+<p>把固件放在pe启动u盘里</p>
+<p>下载img镜像烧录工具<code>physdiskwrite</code></p>
+<p><img src="/images/openwrt/4.png" alt="4" decoding="async" loading="lazy" width="818" height="774"></p>
+<p>放入U盘，和openwrt固件放在一个目录</p>
+<h2>刷入openwrt</h2>
+<p>启动系统，不断按f9-f12，选择进入pe系统</p>
+<p>使用<code>diskgenius</code>删除c92所有分区，保存</p>
+<p>进入openwrt固件所在目录，打开cmd，输入以下命令</p>
+<blockquote>
+<p>如果有人看这篇文章作为参考教程，请注意修改为你的实际文件名</p>
+</blockquote>
+<pre><code class="language-bash">physdiskwrite -u kwrt-12.17.2024-x86-64-generic-squashfs-combined-efi.img</code></pre>
+<p>显示多个硬盘，我的c92的硬盘是0，输入0，回车，等待写入完成</p>
+<p>拔掉U盘重启即可</p>
+<p>猫猫！！</p>
+<p><img src="/images/openwrt/openwrt.png" alt="openwrt" decoding="async" loading="lazy" width="1920" height="1080"></p>
+<h2>最终方案：x86软路由 + usb转网口 + 路由器ap模式</h2>
+<p>软路由接口：</p>
+<ul>
+<li>自带网口做wan口，外接usb转网口做lan口</li>
+</ul>
+<p>路由器ap模式：</p>
+<ul>
+<li>路由器桥接模式，lan口连接软路由usb转网口的lan口，实现ap模式，连接的设备由软路由管理</li>
+</ul>
+<p>60元一个360t7m千兆wifi6路由器</p>
+<p><img src="/images/openwrt/360t7m.png" alt="360t7m" decoding="async" loading="lazy" width="700" height="525"></p>
+<p>体验？</p>
+<p>x86主机只做软路由cpu占用率只有5%，内存使用了195mb，对于一般256m的硬路由来说负载还行？</p>
+<p><img src="/images/openwrt/5.png" alt="5" decoding="async" loading="lazy" width="1919" height="941"></p>
+<p><img src="/images/openwrt/6.png" alt="6" decoding="async" loading="lazy" width="1681" height="527"></p>
+<p>网络稳定340M+</p>
+<p><img src="/images/openwrt/7.png" alt="7" decoding="async" loading="lazy" width="1046" height="663"></p>
+<p>最后使用openclash小猫处理所有流量，结合Github一些项目还可以实现去广告功能，上网自由，爱了爱了！！</p>
+<p>Github openclash去广告加速项目：<a href="https://github.com/Aethersailor/Custom_OpenClash_Rules/wiki/%E6%97%A0%E6%8F%92%E4%BB%B6%E5%B9%BF%E5%91%8A%E6%8B%A6%E6%88%AA%E5%8A%9F%E8%83%BD%E8%AE%BE%E7%BD%AE%E6%96%B9%E6%A1%88">【无插件广告拦截功能设置方案】</a></p>
+<p>openclash设置方案：<a href="https://github.com/Aethersailor/Custom_OpenClash_Rules/wiki/OpenClash-%E8%AE%BE%E7%BD%AE%E6%96%B9%E6%A1%88">【OpenClash 设置方案】</a></p>
+<p>网络连接异常时排查原因：<a href="https://github.com/vernesong/OpenClash/wiki/%E7%BD%91%E7%BB%9C%E8%BF%9E%E6%8E%A5%E5%BC%82%E5%B8%B8%E6%97%B6%E6%8E%92%E6%9F%A5%E5%8E%9F%E5%9B%A0">【网络连接异常时排查原因】</a></p>
+<p><img src="/images/openwrt/8.png" alt="8" decoding="async" loading="lazy" width="1920" height="941"></p>
+<h2>后续遇到的问题</h2>
+<p><strong>360t7单路由器immortalWrt下载openclash失败</strong></p>
+<p>报错</p>
+<pre><code class="language-plaintext">【/tmp/openclash_last_version】下载失败：【how to fix it, please visit the web page mentioned above.】
+2025-02-18 16:31:23【/tmp/openclash_last_version】下载失败：【establish a secure connection to it. To learn more about this situation and】
+2025-02-18 16:31:23【/tmp/openclash_last_version】下载失败：【curl failed to verify the legitimacy of the server and therefore could not】
+2025-02-18 16:31:23【/tmp/openclash_last_version】下载失败：【】
+2025-02-18 16:31:23【/tmp/openclash_last_version】下载失败：【More details here: https://curl.se/docs/sslcerts.html】
+2025-02-18 16:31:23【/tmp/openclash_last_version】下载失败：【curl: (60) SSL certificate problem: self signed certificate】
+2025-02-18 16:29:30 OpenClash 关闭成功！</code></pre>
+<p>可能是网络环境或dns污染问题，可以尝试修改本地hosts文件解决</p>
+<pre><code class="language-bash">echo "185.199.108.133 raw.githubusercontent.com" &gt;&gt; /etc/hosts</code></pre>
+<p><strong>[Bug] 更新到v0.46.075版本后，内核启动失败 #4333</strong></p>
+<p>原因：缺少依赖</p>
+<pre><code class="language-bash">#iptables
+opkg update
+opkg install bash iptables dnsmasq-full curl ca-bundle ipset ip-full iptables-mod-tproxy iptables-mod-extra ruby ruby-yaml kmod-tun kmod-inet-diag unzip luci-compat luci luci-base
+opkg install /tmp/openclash.ipk</code></pre>
+<p>参考：</p>
+<ul>
+<li><a href="https://www.bilibili.com/video/BV1PN4y1P7uW/">c92刷入bios解决无法进入pe系统</a></li>
+<li><a href="https://blog.csdn.net/u012153104/article/details/136846165">【OpenWRT】x86平台安装原版OpenWRT</a></li>
+<li><a href="https://blog.csdn.net/qq_54664893/article/details/131772027">OpenWrt安装使用教程（x86/64架构）</a></li>
+</ul>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>notes</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#捡垃圾</span>
+                                    <span>#openwrt</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

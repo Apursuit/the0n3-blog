@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - MazeSec badbox设计流程</title>
+        <meta name="description" content="靶机说明 这台靶机的设计主要为了展现给选手一个常见提权利用手法失效的场景：在大多数 Linux 发行版中，从 SUID Bash 拿到 ruid=1000,euid=0 的进程的 shell 后，此时已经具备执行大多数 root 权限操作的能力，但在 Alpine Linux 下，大多数工具都是 busybox 的链接…">
+    <link rel="canonical" href="https://the0n3.top/posts/ccdf6a/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="MazeSec badbox设计流程">
+    <meta property="og:description" content="靶机说明 这台靶机的设计主要为了展现给选手一个常见提权利用手法失效的场景：在大多数 Linux 发行版中，从 SUID Bash 拿到 ruid=1000,euid=0 的进程的 shell 后，此时已经具备执行大多数 root 权限操作的能力，但在 Alpine Linux 下，大多数工具都是 busybox 的链接…">
+    <meta property="og:url" content="https://the0n3.top/posts/ccdf6a/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/og-default.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="MazeSec badbox设计流程">
+    <meta name="twitter:description" content="靶机说明 这台靶机的设计主要为了展现给选手一个常见提权利用手法失效的场景：在大多数 Linux 发行版中，从 SUID Bash 拿到 ruid=1000,euid=0 的进程的 shell 后，此时已经具备执行大多数 root 权限操作的能力，但在 Alpine Linux 下，大多数工具都是 busybox 的链接…">
+        <meta name="twitter:image" content="https://the0n3.top/images/og-default.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>MazeSec badbox设计流程</h1>
+    <p>
+        <span class="meta">发布于: 2026-07-02 17:00</span>
+    </p>
+    <div class="post-body">
+        <h2>靶机说明</h2>
+<p>这台靶机的设计主要为了展现给选手一个常见提权利用手法失效的场景：在大多数 Linux 发行版中，从 SUID Bash 拿到 ruid=1000,euid=0 的进程的 shell 后，此时已经具备执行大多数 root 权限操作的能力，但在 Alpine Linux 下，大多数工具都是 busybox 的链接文件，通过查阅 busybox 源码了解到入口处的 check_suid 函数会首先做权限检查，发现 ruid!=0 时，大多数工具按照编译时的策略主动放弃特权，主动放弃特权，降权后以普通用户权限执行操作，出现一些提权操作失败的情况，此时可以通过使用独立编译的二进制程序，或利用 shell 自身的文件操作能力绕过 BusyBox 的权限处理逻辑完成权限利用。详细阅读<a href="https://the0n3.top/posts/busybox138/">Alpine Linux 下 SUID Bash 获取 euid=0 Shell 后 BusyBox 降权机制分析</a></p>
+<p><strong>关键词</strong>：Alpine Linux、BusyBox 降权机制、SUID Bash 利用、/var/tmp 持久化、WordPress 环境搭建</p>
+<p><strong>摘要</strong>：本文为 MazeSec badbox 靶机的设计文档，重点展示了 Alpine Linux 下 SUID 提权的特殊性：即使获取了 ruid=1000, euid=0 的 Bash 进程，由于 BusyBox 的 check_suid 机制会在运行时检测 ruid 并主动放弃特权，导致 ls、cat 等工具降权执行，造成“伪 root Shell”现象。靶机基于 Alpine 构建了 Apache2 + PHP84 + MariaDB 的 WordPress 环境，通过 root 定时任务在避开 nosuid 限制的 /var/tmp 目录下部署 SUID Bash，为选手提供了稳定的提权锚点。该设计强制选手理解 SUID 进程凭证与 BusyBox 运行时行为的差异，并通过使用独立二进制工具或直接利用 Shell 内置命令来完成最终的权限控制，旨在填补传统提权教学中对 Alpine/BusyBox 体系认知的空白。</p>
+<h2>模板说明</h2>
+<p>本次靶机使用alpine模板，靶机自带php84 apache2</p>
+<h2>换源</h2>
+<p>项目推荐https://github.com/SuperManito/LinuxMirrors</p>
+<p>GNU/Linux 更换系统软件源</p>
+<pre><code class="language-bash">bash &lt;(curl -sSL https://linuxmirrors.cn/main.sh)</code></pre>
+<h2>安装mysql及扩展</h2>
+<p>WordPress 需要 mysqli、pdo_mysql等扩展，否则连数据库会失败。</p>
+<pre><code class="language-bash">apk add php84-mysqli php84-pdo_mysql php84-session php84-curl php84-xml php84-mbstring php84-zip php84-gd php84-opcache</code></pre>
+<p>重启 Apache：</p>
+<pre><code class="language-bash">rc-service apache2 restart</code></pre>
+<p>验证扩展是否加载成功：</p>
+<pre><code class="language-bash">php -m | grep mysqli</code></pre>
+<h2>初始化 MariaDB</h2>
+<p>安装 MariaDB：</p>
+<pre><code class="language-bash">apk add mariadb mariadb-client</code></pre>
+<p>启动并设置开机自启</p>
+<pre><code class="language-bash">rc-update add mariadb default
+/etc/init.d/mariadb setup
+rc-service mariadb start</code></pre>
+<p>进入 MariaDB：</p>
+<pre><code class="language-bash">mariadb -u root</code></pre>
+<p>设置 root 密码：</p>
+<pre><code class="language-sql">FLUSH PRIVILEGES;
+ALTER USER 'root'@'localhost' IDENTIFIED BY 'M!aR1aDB#2026$xYz';
+FLUSH PRIVILEGES;
+EXIT;</code></pre>
+<h2>创建 WordPress 数据库和用户</h2>
+<p>root:M!aR1aDB#2026$xYz</p>
+<p>yepian:11111111</p>
+<pre><code class="language-bash">mariadb -u root --password='M!aR1aDB#2026$xYz' &lt;&lt;'EOF'
+CREATE DATABASE wordpress DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'yepian'@'localhost' IDENTIFIED BY '11111111';
+GRANT ALL PRIVILEGES ON wordpress.* TO 'yepian'@'localhost';
+FLUSH PRIVILEGES;
+EOF</code></pre>
+<h2>安装wordpress</h2>
+<p>获取wordpress</p>
+<pre><code class="language-bash">cd /tmp
+wget 192.168.1.6/a.zip
+unzip a.zip
+cp -r wordpress/* /var/www/html
+rm -rf a.zip wordpress</code></pre>
+<p>手动创建 wp-config.php</p>
+<pre><code class="language-bash">cd /var/www/html
+cp wp-config-sample.php wp-config.php
+cat &gt; /var/www/html/wp-config.php &lt;&lt;'PHPEOF'
+&lt;?php
+define( 'DB_NAME', 'wordpress' );
+define( 'DB_USER', 'yepian' );
+define( 'DB_PASSWORD', '11111111' );
+define( 'DB_HOST', 'localhost' );
+define( 'DB_CHARSET', 'utf8mb4' );
+define( 'DB_COLLATE', '' );
+
+define( 'WP_HOME', 'http://badbox.dsz' );
+define( 'WP_SITEURL', 'http://badbox.dsz' );
+
+$table_prefix = 'wp_';
+
+define( 'WP_DEBUG', false );
+
+define( 'AUTH_KEY',         'G^w5V&amp;K5zq8T%u9Lp2@Xm7Qr4Jh6Yn1W' );
+define( 'SECURE_AUTH_KEY',  'Bc3sE!fH7dR0tYpL9oK2mN5qX8wZ1vA4' );
+define( 'LOGGED_IN_KEY',    'P7uY3tC6vB9nM2kX0jR5sT8wQ1eF4hJ7' );
+define( 'NONCE_KEY',        'Lk9mN3bV6cX0zA2sD5fG8hJ1kL4pQ7wE' );
+define( 'AUTH_SALT',        'Rt5yU8iO2pL9aS3dF6gH1jK4lZ7xC0vB' );
+define( 'SECURE_AUTH_SALT', 'Mn4bV7nC0xZ3aQ6wE9rT2yU5iO8pL1kS' );
+define( 'LOGGED_IN_SALT',   'Df6Gh9Jk2Lm4nP7qR0sT3vW5xY8zA1bB' );
+define( 'NONCE_SALT',       'Hj3Kl6Mn9pQ2rS5tU8vW1xY4zA7bB0cE' );
+
+require_once ABSPATH . 'wp-settings.php';
+PHPEOF</code></pre>
+<h2>配置 Apache + 域名</h2>
+<pre><code class="language-bash"># 消除 ServerName 警告
+echo "ServerName badbox.dsz" &gt;&gt; /etc/apache2/httpd.conf
+
+# 加载 rewrite 模块
+echo "LoadModule rewrite_module /usr/lib/apache2/mod_rewrite.so" &gt;&gt; /etc/apache2/httpd.conf
+
+# 把 AllowOverride None 改成 All
+sed -i '/&lt;Directory "\/var\/www\/html"&gt;/,/&lt;\/Directory&gt;/ s/AllowOverride None/AllowOverride All/' /etc/apache2/httpd.conf
+
+# 验证 AllowOverride All
+sed -n '/&lt;Directory "\/var\/www\/html"&gt;/,/&lt;\/Directory&gt;/p' /etc/apache2/httpd.conf
+
+# 本地 hosts
+echo "127.0.0.1 badbox.dsz" &gt;&gt; /etc/hosts
+
+# 重启
+rc-service apache2 restart</code></pre>
+<p>通过wp-cli 完成 WordPress 安装</p>
+<pre><code class="language-bash">
+apk add php84-phar
+cd /var/www/html
+wget https://gh-proxy.com/https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+chmod +x wp-cli.phar
+mv wp-cli.phar /usr/local/bin/wp
+
+wp core install \
+  --url=badbox.dsz \
+  --title="BadBox Site" \
+  --admin_user=yepian \
+  --admin_password='11111111' \
+  --admin_email=admin@badbox.dsz</code></pre>
+<p>权限修复</p>
+<pre><code class="language-bash">chown -R apache:apache /var/www/html
+chmod -R 755 /var/www/html</code></pre>
+<h2>修改主机名</h2>
+<pre><code class="language-bash">hostname="badbox"
+echo "$hostname" &gt; /etc/hostname
+echo "127.0.0.1 localhost badbox badbox.dsz" &gt; /etc/hosts
+echo "::1       localhost" &gt;&gt; /etc/hosts
+hostname -F /etc/hostname</code></pre>
+<h2>添加用户</h2>
+<p>创建用户 yepian 并设置密码</p>
+<pre><code class="language-bash">adduser -D -s /bin/bash yepian
+echo "yepian:2026-07-02build" | chpasswd</code></pre>
+<p>修改root密码</p>
+<pre><code class="language-bash">echo 'root:2026-07-02build!@#' | chpasswd</code></pre>
+<p>注意如果双引号里有 !、$、反引号、空格这些特殊字符，在shell里会进行解析，如无实意，建议使用单引号包裹</p>
+<h2>放置flag</h2>
+<p>生成flag</p>
+<pre><code class="language-bash">#!/bin/bash
+
+flag_root=$(echo "root-$(date)" | md5sum | awk '{print $1}')
+flag_user=$(echo "user-$(date)" | md5sum | awk '{print $1}')
+
+echo "flag{root-$flag_root}"
+echo "flag{user-$flag_user}"</code></pre>
+<p>放置flag</p>
+<pre><code class="language-bash">echo 'flag{root-c1c1a07c7fd6cc391464faa7625d7900}' &gt; /root/root.txt
+echo 'flag{user-20d5d73042f640282afa479ef40e63a4}' &gt; /home/yepian/user.txt</code></pre>
+<h2>安装工具包</h2>
+<p>安装util-linux包，方便使用script反弹shell优化</p>
+<pre><code class="language-bash">apk add util-linux</code></pre>
+<p>安装vim</p>
+<pre><code class="language-bash">apk add vim</code></pre>
+<h2>配置suid工具</h2>
+<p>通过定时任务，在nosuid的tmp目录放置suid bash，避免重启消失</p>
+<pre><code class="language-bash">echo '* * * * * /bin/bash -c "cp /bin/bash /tmp/bash; chmod +s /tmp/bash"' &gt;&gt; /etc/crontabs/root</code></pre>
+<p>在 /var/tmp 目录下放置 suid bash</p>
+<pre><code class="language-bash">cp $(which bash) /var/tmp/bash
+chmod +s /var/tmp/bash</code></pre>
+<h2>清理痕迹</h2>
+<pre><code class="language-bash"># 清理 /tmp（注意别把自己踢出去）
+rm -rf /tmp/*
+
+# 清理 root 家目录临时文件
+rm -f /root/.lesshst /root/.viminfo /root/.mysql_history
+
+# Alpine 没有 apt，清 apk 缓存
+apk cache clean
+rm -rf /var/cache/apk/*
+
+# 清理日志
+find /var/log -type f -name "*.log" -exec truncate -s 0 {} \;
+find /var/log -type f \( -name "*.gz" -o -name "*.old" \) -delete
+
+# Alpine 没有 journalctl，跳过
+# 清除 shell 历史
+truncate -s 0 /root/.bash_history
+truncate -s 0 /home/yepian/.bash_history
+
+# 清除登录记录
+truncate -s 0 /var/log/wtmp /var/log/btmp /var/log/lastlog
+
+# 清除当前 shell 历史（内存里的）
+history -c</code></pre>
+<h2>压缩镜像</h2>
+<pre><code class="language-bash"># 用零填充空闲空间，便于压缩
+dd if=/dev/zero of=/zero bs=1M || true; rm -f /zero</code></pre>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>MazeSec</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#busybox</span>
+                            </span>
+            </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

