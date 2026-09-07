@@ -51,9 +51,11 @@ iscsicpl.exe 内嵌 autoElevate 标记且由微软签名，管理员组用户启
 
 由于前面各项要么受保护不可写、要么（当前目录）不受攻击者控制，PoC 的做法是先把当前用户注册表 HKCU\Environment 的 Path 备份后改写为 %TEMP%；再从自身资源中释放一个代理 DLL 到 %TEMP%\iscsiexe.dll，并通过改写其字符串表资源把待执行命令注入其中，同时释放一份原始 DLL 的副本 iscsiexe_org.dll；随后启动 C:\Windows\SysWOW64\iscsicpl.exe。该进程因 autoElevate 静默提升到高 IL，紧接着按搜索顺序在 %TEMP% 命中并加载恶意代理 DLL，命令便在高完整性上下文中执行。代理 DLL 会把调用转发给原始 DLL 以维持宿主功能、避免进程崩溃暴露异常，执行完毕后终止宿主进程；PoC 主进程随后将备份的 Path 写回注册表恢复现场。
 
-这一手法的特征非常重：需要磁盘落地一个 DLL，外加篡改用户环境注册表，两者都是成熟 EDR / 杀软的高优先级观测点。因此转向第二阶段的 COM 接口手法。
+在未开启火绒的环境下，实验成功获得了高完整性权限，whoami /all 显示 Mandatory Label\High Mandatory Level。
 
 ![](/images/comBypassuac/0.png)
+
+在开启火绒的环境下，执行时被火绒的系统防护拦截。这一手法的特征非常重：需要磁盘落地一个 DLL，外加篡改用户环境注册表，两者都是成熟 EDR / 杀软的高优先级观测点，因此转向第二阶段的 COM 接口手法。
 
 ![](/images/comBypassuac/1.png)
 
@@ -74,7 +76,7 @@ iscsicpl.exe 内嵌 autoElevate 标记且由微软签名，管理员组用户启
 
 改为自写一个最小的命令执行与远程通信程序，仍由 UACME ICMLuaUtil COM 提升方法提升权限后执行。设计上有几个刻意的选择：不使用 msf/CS 模板，全部自写；socket 句柄不绑定子进程标准流，命令输出经匿名管道回传；逐行执行命令而非交互式 PTY shell；断线自动重连；回显结果做 UTF-8 转码。
 
-结果：在火绒开启的环境下稳定运行，whoami /all 显示 Mandatory Label\High Mandatory Level，说明拿到的是未过滤的完整管理员令牌。本文只演示 COM 接口获取高完整权限的原理与教学复现，远程通信程序的实现不在本文范围内。
+结果：在火绒开启的环境下稳定运行，whoami /all 显示 Mandatory Label\High Mandatory Level，拿到完整管理员令牌。本文只演示 COM 接口获取高完整权限的原理与教学复现，远程通信程序的实现不在本文范围内。
 
 ![](/images/comBypassuac/4.png)
 
