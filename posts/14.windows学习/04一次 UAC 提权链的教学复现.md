@@ -60,7 +60,7 @@ iscsicpl.exe 内嵌 autoElevate 标记且由微软签名，管理员组用户启
 ![](/images/comBypassuac/1.png)
 
 
-实验第二阶段：ICMLuaUtil COM 提升
+实验第二阶段：ICMLuaUtil COM类 提升
 
 阅读[UACMe](https://github.com/hfiref0x/UACME)公开的多种绕过技术后，转而尝试 COM 接口类手法，借助系统自带、且被列入 UAC 自动批准列表的 COM 类 CMSTPLUA（实现代码在系统签名的 cmlua.dll 中），调用它对外暴露的接口 ICMLuaUtil。COM 类决定"实例化谁"，ICMLuaUtil 是这个 COM 类实现的接口，决定"能调哪些方法"。我们要调的是其中的 ShellExec。进程通过 Elevation moniker 向 appinfo 服务申请以提升身份实例化它，系统校验请求者属管理员组、CLSID 注册了 Elevation 且标记为 Auto Approval、承载 DLL 为系统签名后静默批准，并由 dllhost.exe /Processid:{3E5FC7F9-…} 在高完整性级别下承载；随后调用 ICMLuaUtil::ShellExec（vtable 索引 9），进程创建发生在已持有完整令牌的 dllhost 内部，新建进程因此生来就是高 IL，父进程是 dllhost 而非请求方。
 
