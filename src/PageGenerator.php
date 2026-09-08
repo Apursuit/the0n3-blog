@@ -92,7 +92,7 @@ class PageGenerator
     private function generateIndexPages(array $posts, array $siteData, array $navItems, array &$sitemapEntries, string $buildTimestamp, string $siteUrl): void
     {
         # 每页显示的文章数量
-        $pageSize = 12;
+        $pageSize = 10;
         $pinnedPosts = array_filter($posts, function ($post) {
             return ($post['frontMatter']['pin'] ?? 0) > 0;
         });
