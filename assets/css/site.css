@@ -267,6 +267,9 @@ main.markdown-body,
     line-height: 1.38;
     margin-top: var(--space-heading-mt);
     margin-bottom: var(--space-heading-mb);
+    /* 去除标题下的分隔线，此样式为覆盖原github-markdown.css定义 */
+    border-bottom: none;
+    padding-bottom: 0;
 }
 
 .markdown-body h3 {
