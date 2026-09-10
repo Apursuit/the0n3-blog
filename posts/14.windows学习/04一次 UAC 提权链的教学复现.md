@@ -1,5 +1,5 @@
 ---
-title: 一次 UAC 绕过的教学复现：从 iscsicpl 侧加载到 ICMLuaUtil COM 提升
+title: 一次 UAC 绕过的教学复现：从 iscsicpl DLL劫持到 ICMLuaUtil COM提升
 date: 2026-09-06 14:34:15
 permalink: /posts/comBypassUAC/
 tags: 
@@ -43,7 +43,7 @@ UAC（User Account Control，用户帐户控制）是微软在 Windows Vista 之
 
 ## 实验过程
 
-实验第一阶段：iscsicpl DLL 搜索顺序劫持
+**第一阶段：iscsicpl DLL 搜索顺序劫持**
 
 尝试了[iscsicpl_bypassUAC](https://github.com/hackerhouse-opensource/iscsicpl_bypassUAC)，利用到微软的白名单系统组件iscsicpl.exe。
 
@@ -60,7 +60,7 @@ iscsicpl.exe 内嵌 autoElevate 标记且由微软签名，管理员组用户启
 ![](/images/comBypassuac/1.png)
 
 
-实验第二阶段：ICMLuaUtil COM类 提升
+**第二阶段：ICMLuaUtil COM类 提升**
 
 阅读[UACMe](https://github.com/hfiref0x/UACME)公开的多种绕过技术后，转而尝试 COM 接口类手法，借助系统自带、且被列入 UAC 自动批准列表的 COM 类 CMSTPLUA（实现代码在系统签名的 cmlua.dll 中），调用它对外暴露的接口 ICMLuaUtil。COM 类决定"实例化谁"，ICMLuaUtil 是这个 COM 类实现的接口，决定"能调哪些方法"。我们要调的是其中的 ShellExec。进程通过 Elevation moniker 向 appinfo 服务申请以提升身份实例化它，系统校验请求者属管理员组、CLSID 注册了 Elevation 且标记为 Auto Approval、承载 DLL 为系统签名后静默批准，并由 dllhost.exe /Processid:{3E5FC7F9-…} 在高完整性级别下承载；随后调用 ICMLuaUtil::ShellExec（vtable 索引 9），进程创建发生在已持有完整令牌的 dllhost 内部，新建进程因此生来就是高 IL，父进程是 dllhost 而非请求方。
 
@@ -70,7 +70,7 @@ iscsicpl.exe 内嵌 autoElevate 标记且由微软签名，管理员组用户启
 
 ![](/images/comBypassuac/2.png)
 
-实验第三阶段：载荷形态与远程通信
+**第三阶段：载荷形态与远程通信**
 
 获取高完整权限上一步已经通了，接下来的问题在载荷形态。直接用 msf 生成的 shellcode 反弹，运行时特征明显，容易被拦截：内存里展开的模板字节会命中内容签名，经典的 cmd 反连形态则会命中网络层规则（与端口无关）。
 
@@ -308,7 +308,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 gcc -m64 -O2 -municode -mwindows -s -static-libgcc -o uac41.exe uac41.c -lole32 -lntdll -lshell32
 ```
 
-## 防御视角：面向普通电脑使用者
+## 防御视角
 
 UAC 不是安全边界，微软明确不把它当漏洞修。
 
