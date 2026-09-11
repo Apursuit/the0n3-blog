@@ -37,22 +37,31 @@ $giscusEnabled = is_array($giscus) && !empty($giscus['enabled']);
 ?>
 
 <?php if ($giscusEnabled): ?>
-<section class="post-comments" aria-label="Comments">
-    <script src="https://giscus.app/client.js"
-        data-repo="<?= htmlspecialchars($giscus['repo'] ?? '') ?>"
-        data-repo-id="<?= htmlspecialchars($giscus['repo_id'] ?? '') ?>"
-        data-category="<?= htmlspecialchars($giscus['category'] ?? '') ?>"
-        data-category-id="<?= htmlspecialchars($giscus['category_id'] ?? '') ?>"
-        data-mapping="<?= htmlspecialchars($giscus['mapping'] ?? 'pathname') ?>"
-        data-strict="<?= htmlspecialchars($giscus['strict'] ?? '0') ?>"
-        data-reactions-enabled="<?= htmlspecialchars($giscus['reactions_enabled'] ?? '1') ?>"
-        data-emit-metadata="<?= htmlspecialchars($giscus['emit_metadata'] ?? '0') ?>"
-        data-input-position="<?= htmlspecialchars($giscus['input_position'] ?? 'bottom') ?>"
-        data-theme="<?= htmlspecialchars($giscus['theme'] ?? 'preferred_color_scheme') ?>"
-        data-lang="<?= htmlspecialchars($giscus['lang'] ?? 'zh-CN') ?>"
-        crossorigin="anonymous"
-        async>
-    </script>
+<?php
+/*
+ * 评论区只输出容器与配置，不直接输出 giscus 的 script 标签。
+ * giscus 的主题是在创建 iframe 时由 client.js 读取 data-theme 拼进 widget URL 决定的，
+ * 而站点主题只有前端才知道（存在 localStorage 里），构建期无法确定。
+ * 因此真正的 script 由 assets/features/giscus-theme/script.js 按访客当前主题注入，
+ * 保证评论区第一帧就与正文一致，不依赖事后 postMessage 纠正。
+ */
+?>
+<section class="post-comments" aria-label="Comments"
+    data-giscus
+    data-theme-mode="<?= htmlspecialchars($giscus['theme'] ?? 'auto') ?>"
+    data-theme-light="<?= htmlspecialchars($giscus['theme_light'] ?? 'light') ?>"
+    data-theme-dark="<?= htmlspecialchars($giscus['theme_dark'] ?? 'dark_dimmed') ?>"
+    data-repo="<?= htmlspecialchars($giscus['repo'] ?? '') ?>"
+    data-repo-id="<?= htmlspecialchars($giscus['repo_id'] ?? '') ?>"
+    data-category="<?= htmlspecialchars($giscus['category'] ?? '') ?>"
+    data-category-id="<?= htmlspecialchars($giscus['category_id'] ?? '') ?>"
+    data-mapping="<?= htmlspecialchars($giscus['mapping'] ?? 'pathname') ?>"
+    data-strict="<?= htmlspecialchars($giscus['strict'] ?? '0') ?>"
+    data-reactions-enabled="<?= htmlspecialchars($giscus['reactions_enabled'] ?? '1') ?>"
+    data-emit-metadata="<?= htmlspecialchars($giscus['emit_metadata'] ?? '0') ?>"
+    data-input-position="<?= htmlspecialchars($giscus['input_position'] ?? 'bottom') ?>"
+    data-lang="<?= htmlspecialchars($giscus['lang'] ?? 'zh-CN') ?>">
+    <div class="giscus"></div>
 </section>
 <?php endif; ?>
 

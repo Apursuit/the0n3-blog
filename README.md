@@ -148,6 +148,8 @@ php -S localhost:8000 -t dist/
 
 默认关闭。如需启用，请在 config/site.php 的 giscus 配置中填入你自己的参数（repo / repo_id / category / category_id）。
 
+评论区主题默认跟随站点主题（`theme => 'auto'`）：页面加载时会按访客当前主题注入 giscus，因此评论区与正文始终一致，无需手动切换。`theme_light` / `theme_dark` 用于自定义 auto 模式下明暗各自对应的 giscus 主题；把 `theme` 直接写成 giscus 主题名（如 `dark_dimmed`）则固定不跟随。
+
 重要：不要直接使用他人的配置，否则评论会写入对方仓库。
 
 注意：启用 Giscus 评论系统需要在 GitHub 仓库创建 Discussions，具体步骤参考这篇文章 https://www.lixueduan.com/posts/blog/02-add-giscus-comment/

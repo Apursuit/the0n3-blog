@@ -28,7 +28,11 @@ return [
         'reactions_enabled' => '1',
         'emit_metadata' => '0',
         'input_position' => 'bottom',
-        'theme' => 'light',
+        // 'auto' = 评论区主题跟随站点主题（推荐）；也可直接填 giscus 主题名固定，如 light / dark_dimmed / dark
+        'theme' => 'auto',
+        // theme=auto 时，站点浅色 / 深色分别对应的 giscus 主题
+        'theme_light' => 'light',
+        'theme_dark' => 'dark_dimmed',
         'lang' => 'zh-CN',
     ],
 ];
