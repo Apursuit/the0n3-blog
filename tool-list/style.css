@@ -1,0 +1,147 @@
+:root {
+    --color-primary: #1a73e8;
+    --color-background: #ffffff;
+    --color-text: #202124;
+    --color-secondary-text: #5f6368;
+    --color-separator: #dadce0;
+    --color-hover-bg: #f8f9fa;
+
+    --font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    --font-size-base: 16px;
+    --border-radius: 8px;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: var(--font-family);
+    font-size: var(--font-size-base);
+    line-height: 1.6;
+    margin: 0;
+    padding: 40px 20px;
+    background-color: var(--color-background);
+    color: var(--color-text);
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+h1 {
+    font-size: 2.2em;
+    font-weight: 300;
+    text-align: center;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--color-separator);
+}
+
+h2 {
+    font-size: 1.5em;
+    font-weight: 500;
+    margin-top: 40px;
+    margin-bottom: 20px;
+    color: var(--color-primary);
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--color-separator);
+}
+
+.tool-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.tool-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--color-separator);
+    transition: all 0.2s ease;
+    cursor: pointer;
+    background-color: #fff;
+}
+
+.tool-item:hover {
+    background-color: var(--color-hover-bg);
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.tool-info {
+    flex-grow: 1;
+    margin-right: 20px;
+}
+
+.tool-name {
+    font-size: 1.05em;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.tool-description {
+    font-size: 0.9em;
+    color: var(--color-secondary-text);
+}
+
+.tool-link a {
+    text-decoration: none;
+    color: var(--color-primary);
+    font-weight: 500;
+}
+
+.tool-item:hover .tool-link a {
+    text-decoration: underline;
+}
+
+/* TOC */
+.toc {
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    width: 200px;
+    max-height: 70vh;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid var(--color-separator);
+    border-radius: var(--border-radius);
+    padding: 12px;
+    font-size: 14px;
+}
+
+.toc-title {
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.toc ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.toc li {
+    margin-bottom: 6px;
+}
+
+.toc a {
+    text-decoration: none;
+    color: var(--color-secondary-text);
+}
+
+.toc a:hover {
+    color: var(--color-primary);
+}
+
+@media (max-width: 900px) {
+    .toc {
+        display: none;
+    }
+}

@@ -1,0 +1,25 @@
+/* Reading progress bar */
+.reading-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: transparent;
+    z-index: 20;
+    pointer-events: none;
+}
+
+.reading-progress__bar {
+    height: 100%;
+    width: 100%;
+    transform: scaleX(0);
+    transform-origin: left center;
+    background: var(--fgColor-accent);
+}
+
+/* Active TOC item */
+.post-toc .toc-link.is-active {
+    color: var(--fgColor-default);
+    font-weight: 600;
+}
