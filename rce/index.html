@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>无字母数字 RCE Payload 生成器（前端版）</title>
+  <link rel="stylesheet" href="./assets/style.css" />
+</head>
+<body>
+  <header>
+    <div class="header-content">
+      <div class="header-text">
+        <h1>无字母数字 RCE Payload 生成器（纯前端）</h1>
+        <p>重构 PHP 脚本到 JS：支持 (~) 取反 + urlencode、(^) XOR 映射、(|) OR 映射。无需后端。</p>
+      </div>
+      <div class="toolbar">
+        <button id="themeToggle" title="切换主题">🌗 主题</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+  <section class="controls card">
+      <div class="row">
+        <label for="method">生成方式</label>
+        <select id="method">
+          <option value="not">(~) 按位取反 + URL 编码</option>
+          <option value="xor">(^) XOR 映射拼接</option>
+          <option value="or">(|) OR 映射拼接</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <label for="funcInput">函数名</label>
+        <input id="funcInput" type="text" value="assert" placeholder="例如：assert" />
+      </div>
+
+      <div class="row">
+        <label for="paramInput">参数/表达式</label>
+        <input id="paramInput" type="text" value="system('whoami')" placeholder="例如：system('whoami') 或 phpinfo();" />
+        <div id="paramHint" class="note hidden">当前为无参，将输出 <code>()</code></div>
+      </div>
+
+      <div class="row row-inline">
+        <label class="checkbox-label">
+          <input id="autoSemicolon" type="checkbox" checked />
+          末尾自动添加分号
+        </label>
+        <div class="button-group">
+          <button id="genBtn" class="primary">生成 Payload</button>
+          <button id="copyBtn">复制</button>
+          <button id="clearBtn" class="secondary" title="清空输入">清空</button>
+        </div>
+      </div>
+
+      <div class="meta">
+        <span class="badge">函数长度: <span id="funcLen">0</span></span>
+        <span class="badge">参数长度: <span id="paramLen">0</span></span>
+        <span class="badge accent">Payload 长度: <span id="payloadLen">0</span></span>
+      </div>
+
+      <details class="examples">
+        <summary>快速示例</summary>
+        <div class="examples-list">
+          <button data-example="not-phpinfo">(~) 测试：phpinfo → (~%..%..)();</button>
+          <button data-example="not-assert-whoami">(~) RCE：assert + system('whoami')</button>
+          <button data-example="xor-assert-whoami">(^) RCE：assert + system('whoami')</button>
+          <button data-example="or-assert-phpinfo">(|) RCE：assert + phpinfo();</button>
+        </div>
+      </details>
+
+      <p class="hint">提示：输入请尽量使用 ASCII 可见字符。非 ASCII 会按低 8 位处理，结果可能与 PHP 行为不一致。</p>
+    </section>
+
+  <section class="output card">
+      <div class="output-header">
+        <label for="output">生成结果</label>
+        <div class="output-actions">
+          <button id="copyBtn2" class="small-button">复制</button>
+        </div>
+      </div>
+      <textarea id="output" rows="8" readonly></textarea>
+    </section>
+  </main>
+
+  <footer>
+    <p>前端实现基于 PHP 逻辑重写：(~) 使用逐字节取反并转 %XX；(^/|) 使用可见字符映射并逐字符拼接。</p>
+  </footer>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="./assets/app.js"></script>
+</body>
+</html>
