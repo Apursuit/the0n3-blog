@@ -168,20 +168,55 @@ header nav .nav-right {
 }
 
 header nav a {
-    color: #111827;
+    position: relative;
+    --nav-link-color: #111827;
+    color: var(--nav-link-color);
     text-decoration: none;
     font-weight: 500;
     letter-spacing: 0.01em;
     transition: color 0.15s ease, opacity 0.15s ease;
 }
 
+/* 下划线高亮：
+   用伪元素绘制，不影响文字基线，出现时不会引起导航位移；
+   hover 与当前页 is-active 共用同一套视觉，仅状态强度不同 */
+header nav a::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -6px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--fgColor-accent);
+    opacity: 0;
+    transform: scaleX(0.6);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
 header nav a:hover {
     color: var(--fgColor-accent);
-    text-decoration: underline;
+}
+
+header nav a:hover::after,
+header nav a.is-active::after {
+    opacity: 1;
+    transform: scaleX(1);
+}
+
+header nav a.is-active {
+    color: var(--fgColor-accent);
+    font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    header nav a::after {
+        transition: none;
+    }
 }
 
 html[data-theme="dark"] header nav a {
-    color: #8b949e;
+    --nav-link-color: #8b949e;
 }
 
 main.markdown-body,

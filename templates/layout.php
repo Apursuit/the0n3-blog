@@ -6,6 +6,14 @@
     <title><?= htmlspecialchars($site['title'] ?? 'My Blog') ?><?= isset($pageTitle) ? ' - ' . htmlspecialchars($pageTitle) : '' ?></title>
     <?php
     $canonicalUrl = $pageCanonical ?? ($site['url'] ?? '/');
+    $siteOrigin   = rtrim($site['url'] ?? '', '/');
+    $currentPath  = $canonicalUrl;
+    if ($siteOrigin !== '' && strpos($currentPath, $siteOrigin) === 0) {
+        $currentPath = substr($currentPath, strlen($siteOrigin));
+    }
+    if ($currentPath === '') {
+        $currentPath = '/';
+    }
     $metaDesc      = $pageDescription ?? ($site['description'] ?? '');
     $ogTitle       = $ogTitle ?? $pageTitle ?? ($site['title'] ?? '');
     $ogType        = $ogType ?? 'website';
@@ -85,8 +93,10 @@
                     if ($navLabel === '') {
                         continue;
                     }
+                    $isActive = strpos($navUrl, '/') === 0
+                        && rtrim($navUrl, '/') === rtrim($currentPath, '/');
                 ?>
-                <a href="<?= htmlspecialchars($navUrl) ?>"><?= htmlspecialchars($navLabel) ?></a>
+                <a href="<?= htmlspecialchars($navUrl) ?>"<?= $isActive ? ' class="is-active" aria-current="page"' : '' ?>><?= htmlspecialchars($navLabel) ?></a>
                 <?php endforeach; ?>
                 <?php if (false): ?>
                 <a href="/">首页</a>
