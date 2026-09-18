@@ -71,11 +71,16 @@ $content = ob_get_clean();
 $siteUrl = rtrim($site['url'] ?? '', '/');
 $pageCanonical = $siteUrl . $post['frontMatter']['permalink'];
 
-$plain = trim(strip_tags($post['html']));
-$plain = preg_replace('/\s+/', ' ', $plain);
-$pageDescription = mb_substr($plain, 0, 160);
-if (mb_strlen($plain) > 160) {
-    $pageDescription .= '…';
+$customDescription = trim((string) ($post['frontMatter']['description'] ?? ''));
+if ($customDescription !== '') {
+    $pageDescription = $customDescription;
+} else {
+    $plain = trim(strip_tags($post['html']));
+    $plain = preg_replace('/\s+/', ' ', $plain);
+    $pageDescription = mb_substr($plain, 0, 160);
+    if (mb_strlen($plain) > 160) {
+        $pageDescription .= '…';
+    }
 }
 
 $ogType = 'article';

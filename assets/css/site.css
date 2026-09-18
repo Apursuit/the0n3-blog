@@ -281,12 +281,9 @@ main.markdown-body,
     scroll-margin-top: var(--scroll-offset);
 }
 
-/* 字号相关的 tracking（Apple Design §15）：
-   大标题负向收紧，正文趋近 0，永不使用单一固定值 */
-.markdown-body h1 { letter-spacing: -0.02em; }
-.markdown-body h2 { letter-spacing: -0.015em; }
-.markdown-body h3 { letter-spacing: -0.01em; }
-.markdown-body h4 { letter-spacing: -0.005em; }
+/* 标题字距：
+   负向收紧是拉丁字体的技巧，对汉字会让标题显得拥挤，
+   中文博客保持默认字距即可。 */
 
 .markdown-body h1 {
     font-size: clamp(1.5rem, 1.2rem + 3vw, 2.2rem);

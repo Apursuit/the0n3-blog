@@ -12,11 +12,16 @@ $content = ob_get_clean();
 $siteUrl = rtrim($site['url'] ?? '', '/');
 $pageCanonical = $siteUrl . $page['frontMatter']['permalink'];
 
-$plain = trim(strip_tags($page['html']));
-$plain = preg_replace('/\s+/', ' ', $plain);
-$pageDescription = mb_substr($plain, 0, 160);
-if (mb_strlen($plain) > 160) {
-    $pageDescription .= '...';
+$customDescription = trim((string) ($page['frontMatter']['description'] ?? ''));
+if ($customDescription !== '') {
+    $pageDescription = $customDescription;
+} else {
+    $plain = trim(strip_tags($page['html']));
+    $plain = preg_replace('/\s+/', ' ', $plain);
+    $pageDescription = mb_substr($plain, 0, 160);
+    if (mb_strlen($plain) > 160) {
+        $pageDescription .= '...';
+    }
 }
 
 $ogTitle = $page['frontMatter']['title'];

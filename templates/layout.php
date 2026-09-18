@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh_CN">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($site['title'] ?? 'My Blog') ?><?= isset($pageTitle) ? ' - ' . htmlspecialchars($pageTitle) : '' ?></title>
+    <title><?= (isset($pageTitle) && $pageTitle !== '') ? htmlspecialchars($pageTitle) . ' - ' : '' ?><?= htmlspecialchars($site['title'] ?? 'My Blog') ?></title>
     <?php
     $canonicalUrl = $pageCanonical ?? ($site['url'] ?? '/');
     $siteOrigin   = rtrim($site['url'] ?? '', '/');
