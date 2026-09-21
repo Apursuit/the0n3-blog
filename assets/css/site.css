@@ -149,6 +149,7 @@ header {
 
 header nav {
     box-sizing: border-box;
+    position: relative;
     min-width: 200px;
     max-width: var(--content-max-width);
     margin: 0 auto;

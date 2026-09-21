@@ -85,6 +85,10 @@
     <header>
         <nav>
             <div class="nav-right">
+                <details class="nav-menu">
+                    <summary class="nav-toggle" aria-label="打开菜单"><span aria-hidden="true">☰</span></summary>
+                </details>
+                <div class="nav-links">
                 <?php
                 $navItems = $navItems ?? ($site['nav'] ?? []);
                 foreach ($navItems as $navItem):
@@ -107,6 +111,7 @@
                 <!-- 搜索入口：
                      导航栏只保留触发按钮，具体搜索交互放进全局弹层 -->
                 <?php endif; ?>
+                </div>
                 <button
                     id="searchTrigger"
                     class="search-trigger"
