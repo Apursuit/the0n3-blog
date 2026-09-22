@@ -1,0 +1,8 @@
+# 默认：自动判定文本/二进制；文本一律以 LF 入库、以 LF 检出
+# 二进制（png/jpg/woff 等）不做硬编码，交给 text=auto 按内容自动识别
+* text=auto eol=lf
+
+# Windows 专用脚本：保持 CRLF
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
