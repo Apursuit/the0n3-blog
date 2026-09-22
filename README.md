@@ -3,7 +3,7 @@
 <div align="center">
 <h5>一个基于 Markdown 的极简博客系统，专注 Markdown 写作，自动生成静态站点并支持一键部署。</h5>
 
-![PHP](https://img.shields.io/badge/PHP-%E2%89%A5%207.4-blue)
+![PHP](https://img.shields.io/badge/PHP-%E2%89%A5%208.1-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Build](https://img.shields.io/badge/build-passing-brightgreen)
 
@@ -44,7 +44,7 @@
 ### 1. 环境准备
 
 确保您的本地环境已安装以下组件：
-* PHP ≥ 7.4
+* PHP ≥ 8.1
 * Composer
 * Git
 
