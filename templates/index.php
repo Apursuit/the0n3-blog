@@ -1,5 +1,7 @@
 <?php
-$pageTitle = 'Home';
+$current = (int) ($pagination['current'] ?? 1);
+$pageTitle = $current <= 1 ? '' : '第 ' . $current . ' 页';
+$pageDescription = $site['description'] ?? '';
 ob_start();
 ?>
 

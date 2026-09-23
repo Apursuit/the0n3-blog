@@ -1,5 +1,6 @@
 <?php
-$pageTitle = 'All Categories';
+$pageTitle = '分类';
+$pageDescription = '本站全部分类，按分类浏览文章。';
 ob_start();
 ?>
 

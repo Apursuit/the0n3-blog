@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= (isset($pageTitle) && $pageTitle !== '') ? htmlspecialchars($pageTitle) . ' - ' : '' ?><?= htmlspecialchars($site['title'] ?? 'My Blog') ?></title>
+    <?php $titleText = (isset($pageTitle) && $pageTitle !== '') ? $pageTitle . ' - ' . ($site['title'] ?? 'My Blog') : ($site['title'] ?? 'My Blog'); ?>
+    <title><?= htmlspecialchars($titleText) ?></title>
     <?php
     $canonicalUrl = $pageCanonical ?? ($site['url'] ?? '/');
     $siteOrigin   = rtrim($site['url'] ?? '', '/');
@@ -15,7 +16,7 @@
         $currentPath = '/';
     }
     $metaDesc      = $pageDescription ?? ($site['description'] ?? '');
-    $ogTitle       = $ogTitle ?? $pageTitle ?? ($site['title'] ?? '');
+    $ogTitle       = $ogTitle ?? $titleText;
     $ogType        = $ogType ?? 'website';
     $ogImage       = $ogImage ?? ($site['og_image'] ?? '');
     $ogLocale      = $ogLocale ?? ($site['og_locale'] ?? 'zh_CN');

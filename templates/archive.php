@@ -1,5 +1,6 @@
 <?php
-$pageTitle = 'Archives';
+$pageTitle = '归档';
+$pageDescription = '按年份归档的全部文章。';
 ob_start();
 ?>
 

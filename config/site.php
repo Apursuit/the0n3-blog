@@ -5,7 +5,7 @@ return [
     'author' => 'the0n3',
     # Sitemap 使用此域名作为站点根地址
     'url' => 'https://the0n3.top',
-    'description' => 'the0n3',
+    'description' => 'the0n3 的个人博客：专注 Linux安全、 Web 安全、CTF 赛题解析与工程实践，基于 Markdown 的极简静态站点。',
     'canonical' => 'https://the0n3.top',
     'og_image' => 'https://the0n3.top/images/og-default.png',
     'og_locale' => 'zh_CN',

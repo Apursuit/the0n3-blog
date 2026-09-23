@@ -1,5 +1,6 @@
 <?php
-$pageTitle = 'All Tags';
+$pageTitle = '标签';
+$pageDescription = '本站全部标签，按标签浏览文章。';
 ob_start();
 ?>
 
