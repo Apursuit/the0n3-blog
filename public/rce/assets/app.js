@@ -14,9 +14,6 @@
   const output = $('#output');
   const themeToggle = $('#themeToggle');
   const paramHint = $('#paramHint');
-  const funcLen = $('#funcLen');
-  const paramLen = $('#paramLen');
-  const payloadLen = $('#payloadLen');
   const toastElement = $('#toast');
 
   // PHP 按位取反（~）对字节的行为：逐字节取反（0xFF - b）
@@ -122,10 +119,6 @@
     }
     output.value = payload;
 
-    // UI meta
-    funcLen.textContent = String(func.length);
-    paramLen.textContent = String(param.length);
-    payloadLen.textContent = String(payload.length);
     // param hint
     if(method === 'not' && param.trim().length === 0){
       paramHint.classList.remove('hidden');
@@ -202,40 +195,28 @@
   }
 
   // 事件
-  $('#genBtn').addEventListener('click', build);
-  $('#copyBtn').addEventListener('click', copyOut);
-  $('#copyBtn2').addEventListener('click', copyOut); // 新增的复制按钮
-  $('#clearBtn').addEventListener('click', ()=>{
-    funcInput.value = '';
-    paramInput.value = '';
-    build();
-    funcInput.focus();
-  });
+  $('#copyBtn2').addEventListener('click', copyOut);
   [methodSel, funcInput, paramInput, autoSemicolon].forEach(el=>{
     el.addEventListener('change', build);
     el.addEventListener('input', build);
   });
 
-  // 主题切换
+  // 主题切换（data-theme 由 <head> 内联脚本预置，这里只负责开关状态与点击切换）
+  function syncThemeToggle(){
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    themeToggle.setAttribute('aria-checked', isDark ? 'true' : 'false');
+  }
+
   themeToggle.addEventListener('click', ()=>{
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
-    localStorage.setItem('theme', isDark ? 'light' : 'dark');
-    themeToggle.textContent = isDark ? '🌕 主题' : '🌑 主题';
+    const next = isDark ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    syncThemeToggle();
   });
 
-  // 初始主题
-  (function(){
-    const stored = localStorage.getItem('theme');
-    if(stored){
-      document.documentElement.setAttribute('data-theme', stored);
-      themeToggle.textContent = stored === 'dark' ? '🌕 主题' : '🌑 主题';
-    }else{
-      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-      document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
-      themeToggle.textContent = prefersDark ? '🌕 主题' : '🌑 主题';
-    }
-  })();
+  // 初始同步开关状态
+  syncThemeToggle();
 
   function autoResizeOutput(){
     output.style.height = 'auto';
