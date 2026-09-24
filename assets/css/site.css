@@ -264,7 +264,7 @@ main.markdown-body,
     font-family: var(--font-family-reading);
     font-size: var(--font-size-body);
     line-height: var(--line-height-body);
-    letter-spacing: 0.02em;
+    letter-spacing: normal;
     word-break: break-word;
     /* 主题切换过渡（与 body 同步，避免亮度跳变） */
     transition: background-color 250ms ease, color 250ms ease;
