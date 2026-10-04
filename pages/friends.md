@@ -150,8 +150,8 @@ nav_order: 50
         <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/karry.png" alt="hankarry avatar" loading="lazy">
         <span class="friend-info">
             <span class="friend-name">hankarry</span>
-            <span class="friend-desc">寄吧咸鱼一个，看什么看！有什么看的！再看我就能憋出代码了？</span>
-            <span class="friend-link">hankarry.fun</span>
+            <span class="friend-desc">大学牲，苦心修炼中</span>
+            <span class="friend-link">blog.hankarry.com</span>
         </span>
     </a>
 </div>
