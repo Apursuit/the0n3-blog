@@ -32,6 +32,19 @@ ob_start();
 </article>
 
 <?php
+/*
+ * 精选推荐 · 占位容器
+ * - 文章清单不在这里维护，统一放在 assets/features/random-recommend/script.js 的 FEATURED 数组。
+ * - 这里只提供语义占位：hidden 保证无 JS / 数据缺失时不留空白。
+ * - 前端脚本以该容器的存在作为「仅在文章页启用」的开关，其他页面无此容器即自动跳过。
+ */
+?>
+<section class="post-recommend" data-featured-recommend hidden aria-labelledby="featuredRecommendTitle">
+    <h2 class="post-recommend__title" id="featuredRecommendTitle">精选推荐</h2>
+    <div class="post-recommend__slot" data-featured-recommend-slot></div>
+</section>
+
+<?php
 $giscus = $site['giscus'] ?? null;
 $giscusEnabled = is_array($giscus) && !empty($giscus['enabled']);
 ?>

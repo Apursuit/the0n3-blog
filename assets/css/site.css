@@ -444,6 +444,15 @@ main.markdown-body,
     text-decoration: underline;
 }
 
+/* 评论区（giscus）：
+   - 作为文章末尾的独立区块，需要与上方内容拉开距离。
+   - 用 margin-top 而非 padding-top，避免影响 giscus 注入的 iframe 内部布局。
+   - 上方可能是「精选推荐」卡片（assets/features/random-recommend），也可能是正文/元信息；
+     由评论区自己声明间距，保证卡片显示或隐藏（无 JS）时表现一致。 */
+.post-comments {
+    margin-top: 2.5rem;
+}
+
 /* 代码区域：
    - 内联代码不能太小
    - 代码块比正文更紧凑，但不能显得发挤 */
