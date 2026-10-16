@@ -74,14 +74,6 @@ nav_order: 50
             <span class="friend-link">faabbi.github.io</span>
         </span>
     </a>
-    <a class="friend-card" href="https://tlgjm.site/" target="_blank" rel="noopener noreferrer">
-        <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/tonglinggejimo.jpg" alt="tonglinggejimo avatar" loading="lazy">
-        <span class="friend-info">
-            <span class="friend-name">tonglinggejimo</span>
-            <span class="friend-desc">很高兴见到你！</span>
-            <span class="friend-link">tlgjm.site</span>
-        </span>
-    </a>
     <a class="friend-card" href="https://xiaozhihua.top/" target="_blank" rel="noopener noreferrer">
         <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/xzh.png" alt="咲之花 avatar" loading="lazy">
         <span class="friend-info">
@@ -114,7 +106,7 @@ nav_order: 50
             <span class="friend-link">c1trus.top</span>
         </span>
     </a>
-        <a class="friend-card" href="https://flowerwitch.github.io/" target="_blank" rel="noopener noreferrer">
+    <a class="friend-card" href="https://flowerwitch.github.io/" target="_blank" rel="noopener noreferrer">
         <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/flower.png" alt="Flower avatar" loading="lazy">
         <span class="friend-info">
             <span class="friend-name">Flower</span>
@@ -154,4 +146,23 @@ nav_order: 50
             <span class="friend-link">blog.hankarry.com</span>
         </span>
     </a>
+</div>
+
+<hr style="margin: 3rem 0 1.5rem; border: 0; border-top: 1px dashed #ccc;">
+
+<div class="friend-dead-section">
+    <h3 style="color: #999; font-size: 1rem; margin-bottom: 1rem;">
+        ⚠️ 暂时失联的友链
+        <small style="font-weight: normal; margin-left: .5rem;">（站点当前无法访问，待恢复后移回上方）</small>
+    </h3>
+    <div class="friend-grid" style="opacity: .55;">
+        <div class="friend-card" style="pointer-events: none; cursor: not-allowed; border-color: #ddd;">
+            <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/tonglinggejimo.jpg" alt="tonglinggejimo avatar" loading="lazy">
+            <span class="friend-info">
+                <span class="friend-name" style="text-decoration: line-through; color: #aaa;">tonglinggejimo</span>
+                <span class="friend-desc">很高兴见到你！</span>
+                <span class="friend-link" style="color: #bbb;">tlgjm.site · 当前不可达</span>
+            </span>
+        </div>
+    </div>
 </div>
