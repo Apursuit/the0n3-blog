@@ -138,7 +138,7 @@ nav_order: 50
             <span class="friend-link">amqyy.cn</span>
         </span>
     </a>
-    <a class="friend-card" href="https://www.hankarry.fun/" target="_blank" rel="noopener noreferrer">
+    <a class="friend-card" href="https://blog.hankarry.fun/" target="_blank" rel="noopener noreferrer">
         <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/karry.png" alt="hankarry avatar" loading="lazy">
         <span class="friend-info">
             <span class="friend-name">hankarry</span>
