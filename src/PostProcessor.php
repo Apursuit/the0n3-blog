@@ -111,11 +111,44 @@ class PostProcessor
             });
         });
 
+        // 分类 / 标签索引按文章数降序排列（数量相同按名称字节序兜底）。
+        // 与上方 ksort($archives) 一致，排序在数据聚合层完成，模板不再持有排序逻辑。
+        $tags = $this->sortTaxonomyByCount($tags);
+        $categories = $this->sortTaxonomyByCount($categories);
+
         return [
             'posts' => $posts,
             'tags' => $tags,
             'categories' => $categories,
             'archives' => $archives,
         ];
+    }
+
+    /**
+     * 按「文章数降序」重排分类 / 标签索引，保留 name => posts[] 的映射结构。
+     *
+     * - 数量多的排在前面，让热点分类 / 标签更靠前，便于浏览。
+     * - 数量相同时按名称做字节序升序兜底，避免大量 count=1 的长尾在每次
+     *   构建后顺序漂移，保证输出稳定可复现。
+     * - 使用 PHP 5 兼容写法：不使用返回类型声明、类型化属性、<=> 与 ??。
+     *
+     * @param array $items 形如 ['分类名' => [post, post, ...], ...]
+     * @return array       按数量降序（同数量按名称升序）重排后的索引
+     */
+    private function sortTaxonomyByCount($items)
+    {
+        uksort($items, function ($a, $b) use ($items) {
+            $countA = count($items[$a]);
+            $countB = count($items[$b]);
+
+            if ($countA !== $countB) {
+                return $countB - $countA;
+            }
+
+            // 字节序比较，中文按 UTF-8 码点排序，结果稳定即可。
+            return strcmp($a, $b);
+        });
+
+        return $items;
     }
 }

@@ -7,7 +7,6 @@ ob_start();
 <h1>分类</h1>
 <ul class="tax-accordion">
     <?php
-    ksort($categories);
     foreach ($categories as $category => $posts):
         $postItems = [];
         foreach ($posts as $post) {
