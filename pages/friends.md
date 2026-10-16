@@ -50,12 +50,12 @@ nav_order: 50
             <span class="friend-link">7r1umphk.github.io</span>
         </span>
     </a>
-    <a class="friend-card" href="https://vortex.blog.csdn.net/" target="_blank" rel="noopener noreferrer">
+    <a class="friend-card" href="https://569888.xyz/" target="_blank" rel="noopener noreferrer">
         <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/vortex5.jpg" alt="vortex avatar" loading="lazy">
         <span class="friend-info">
             <span class="friend-name">vortex</span>
             <span class="friend-desc">知其攻，守其防；知其黑，守其白。</span>
-            <span class="friend-link">vortex.blog.csdn.net</span>
+            <span class="friend-link">569888.xyz</span>
         </span>
     </a>
     <a class="friend-card" href="https://skyarrow416.github.io/" target="_blank" rel="noopener noreferrer">
