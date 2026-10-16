@@ -1,0 +1,83 @@
+/* 精选推荐 · 文章末尾「编辑精选」批注
+   数据与随机逻辑见同目录 script.js
+
+   视觉：借用站内 callout 的表面语言——muted 底色 + 左侧 3px accent 竖条 + 无四周边框，
+        读起来像编辑批注而非通用推荐插件。
+   交互：整卡可点（stretched link）——把标题链接的命中区域撑满卡片，
+        但语义链接仍然只是标题，对读屏 / 新标签 / 右键菜单 / SEO 都友好。
+   主题：颜色全部走 site.css 的设计变量，自动跟随 html[data-theme] 明暗切换。
+        - 浅色：卡片面 --bgColor-muted（#f6f8fa），相对正文白底略深的「下沉」面。
+        - 深色：改用极淡白色叠加 rgba(255,255,255,0.03) 做「上浮」，对齐 .callout 的深色约定；
+          若沿用深色 --bgColor-muted（#151b23）会明显压暗，大面积卡片对比过强。
+        - 竖条 / 标题 / 链接分别用 --fgColor-accent / --fgColor-muted / --fgColor-accent，
+          这些变量在 light / dark 下均有定义。 */
+.post-recommend {
+    position: relative;                        /* 承载 stretched link 的绝对定位命中区 */
+    margin-top: var(--space-heading-mt);       /* 与正文段间距一致 */
+    padding: 12px 14px;                        /* 与 .callout 对齐 */
+    border: none;
+    border-left: 3px solid var(--fgColor-accent, #0969da);
+    border-radius: 6px;                        /* 与 .callout 对齐 */
+    background: var(--bgColor-muted, #f6f8fa);
+    /* 与 body 的 250ms 主题过渡对齐，避免切换明暗时卡片突兀跳变 */
+    transition: background-color 250ms ease, border-left-color 250ms ease;
+}
+
+/* 深色主题：跟随站内 callout 的深色约定——用极淡白色叠加让卡片「上浮」，
+   而不是沿用 --bgColor-muted（深色下为 #151b23，是给 .fab / 搜索框这类小面积元素用的「下沉」面）。
+   大卡片整体压暗会与页面底色对比过强，显得很重。
+   0.03 与 .callout 的深色值一致，可按喜好微调到 0.02~0.05。 */
+.dark .post-recommend,
+[data-theme="dark"] .post-recommend {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+/* 提高特异性，避免被 .markdown-body h2 的标题样式覆盖 */
+.post-recommend .post-recommend__title {
+    margin: 0 0 6px;                           /* 与 .callout-title 对齐 */
+    padding: 0;
+    border: 0;
+    font-size: 0.92rem;                        /* 与 .callout-title 对齐 */
+    font-weight: 600;
+    color: var(--fgColor-muted, #59636e);
+    transition: color 250ms ease;
+}
+
+/* 作用域到 .post-recommend，压过 github-markdown.css 的 .markdown-body a */
+.post-recommend .post-recommend__link {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--fgColor-accent, #0969da);
+    text-decoration: none;
+    word-break: break-word;
+    transition: color 250ms ease;
+}
+
+.post-recommend .post-recommend__link:hover {
+    text-decoration: underline;
+}
+
+/* 整卡可点（stretched link）：
+   伪元素把链接命中区拉伸到整张卡片，实现「点哪都能进」；
+   由于 ::after 属于链接自身，悬停卡片任意位置也会触发上面的 :hover（标题下划线）。
+   注意：此模式仅在卡片内只有一个链接时成立，将来若加第二个链接需改用其它方案。 */
+.post-recommend .post-recommend__link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+}
+
+/* 兜底：万一有全局样式覆盖了 [hidden] */
+.post-recommend[hidden] {
+    display: none;
+}
+
+/* 尊重系统的减少动效偏好 */
+@media (prefers-reduced-motion: reduce) {
+    .post-recommend,
+    .post-recommend .post-recommend__title,
+    .post-recommend .post-recommend__link {
+        transition: none;
+    }
+}
