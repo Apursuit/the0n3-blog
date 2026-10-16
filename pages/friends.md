@@ -150,16 +150,18 @@ nav_order: 50
 
 <hr style="margin: 3rem 0 1.5rem; border: 0; border-top: 1px dashed #ccc;">
 
+<hr style="margin: 3rem 0 1.5rem; border: 0; border-top: 1px dashed #ccc;">
+
 <div class="friend-dead-section">
     <h3 style="color: #999; font-size: 1rem; margin-bottom: 1rem;">
         ⚠️ 暂时失联的友链
-        <small style="font-weight: normal; margin-left: .5rem;">（站点当前无法访问，待恢复后移回上方）</small>
+        <small style="font-weight: normal; margin-left: .5rem;">（站点当前无法访问，期待早日恢复！）</small>
     </h3>
-    <div class="friend-grid" style="opacity: .55;">
-        <div class="friend-card" style="pointer-events: none; cursor: not-allowed; border-color: #ddd;">
+    <div class="friend-grid" style="opacity: .6;">
+        <div class="friend-card" style="pointer-events: none; cursor: not-allowed; border-color: #e0e0e0;">
             <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/tonglinggejimo.jpg" alt="tonglinggejimo avatar" loading="lazy">
             <span class="friend-info">
-                <span class="friend-name" style="text-decoration: line-through; color: #aaa;">tonglinggejimo</span>
+                <span class="friend-name">tonglinggejimo</span>
                 <span class="friend-desc">很高兴见到你！</span>
                 <span class="friend-link" style="color: #bbb;">tlgjm.site · 当前不可达</span>
             </span>
