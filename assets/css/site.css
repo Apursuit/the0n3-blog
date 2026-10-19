@@ -72,6 +72,10 @@ html[data-theme="light"] {
     --fgColor-default: #1f2328;
     --fgColor-muted: #59636e;
     --fgColor-accent: #0969da;
+    /* 选中淡染浓度：见下方 ::selection 规则。浅色底上一档即可辨；
+       深色底需要更高浓度才有同等“被标记”感，故按主题分档。
+       20% 起步偏灰（合成色红蓝通道差仅 42，色相被中性灰摊薄），现提至 30%。 */
+    --selection-alpha: 30%;
     --borderColor-default: #d1d9e0;
     --borderColor-muted: #d1d9e0b3;
     /* 卡片表面（浅色）：页面底 #f2f2f2 之上的“纸片”。
@@ -97,6 +101,8 @@ html[data-theme="dark"] {
     --fgColor-default: #e1e1e5;
     --fgColor-muted: #8b949e;
     --fgColor-accent: #58a6ff;
+    /* 选中淡染浓度：见浅色块说明；与浅色对称取 +10pp，治暗底的“闷” */
+    --selection-alpha: 40%;
     --borderColor-default: #3d444d;
     --borderColor-muted: #3d444db3;
     /* 卡片表面（深色）：深色下页面本身就是暗的，卡片与页面同色、只靠描边分界；
@@ -192,14 +198,48 @@ body {
     }
 }
 
-/* 选中与光标（极简口径）：
+/* 选中与光标：
    - 选中只用背景色、不改文字颜色：代码块的语法色、链接蓝都能保留。
-   - 背景 = 正文墨色 10% 透明叠加：浅色合成 #ddddde（与页面对比 1.21），
-     深色自动变成 #323234（1.30），一条规则覆盖两个主题，不需要分别写。
-   - 为什么用半透明：选中叠在正文、代码块、卡片、提示块上时，
-     会自然“沉”进各自的底色，不会变成一块硬贴纸。 */
+   - 背景 = 强调色透明淡染（浅色 30% / 深色 40%，见主题块 --selection-alpha）：
+     浅色合成 #acc9eb，深色合成 #355479，一条公式覆盖两个主题。
+   - 为什么用强调色而不是正文墨色：灰叠灰只能靠明度差感知，明度差一放大就发脏；
+     蓝-黄色相差在低浓度即可辨。旧值 10% 墨色（浅色与页面仅 1.21:1）
+     正是“选中看不见”的根因。
+   - 为什么保持半透明：选中叠在正文、代码块、卡片、提示块上时，
+     会自然“沉”进各自的底色，不会变成一块硬贴纸。
+   - 兜底：不支持 color-mix 的旧浏览器回落系统 Highlight，保证选中永远可见。 */
 ::selection {
-    background-color: color-mix(in srgb, var(--fgColor-default, #1f2328) 10%, transparent);
+    background: Highlight;
+    background: color-mix(in srgb, var(--fgColor-accent, #0969da) var(--selection-alpha, 30%), transparent);
+}
+
+::-moz-selection {
+    background: Highlight;
+    background: color-mix(in srgb, var(--fgColor-accent, #0969da) var(--selection-alpha, 30%), transparent);
+}
+
+/* 选中区内的链接：淡染底上的链接蓝对比跌到约 3.5:1（计算值），
+   选中期间单独压深一档（浅色）/ 提亮一档（深色），拉回 AA 以上。
+   浓度提至 30% / 40% 后链接色同步各压/提一档，维持 AA（浅 6.4:1 / 深 4.6:1）。 */
+html[data-theme="light"] a::selection {
+    color: #044289;
+}
+
+html[data-theme="dark"] a::selection {
+    color: #8cc0ff;
+}
+
+/* 代码块：块底更接近中性，同浓度淡染容易被吞，浓度 +6% */
+pre ::selection {
+    background: color-mix(in srgb, var(--fgColor-accent, #0969da) calc(var(--selection-alpha, 30%) + 6%), transparent);
+}
+
+/* 高对比度模式（forced-colors）：交还系统选中色，不与系统较劲 */
+@media (forced-colors: active) {
+    ::selection {
+        background: Highlight;
+        color: HighlightText;
+    }
 }
 
 /* 光标与表单控件颜色跟站点强调色走，不用浏览器默认蓝 */
