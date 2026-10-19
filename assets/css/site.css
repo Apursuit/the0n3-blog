@@ -88,7 +88,10 @@ html[data-theme="light"] .markdown-body {
     --fgColor-muted: #59636e;
     --fgColor-accent: #0969da;
     --borderColor-muted: #d1d9e0b3;
-    background-color: var(--bgColor-default);
+    /* 浅色主题：主体不再单独铺底色，直接沿用 body 的 --bgColor-page。
+       白底（#ffffff）与页面底色（#f6f8fa）色差过小，会形成一条既不像卡片
+       也不像整页统一的"白板"边界；让主体透明后，浅色与深色都只有单一表面。 */
+    background-color: transparent;
     color: var(--fgColor-default);
 }
 
@@ -510,23 +513,27 @@ main.markdown-body,
     color: var(--callout-accent, var(--fgColor-accent));
 }
 
+/* callout 强调色按主题分档：
+   下面这组基础值即浅色口径，取加深后的深色系，保证标题文字与自己那层
+   淡色底叠加后仍 ≥ 4.5:1（原来 tip 3.1:1、warning 2.4:1 发灰看不清）；
+   深色口径在下方 [data-theme="dark"] 块里提亮。 */
 .markdown-body .callout-note {
-    --callout-accent: #0969da;
+    --callout-accent: #0550ae;
     --callout-bg: rgba(9, 105, 218, 0.06);
 }
 
 .markdown-body .callout-tip {
-    --callout-accent: #2da44e;
+    --callout-accent: #16682f;
     --callout-bg: rgba(45, 164, 78, 0.06);
 }
 
 .markdown-body .callout-warning {
-    --callout-accent: #d29922;
+    --callout-accent: #8a5a00;
     --callout-bg: rgba(210, 153, 34, 0.08);
 }
 
 .markdown-body .callout-important {
-    --callout-accent: #8250df;
+    --callout-accent: #6e40c9;
     --callout-bg: rgba(130, 80, 223, 0.06);
 }
 
@@ -542,26 +549,31 @@ main.markdown-body,
 
 .dark .markdown-body .callout-note,
 [data-theme="dark"] .markdown-body .callout-note {
+    --callout-accent: #58a6ff;
     --callout-bg-dark: rgba(9, 105, 218, 0.10);
 }
 
 .dark .markdown-body .callout-tip,
 [data-theme="dark"] .markdown-body .callout-tip {
+    --callout-accent: #3fb950;
     --callout-bg-dark: rgba(45, 164, 78, 0.10);
 }
 
 .dark .markdown-body .callout-warning,
 [data-theme="dark"] .markdown-body .callout-warning {
+    --callout-accent: #e3b341;
     --callout-bg-dark: rgba(210, 153, 34, 0.10);
 }
 
 .dark .markdown-body .callout-important,
 [data-theme="dark"] .markdown-body .callout-important {
+    --callout-accent: #ab7df8;
     --callout-bg-dark: rgba(130, 80, 223, 0.10);
 }
 
 .dark .markdown-body .callout-caution,
 [data-theme="dark"] .markdown-body .callout-caution {
+    --callout-accent: #f85149;
     --callout-bg-dark: rgba(207, 34, 46, 0.10);
 }
 
