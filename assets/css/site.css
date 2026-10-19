@@ -58,7 +58,14 @@
 html[data-theme="light"] {
     color-scheme: light;
     --bgColor-default: #ffffff;
-    --bgColor-page: #f6f8fa;
+    /* 页面底（浅色下即正文底，见下方 markdown-body 规则）：
+       中性冷灰 #f6f8fa → 暖白纸色 #f5f1e9。
+       选值约束：比 #f6f8fa 略深一档（亮度 ~6%），暖调明显但不到"茶色纸"，
+       同时保住正文链接 #0969da 的 4.6:1（≥AA）；
+       再深（如 #f2eee4）链接就跌到 4.48:1，需要连 --fgColor-accent 一起调。 */
+    --bgColor-page: #f5f1e9;
+    /* muted 维持中性灰 #f6f8fa（与页面底刻意拉开明度）：它是代码块、
+       表格斑马纹、悬浮按钮的底，比暖色页面底亮一档后重新有了"块"的边界。 */
     --bgColor-muted: #f6f8fa;
     --bgColor-neutral-muted: #818b981f;
     --fgColor-default: #1f2328;
@@ -89,8 +96,8 @@ html[data-theme="light"] .markdown-body {
     --fgColor-accent: #0969da;
     --borderColor-muted: #d1d9e0b3;
     /* 浅色主题：主体不再单独铺底色，直接沿用 body 的 --bgColor-page。
-       白底（#ffffff）与页面底色（#f6f8fa）色差过小，会形成一条既不像卡片
-       也不像整页统一的"白板"边界；让主体透明后，浅色与深色都只有单一表面。 */
+       白底（#ffffff）与页面底色色差小，会形成一条既不像卡片也不像整页
+       统一的"白板"边界；让主体透明后，浅色与深色都只有单一表面。 */
     background-color: transparent;
     color: var(--fgColor-default);
 }
