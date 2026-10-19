@@ -192,6 +192,34 @@ body {
     }
 }
 
+/* 选中与光标（极简口径）：
+   - 选中只用背景色、不改文字颜色：代码块的语法色、链接蓝都能保留。
+   - 背景 = 正文墨色 10% 透明叠加：浅色合成 #ddddde（与页面对比 1.21），
+     深色自动变成 #323234（1.30），一条规则覆盖两个主题，不需要分别写。
+   - 为什么用半透明：选中叠在正文、代码块、卡片、提示块上时，
+     会自然“沉”进各自的底色，不会变成一块硬贴纸。 */
+::selection {
+    background-color: color-mix(in srgb, var(--fgColor-default, #1f2328) 10%, transparent);
+}
+
+/* 光标与表单控件颜色跟站点强调色走，不用浏览器默认蓝 */
+input,
+textarea,
+[contenteditable="true"] {
+    caret-color: var(--fgColor-accent, #0969da);
+}
+
+input[type="checkbox"],
+input[type="radio"],
+progress {
+    accent-color: var(--fgColor-accent, #0969da);
+}
+
+/* 移动端点按的“闪一下”：换成极淡的强调色，避免安卓默认的饱和蓝闪 */
+html {
+    -webkit-tap-highlight-color: color-mix(in srgb, var(--fgColor-accent, #0969da) 14%, transparent);
+}
+
 /* ============================================
    4. 布局
    说明：
