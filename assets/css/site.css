@@ -74,6 +74,18 @@ html[data-theme="light"] {
     --fgColor-accent: #0969da;
     --borderColor-default: #d1d9e0;
     --borderColor-muted: #d1d9e0b3;
+    /* 卡片表面（浅色）：页面底 #f2f2f2 之上的“纸片”。
+       只比页面亮 5%（纯白是 +11%，一屏十几张卡片就成白斑）；
+       边界交给不透明描边 + 极轻阴影，而不是靠“更白”去抢眼。
+       一套值给交链卡片、分类/标签手风琴、以及后续复用的小卡片。 */
+    --surface-card: #f8f8f8;
+    --surface-card-hover: #f0f0f0;
+    --surface-card-active: #f1f2f5;
+    --line-card: #e4e4e4;
+    --line-card-strong: #d0d0d0;
+    --line-divider: #ececec;
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-card-hover: 0 6px 16px -10px rgba(0, 0, 0, 0.18);
 }
 
 html[data-theme="dark"] {
@@ -87,6 +99,16 @@ html[data-theme="dark"] {
     --fgColor-accent: #58a6ff;
     --borderColor-default: #3d444d;
     --borderColor-muted: #3d444db3;
+    /* 卡片表面（深色）：深色下页面本身就是暗的，卡片与页面同色、只靠描边分界；
+       取值尽量维持改造前观感，避免深色下跳变。 */
+    --surface-card: #1e1e20;
+    --surface-card-hover: #26262a;
+    --surface-card-active: #2a2d33;
+    --line-card: #3d444db3;
+    --line-card-strong: #3d444d;
+    --line-divider: #3d444d66;
+    --shadow-card: none;
+    --shadow-card-hover: 0 8px 20px -12px rgba(0, 0, 0, 0.5);
 }
 
 html[data-theme="light"] .markdown-body {
@@ -801,18 +823,20 @@ html[data-theme="dark"] .markdown-body h6 {
     gap: 14px;
     min-height: 92px;
     padding: 14px;
-    border: 1px solid var(--borderColor-muted);
+    border: 1px solid var(--line-card);
     border-radius: 8px;
-    background: var(--bgColor-default);
+    background: var(--surface-card);
+    box-shadow: var(--shadow-card);
     color: var(--fgColor-default);
     text-decoration: none;
     box-sizing: border-box;
-    transition: border-color 0.16s ease, background-color 0.16s ease, transform 0.16s ease;
+    transition: border-color 0.16s ease, background-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
 }
 
 .markdown-body .friend-card:hover {
     border-color: var(--fgColor-accent);
-    background: var(--bgColor-muted);
+    background: var(--surface-card-hover);
+    box-shadow: var(--shadow-card-hover);
     text-decoration: none;
     transform: translateY(-1px);
 }
@@ -823,8 +847,8 @@ html[data-theme="dark"] .markdown-body h6 {
     margin: 0;
     border-radius: 50%;
     object-fit: cover;
-    background: var(--bgColor-muted);
-    border: 1px solid var(--borderColor-muted);
+    background: var(--surface-card);
+    border: 1px solid var(--line-card);
     box-sizing: border-box;
 }
 
@@ -869,13 +893,7 @@ html[data-theme="dark"] .markdown-body h6 {
     white-space: nowrap;
 }
 
-html[data-theme="dark"] .markdown-body .friend-card {
-    background: #1e1e20;
-}
-
-html[data-theme="dark"] .markdown-body .friend-card:hover {
-    background: #151b23;
-}
+/* 深色不再单独覆盖：卡片颜色统一走 --surface-card / --line-card 令牌 */
 
 /* ============================================
    7. 响应式
