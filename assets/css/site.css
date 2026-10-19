@@ -515,18 +515,57 @@ main.markdown-body,
 /* ============================================
    提示块（GitHub alert）
    说明：
-   - 结构与外观 100% 沿用 github-markdown.css 的 .markdown-alert 原版规则
-     （图标 + 英文词 + 无底色 + 左侧 .25em 竖线），本文件不重复实现。
+   - 结构与外观基础沿用 github-markdown.css 的 .markdown-alert 原版规则
+     （图标 + 英文词 + 左侧 .25em 竖线），本文件只做站点口径的必要微调。
    - 结构由 src/Markdown.php 生成：
      <div class="markdown-alert markdown-alert-note">
        <p class="markdown-alert-title"><svg class="octicon …">…</svg>Note</p>
        <p>正文…</p>
      </div>
-   - 这里只补一条站点口径的微调：
-     GitHub 的正文段落下边距是 10px，本站改成了 1.1rem；标题行也是 <p>，
-     不收紧的话标题和正文之间会空出接近两倍的距离。 */
+   - 站点微调共两处：标题与正文的间距（见下），以及浅色主题的底色（见再下一段）。 */
 .markdown-body .markdown-alert-title {
     margin-bottom: 10px;
+}
+
+/* 浅色主题：给提示块补一层极淡的类型底色
+   - 用不透明实色而不是 rgba：半透明会透出页面底色，以后调 --bgColor-page 时这里会跟着变；
+     实色则完全锁定，改了背景也不会跟着跳。
+   - 底色（约 8% accent 叠在 #f2f2f2 上）比页面底色深一档，块感明确又不压字。
+   - 底色一加深，GitHub 原版标题色在这层底上只剩 4.1~4.4:1（低于 AA），
+     所以标题与竖线同步压深一档，全部回到 4.8:1 以上（括号内为实测值）。
+   - 深色主题保持 GitHub 原版无底色；需要的话下一轮再补。 */
+html[data-theme="light"] .markdown-body .markdown-alert {
+    background-color: var(--alert-surface, transparent);
+    border-left-color: var(--alert-accent, var(--borderColor-default));
+}
+
+html[data-theme="light"] .markdown-body .markdown-alert .markdown-alert-title {
+    color: var(--alert-accent, var(--fgColor-accent));
+}
+
+html[data-theme="light"] .markdown-body .markdown-alert-note {
+    --alert-surface: #dfe7f0;
+    --alert-accent: #0550ae;   /* 6.1:1 */
+}
+
+html[data-theme="light"] .markdown-body .markdown-alert-tip {
+    --alert-surface: #e0e8e3;
+    --alert-accent: #16682f;   /* 5.5:1 */
+}
+
+html[data-theme="light"] .markdown-body .markdown-alert-important {
+    --alert-surface: #e7e3ee;
+    --alert-accent: #6e40c9;   /* 5.2:1 */
+}
+
+html[data-theme="light"] .markdown-body .markdown-alert-warning {
+    --alert-surface: #ebe6de;
+    --alert-accent: #8a5a00;   /* 4.8:1 */
+}
+
+html[data-theme="light"] .markdown-body .markdown-alert-caution {
+    --alert-surface: #efe1e2;
+    --alert-accent: #b31d28;   /* 5.3:1 */
 }
 
 /* ============================================
