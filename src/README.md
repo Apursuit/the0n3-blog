@@ -68,7 +68,7 @@
 |------|------|----------|
 | `Loader.php` | 递归扫描 `posts/` 下的 `.md` 文件 | `loadPosts(): array` |
 | `FrontMatter.php` | 解析 YAML front matter，补默认值 | `parse(string $content, string $sourcePath): array` |
-| `Markdown.php` | Markdown → HTML，`[!NOTE]` 等 callout 转换为 `<div class="callout">` | `toHtml(string): string` |
+| `Markdown.php` | Markdown → HTML，`[!NOTE]` 等标记转换为 GitHub 原版 alert 结构（`markdown-alert` + 图标 + 英文词，无底色） | `toHtml(string): string` |
 | `Renderer.php` | PHP 模板渲染（`ob_start` + `include`） | `render(string $template, array $data): string` |
 | `Validator.php` | **批量**校验必填字段、类型、permalink 格式/唯一性/冲突，所有错误一次性报出 | `validate(array $posts): void` |
 | `SearchIndexer.php` | 从 HTML 提取 h1-h3 标题，构建搜索 JSON | `build(array $posts, string $distPath): void` |

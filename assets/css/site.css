@@ -96,6 +96,18 @@ html[data-theme="light"] .markdown-body {
     --fgColor-muted: #59636e;
     --fgColor-accent: #0969da;
     --borderColor-muted: #d1d9e0b3;
+    /* 提示块（GitHub alert）用的语义色：
+       github-markdown.css 里同名变量只写在 @media (prefers-color-scheme) 里，
+       会跟着访客系统而不是站点主题，必须在 .markdown-body 作用域里补一份站点口径。 */
+    --fgColor-success: #1a7f37;
+    --fgColor-attention: #9a6700;
+    --fgColor-done: #8250df;
+    --fgColor-danger: #d1242f;
+    --borderColor-accent-emphasis: #0969da;
+    --borderColor-success-emphasis: #1a7f37;
+    --borderColor-attention-emphasis: #9a6700;
+    --borderColor-done-emphasis: #8250df;
+    --borderColor-danger-emphasis: #cf222e;
     /* 浅色主题：主体不再单独铺底色，直接沿用 body 的 --bgColor-page。
        白底（#ffffff）与页面底色色差小，会形成一条既不像卡片也不像整页
        统一的"白板"边界；让主体透明后，浅色与深色都只有单一表面。 */
@@ -110,6 +122,16 @@ html[data-theme="dark"] .markdown-body {
     --fgColor-muted: #8b949e;
     --fgColor-accent: #58a6ff;
     --borderColor-muted: #3d444db3;
+    /* 提示块（GitHub alert）深色口径的语义色，理由见浅色块注释 */
+    --fgColor-success: #3fb950;
+    --fgColor-attention: #d29922;
+    --fgColor-done: #ab7df8;
+    --fgColor-danger: #f85149;
+    --borderColor-accent-emphasis: #1f6feb;
+    --borderColor-success-emphasis: #238636;
+    --borderColor-attention-emphasis: #9e6a03;
+    --borderColor-done-emphasis: #8957e5;
+    --borderColor-danger-emphasis: #da3633;
     background-color: var(--bgColor-default);
     color: var(--fgColor-default);
 }
@@ -490,99 +512,21 @@ main.markdown-body,
     margin: 1.25em 0;
 }
 
-/* Callout */
-.markdown-body .callout {
-    border: none;
-    border-left: 3px solid var(--callout-accent, var(--fgColor-accent));
-    background: var(--callout-bg, var(--bgColor-muted));
-    padding: 12px 14px;
-    border-radius: 6px;
-    margin: 16px 0;
-}
-
-.markdown-body .callout p {
-    margin: 0.4em 0;
-}
-
-.markdown-body .callout > :first-child,
-.markdown-body .callout-content > :first-child {
-    margin-top: 0;
-}
-
-.markdown-body .callout > :last-child,
-.markdown-body .callout-content > :last-child {
-    margin-bottom: 0;
-}
-
-.markdown-body .callout-title {
-    font-size: 0.92em;
-    font-weight: 600;
-    margin-bottom: 6px;
-    color: var(--callout-accent, var(--fgColor-accent));
-}
-
-/* callout 强调色按主题分档：
-   下面这组基础值即浅色口径，取加深后的深色系，保证标题文字与自己那层
-   淡色底叠加后仍 ≥ 4.5:1（原来 tip 3.1:1、warning 2.4:1 发灰看不清）；
-   深色口径在下方 [data-theme="dark"] 块里提亮。 */
-.markdown-body .callout-note {
-    --callout-accent: #0550ae;
-    --callout-bg: rgba(9, 105, 218, 0.06);
-}
-
-.markdown-body .callout-tip {
-    --callout-accent: #16682f;
-    --callout-bg: rgba(45, 164, 78, 0.06);
-}
-
-.markdown-body .callout-warning {
-    --callout-accent: #8a5a00;
-    --callout-bg: rgba(210, 153, 34, 0.08);
-}
-
-.markdown-body .callout-important {
-    --callout-accent: #6e40c9;
-    --callout-bg: rgba(130, 80, 223, 0.06);
-}
-
-.markdown-body .callout-caution {
-    --callout-accent: #cf222e;
-    --callout-bg: rgba(207, 34, 46, 0.06);
-}
-
-.dark .markdown-body .callout,
-[data-theme="dark"] .markdown-body .callout {
-    background: var(--callout-bg-dark, rgba(255, 255, 255, 0.03));
-}
-
-.dark .markdown-body .callout-note,
-[data-theme="dark"] .markdown-body .callout-note {
-    --callout-accent: #58a6ff;
-    --callout-bg-dark: rgba(9, 105, 218, 0.10);
-}
-
-.dark .markdown-body .callout-tip,
-[data-theme="dark"] .markdown-body .callout-tip {
-    --callout-accent: #3fb950;
-    --callout-bg-dark: rgba(45, 164, 78, 0.10);
-}
-
-.dark .markdown-body .callout-warning,
-[data-theme="dark"] .markdown-body .callout-warning {
-    --callout-accent: #e3b341;
-    --callout-bg-dark: rgba(210, 153, 34, 0.10);
-}
-
-.dark .markdown-body .callout-important,
-[data-theme="dark"] .markdown-body .callout-important {
-    --callout-accent: #ab7df8;
-    --callout-bg-dark: rgba(130, 80, 223, 0.10);
-}
-
-.dark .markdown-body .callout-caution,
-[data-theme="dark"] .markdown-body .callout-caution {
-    --callout-accent: #f85149;
-    --callout-bg-dark: rgba(207, 34, 46, 0.10);
+/* ============================================
+   提示块（GitHub alert）
+   说明：
+   - 结构与外观 100% 沿用 github-markdown.css 的 .markdown-alert 原版规则
+     （图标 + 英文词 + 无底色 + 左侧 .25em 竖线），本文件不重复实现。
+   - 结构由 src/Markdown.php 生成：
+     <div class="markdown-alert markdown-alert-note">
+       <p class="markdown-alert-title"><svg class="octicon …">…</svg>Note</p>
+       <p>正文…</p>
+     </div>
+   - 这里只补一条站点口径的微调：
+     GitHub 的正文段落下边距是 10px，本站改成了 1.1rem；标题行也是 <p>，
+     不收紧的话标题和正文之间会空出接近两倍的距离。 */
+.markdown-body .markdown-alert-title {
+    margin-bottom: 10px;
 }
 
 /* ============================================
