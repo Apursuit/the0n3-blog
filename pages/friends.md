@@ -114,14 +114,6 @@ nav_order: 50
             <span class="friend-link">flowerwitch.github.io</span>
         </span>
     </a>
-    <a class="friend-card" href="https://www.sunsetaction.top/" target="_blank" rel="noopener noreferrer">
-        <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/sunset.png" alt="Sunset's Blog avatar" loading="lazy">
-        <span class="friend-info">
-            <span class="friend-name">Sunset's Blog</span>
-            <span class="friend-desc">Records of life and study at sunset.</span>
-            <span class="friend-link">sunsetaction.top</span>
-        </span>
-    </a>
     <a class="friend-card" href="https://www.geekery.cn/" target="_blank" rel="noopener noreferrer">
         <img class="friend-avatar" data-no-lightbox="true" src="https://www.geekery.cn/logo.svg" alt="运维开发绿皮书 avatar" loading="lazy">
         <span class="friend-info">
