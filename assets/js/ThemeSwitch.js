@@ -10,6 +10,7 @@
 
     var KEY = 'theme';
     var root = document.documentElement;
+    var unlockTimer;
 
     function readSaved() {
         try {
@@ -35,6 +36,10 @@
     }
 
     function paint(theme) {
+        // 加锁后强制一次样式计算，让统一时长先生效，再提交新色
+        root.classList.add('theme-switching');
+        void root.offsetHeight;
+
         root.dataset.theme = theme;
         root.style.colorScheme = theme;
 
@@ -43,6 +48,13 @@
             btn.setAttribute('data-theme', theme);
             btn.textContent = '';
         }
+
+        void root.offsetHeight;
+        // 过渡跑完再解锁，中途改时长会打断过渡；余量留足，调时长不必同步改这里
+        clearTimeout(unlockTimer);
+        unlockTimer = setTimeout(function () {
+            root.classList.remove('theme-switching');
+        }, 400);
     }
 
     paint(currentTheme());
