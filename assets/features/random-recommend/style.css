@@ -1,0 +1,40 @@
+/* 精选推荐：结构与配色由 templates/post.php + github-markdown.css 提供，
+   本文件只负责整卡可点（stretched link）与交互细节。 */
+
+.post-recommend {
+    position: relative;                    /* 承载 stretched link 的绝对定位命中区 */
+    margin-top: var(--space-heading-mt);   /* 与正文段间距离一致 */
+}
+
+/* 作用域到 .post-recommend，压过 github-markdown.css 的 .markdown-body a */
+.post-recommend .post-recommend__link {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--fgColor-accent, #0969da);
+    text-decoration: none;
+    word-break: break-word;
+}
+
+.post-recommend .post-recommend__link:hover {
+    text-decoration: underline;
+}
+
+/* 整卡可点：::after 撑满卡片，悬停任意位置都触发标题链接（仅适用于单链接卡片） */
+.post-recommend .post-recommend__link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+}
+
+/* 兜底：万一一有全局样式覆盖了 [hidden] */
+.post-recommend[hidden] {
+    display: none;
+}
+
+/* 尊重系统的减少动效偏好 */
+@media (prefers-reduced-motion: reduce) {
+    .post-recommend .post-recommend__link {
+        transition: none;
+    }
+}
