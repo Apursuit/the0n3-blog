@@ -126,7 +126,7 @@ html[data-theme="dark"] .markdown-body {
     --borderColor-attention-emphasis: #9e6a03;
     --borderColor-done-emphasis: #8957e5;
     --borderColor-danger-emphasis: #da3633;
-    /* 与浅色一致：主体不铺底，跟随页面底，切换时不产生块状差 */
+    /* 同浅色：主体不铺底 */
     background-color: transparent;
     color: var(--fgColor-default);
 }
@@ -153,14 +153,6 @@ body {
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* 深浅主题切换时避免瞬间亮度跳变（Apple Design §14） */
-    transition: background-color 250ms ease, color 250ms ease;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    body {
-        transition: none;
-    }
 }
 
 /* 主题切换：切换当下把所有元素压到同一时长，避免快慢错位。
@@ -350,8 +342,6 @@ main.markdown-body,
     line-height: var(--line-height-body);
     letter-spacing: normal;
     word-break: break-word;
-    /* 主题切换过渡，与 body 同步 */
-    transition: background-color 250ms ease, color 250ms ease;
 }
 
 .markdown-body h1,

@@ -1,33 +1,15 @@
 /**
- * 精选推荐（Featured Recommendation）
- * ---------------------------------------------------------------------------
- * 功能：文章页末尾随机推荐 1 篇精选文章，避免优质内容在归档页淹没。
+ * 精选推荐：文章页末尾随机推荐 1 篇精选文章。
+ * 数据源为本文件的 FEATURED 数组，顺序即权重，单条可用 weight 显式覆盖。
+ * 权重按 w = RANK_DECAY^i 几何衰减，取 0.8 时首条约 22%、末条约 3%。
+ * 仅文章页生效（靠 [data-featured-recommend] 容器判断），排除当前文章、会话内不重复。
  *
- * 数据：本文件顶部的 FEATURED 数组是唯一数据源（10 篇）。
- *      顺序即优先级：越靠前推荐权重越高。
- *
- * 权重：几何衰减 w = RANK_DECAY^i，默认 0.8。10 篇时的曝光概率：
- *        #1 22.4%  #2 17.9%  #3 14.3%  #4 11.5%  #5 9.2%
- *        #6 7.3%   #7 5.9%   #8 4.7%   #9 3.8%   #10 3.0%
- *      单条可用 weight 字段显式覆盖（用于强推某篇旗舰文）。
- *
- * 规则：
- *  - 仅文章页生效（靠 [data-featured-recommend] 占位容器判断）。
- *  - 排除当前文章，避免推荐自己。
- *  - 同一会话内尽量不重复推荐上一篇（sessionStorage）。
- *
- * 维护提醒：修改文章 permalink / 标题时，务必同步更新 FEATURED，否则会 404。
+ * 维护提醒：修改文章 permalink 后务必同步 FEATURED，否则会 404。
  */
 (function () {
     'use strict';
 
-    // =======================================================================
-    // 1. 精选文章清单（唯一数据源，10 篇）
-    //    - url    : 文章 permalink，需与 posts/*.md 的 frontMatter.permalink 完全一致
-    //    - title  : 推荐卡片展示的标题
-    //    - weight : 可选，正数。不填则按顺序几何衰减
-    //    顺序 = 优先级，越靠前权重越高
-    // =======================================================================
+    // 唯一数据源，顺序即权重。url 须与 posts/*.md 的 frontMatter.permalink 完全一致
     var FEATURED = [
         { url: '/pages/mazesec-mao/', title: 'MazeSec 矛计划 - 如何制作一台靶机' },
         { url: '/pages/linux-config-privesc/', title: '利用逐行解析配置文件实现权限提升的八种方式' },
@@ -41,10 +23,7 @@
         { url: '/posts/maze-hihyh/', title: 'MazeSec HiHYH 靶机设计流程' }
     ];
 
-    // =======================================================================
-    // 2. 权重参数
-    //    RANK_DECAY 越小越集中在头部，越大越平均（1 = 完全均匀，推荐 0.7~0.9）
-    // =======================================================================
+    // 越小越集中在头部，1 为完全均匀
     var RANK_DECAY = 0.8;
 
     // 会话去重用的存储 key
@@ -100,7 +79,7 @@
         for (var i = 0; i < FEATURED.length; i++) {
             var entry = FEATURED[i];
             if (!entry || !entry.url || !entry.title) continue;
-            if (normalizePath(entry.url) === here) continue; // 排除当前文章
+            if (normalizePath(entry.url) === here) continue;
             candidates.push({ entry: entry, weight: weightOf(entry, i) });
         }
         if (candidates.length === 0) return; // 无候选则不显示

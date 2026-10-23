@@ -1,13 +1,5 @@
-/* 精选推荐 · 文章末尾「编辑精选」批次
-   数据与随机逻辑见同目录 script.js。
-
-   视觉：直接复用站内提示块（GitHub alert）的 .markdown-alert.markdown-alert-tip ——
-        结构（容器 + 图标 + 英文词 + 无底色 + 左侧竖线）由 templates/post.php 输出，
-        外观由 github-markdown.css 的 .markdown-alert 规则提供，
-        本文件只负责「整卡可点」和几条交互细节，不再重复表面样式。
-
-   交互：整卡可点（stretched link）——把标题链接的命中区域撑满卡片，
-        但语义链接仍然只是标题，对读屏 / 新标签 / 右键菜单 / SEO 都友好。 */
+/* 精选推荐：结构与配色由 templates/post.php + github-markdown.css 提供，
+   本文件只负责整卡可点（stretched link）与交互细节。 */
 
 .post-recommend {
     position: relative;                    /* 承载 stretched link 的绝对定位命中区 */
@@ -21,16 +13,13 @@
     color: var(--fgColor-accent, #0969da);
     text-decoration: none;
     word-break: break-word;
-    transition: color 250ms ease;
 }
 
 .post-recommend .post-recommend__link:hover {
     text-decoration: underline;
 }
 
-/* 整卡可点（stretched link）：
-   ::after 属于链接自身，悬停卡片任意位置也会触发链接的 :hover（标题下划线）。
-   注意：此模式仅在卡片内只有一个链接时成立。 */
+/* 整卡可点：::after 撑满卡片，悬停任意位置都触发标题链接（仅适用于单链接卡片） */
 .post-recommend .post-recommend__link::after {
     content: "";
     position: absolute;
