@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>XSS攻击---XSS bot模拟用户 - the0n3</title>
+        <meta name="description" content="什么是 XSS 攻击 XSS（Cross Site Scripting，跨站脚本攻击）是指： 当目标网站在渲染 HTML 文档时，执行了不被预期的恶意脚本，就发生了 XSS。 简单来说： 攻击者通过输入点注入恶意 JavaScript，当其他用户（或 Bot）浏览页面时，脚本在其浏览器中执行，从而窃取 Cookie、模…">
+    <link rel="canonical" href="https://the0n3.top/pages/qwevv/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="XSS攻击---XSS bot模拟用户">
+    <meta property="og:description" content="什么是 XSS 攻击 XSS（Cross Site Scripting，跨站脚本攻击）是指： 当目标网站在渲染 HTML 文档时，执行了不被预期的恶意脚本，就发生了 XSS。 简单来说： 攻击者通过输入点注入恶意 JavaScript，当其他用户（或 Bot）浏览页面时，脚本在其浏览器中执行，从而窃取 Cookie、模…">
+    <meta property="og:url" content="https://the0n3.top/pages/qwevv/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/og-default.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="XSS攻击---XSS bot模拟用户">
+    <meta name="twitter:description" content="什么是 XSS 攻击 XSS（Cross Site Scripting，跨站脚本攻击）是指： 当目标网站在渲染 HTML 文档时，执行了不被预期的恶意脚本，就发生了 XSS。 简单来说： 攻击者通过输入点注入恶意 JavaScript，当其他用户（或 Bot）浏览页面时，脚本在其浏览器中执行，从而窃取 Cookie、模…">
+        <meta name="twitter:image" content="https://the0n3.top/images/og-default.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 评论系统预连接：giscus 由前端按访客主题动态注入，提前建连可抵消注入延迟 -->
+    <link rel="preconnect" href="https://giscus.app" crossorigin>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/nav-menu/style.css">
+        <link rel="stylesheet" href="/assets/features/random-recommend/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/features/tax-accordion/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                <details class="nav-menu">
+                    <summary class="nav-toggle" aria-label="打开菜单"><span aria-hidden="true">☰</span></summary>
+                </details>
+                <div class="nav-links">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                </div>
+                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>XSS攻击---XSS bot模拟用户</h1>
+    <p>
+        <span class="meta">发布于: 2024-07-20 21:53</span>
+    </p>
+    <div class="post-body">
+        <h2>什么是 XSS 攻击</h2>
+<p>XSS（Cross Site Scripting，跨站脚本攻击）是指：
+当目标网站在渲染 HTML 文档时，执行了<strong>不被预期的恶意脚本</strong>，就发生了 XSS。</p>
+<p>简单来说：
+攻击者通过输入点注入恶意 JavaScript，当其他用户（或 Bot）浏览页面时，脚本在其浏览器中执行，从而窃取 Cookie、模拟操作甚至控制账户。</p>
+<p>XSS 常见三类：</p>
+<ul>
+<li><strong>反射型 XSS</strong>：代码在 URL 中，服务器“反射”回页面</li>
+<li><strong>存储型 XSS</strong>：代码被存储到服务器（如数据库），持续生效</li>
+<li><strong>DOM 型 XSS</strong>：完全在客户端 DOM 解析阶段触发，服务器无感知</li>
+</ul>
+<p>我主要有两点疑惑：
+1.在 CTF 题目中，XSS 到底是如何被触发的？
+2.通过 XSS 获取的 Cookie，通常是哪个用户的身份？</p>
+<h2>XSS 常见标签与触发方式</h2>
+<p>常见可用于 XSS 的标签包括：</p>
+<ul>
+<li><code>&lt;script&gt;</code></li>
+<li><code>&lt;img&gt;</code></li>
+<li><code>&lt;svg&gt;</code></li>
+<li><code>&lt;iframe&gt;</code></li>
+<li><code>&lt;video&gt;</code></li>
+<li><code>&lt;a&gt;</code></li>
+<li><code>&lt;details&gt;</code></li>
+<li><code>&lt;marquee&gt;</code></li>
+<li><code>&lt;embed&gt;</code></li>
+</ul>
+<p>常见触发方式：</p>
+<ul>
+<li>事件触发：<code>onclick</code>、<code>onmouseover</code>、<code>onmouseout</code>、<code>onfocus</code>、<code>onerror</code></li>
+<li>函数/属性触发：<code>onload</code>、<code>window.open</code>、<code>window.location</code></li>
+</ul>
+<h2>为什么需要 XSS Bot？</h2>
+<p>在 CTF 的 XSS 题目中，攻击者注入的 payload 通常不会被自己触发，
+而是需要<strong>特定用户（如管理员）访问页面</strong>时才会执行。</p>
+<p>因此，题目环境通常会提供一个 XSS Bot：</p>
+<ul>
+<li>模拟管理员或其他高权限用户</li>
+<li>自动访问包含 payload 的页面</li>
+<li>从而触发 XSS，泄露该用户的 Cookie 或敏感信息</li>
+</ul>
+<h3>XSS Bot 的触发流程</h3>
+<ul>
+<li>攻击者在输入点（评论、留言、表单等）注入恶意 JavaScript</li>
+<li>payload 被保存到服务器（存储型 XSS）</li>
+<li>XSS Bot 模拟管理员访问该页面</li>
+<li>Bot 的浏览器加载页面并执行 JavaScript</li>
+<li>攻击者成功获取 Bot 所代表用户的 Cookie</li>
+</ul>
+<h3>XSS Bot 的实现方案</h3>
+<h4>方案一：简单 HTTP 请求（如 curl）</h4>
+<ul>
+<li>使用 <code>curl</code> 或脚本直接请求页面</li>
+<li>能触发 <code>&lt;img&gt;</code>、<code>&lt;script src&gt;</code> 等资源的自动加载</li>
+<li>优点：实现简单</li>
+<li>缺点：<ul>
+<li>不会执行 JavaScript</li>
+<li>不会加载完整 DOM</li>
+<li>无法覆盖大多数 XSS 场景</li>
+</ul>
+</li>
+</ul>
+<p>这种方式更像是“带答案去验证”，不够真实。</p>
+<h4>方案二：无头浏览器（推荐）</h4>
+<ul>
+<li>使用 Puppeteer、Selenium 等控制无头浏览器</li>
+<li>会完整加载页面：<ul>
+<li>执行 JavaScript</li>
+<li>渲染 DOM</li>
+<li>加载 CSS、图片等资源</li>
+</ul>
+</li>
+<li>能真实模拟用户访问行为</li>
+</ul>
+<p>这是 CTF 和真实环境中最常见的 XSS Bot 实现方式。</p>
+<h3>回到开头的问题</h3>
+<ul>
+<li>
+<p><strong>CTF 中 XSS 是怎么执行的？</strong></p>
+<ul>
+<li>攻击者注入 payload → XSS Bot 访问页面 → 浏览器执行脚本</li>
+</ul>
+</li>
+<li>
+<p><strong>获取的 Cookie 是什么身份的用户？</strong></p>
+<ul>
+<li>取决于 Bot 模拟的是谁</li>
+<li>通常是管理员或高权限用户</li>
+<li>因此拿到的是管理员 Cookie，可直接用于登录后台</li>
+</ul>
+</li>
+</ul>
+<h2>XSS Bot 的作用</h2>
+<ul>
+<li>
+<p><strong>CTF 竞赛</strong></p>
+<ul>
+<li>自动访问选手提交的 payload</li>
+<li>检测是否成功窃取管理员 Cookie</li>
+<li>验证 XSS 漏洞是否可利用</li>
+</ul>
+</li>
+<li>
+<p><strong>安全测试</strong></p>
+<ul>
+<li>企业安全团队模拟用户行为</li>
+<li>检测网站是否存在 XSS 漏洞</li>
+<li>验证修复方案是否有效</li>
+</ul>
+</li>
+</ul>
+<h2>相关/更多</h2>
+<p>推荐文章</p>
+<ul>
+<li><a href="https://www.f12bug.com/archives/xss-chang-yong-biao-qian-ji-rao-guo-zi-shi-zong-jie">XSS 常用标签及绕过姿势总结</a></li>
+<li><a href="https://segmentfault.com/a/1190000022348467">XSS攻击常识及常见的XSS攻击脚本汇总</a></li>
+</ul>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <span>Web安全</span>
+                            </span>
+                    </div>
+    </article>
+
+<section class="post-recommend markdown-alert markdown-alert-tip" data-featured-recommend dir="auto" hidden aria-labelledby="featuredRecommendTitle">
+    <p class="markdown-alert-title" id="featuredRecommendTitle">
+        <svg class="octicon octicon-light-bulb mr-2" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8 1.5c-2.363 0-4 1.69-4 3.75 0 .984.424 1.625.984 2.304l.214.253c.223.264.47.556.673.848.284.411.537.896.621 1.49a.75.75 0 0 1-1.484.211c-.04-.282-.163-.547-.37-.847a8.456 8.456 0 0 0-.542-.68c-.084-.1-.173-.205-.268-.32C3.201 7.75 2.5 6.766 2.5 5.25 2.5 2.31 4.863 0 8 0s5.5 2.31 5.5 5.25c0 1.516-.701 2.5-1.328 3.259-.095.115-.184.22-.268.319-.207.245-.383.453-.541.681-.208.3-.33.565-.37.847a.751.751 0 0 1-1.485-.212c.084-.593.337-1.078.621-1.489.203-.292.45-.584.673-.848.075-.088.147-.173.213-.253.561-.679.985-1.32.985-2.304 0-2.06-1.637-3.75-4-3.75ZM5.75 12h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1 0-1.5ZM6 15.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z"></path></svg>推荐阅读
+    </p>
+    <div class="post-recommend__slot" data-featured-recommend-slot></div>
+</section>
+
+
+<section class="post-comments" aria-label="Comments"
+    data-giscus
+    data-theme-mode="auto"
+    data-theme-light="light"
+    data-theme-dark="dark_dimmed"
+    data-repo="Apursuit/the0n3-blog"
+    data-repo-id="R_kgDORvPPbA"
+    data-category="Announcements"
+    data-category-id="DIC_kwDORvPPbM4C5KAt"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="bottom"
+    data-lang="zh-CN">
+    <div class="giscus"></div>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/blog-stats/script.js"></script>
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/giscus-theme/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/random-recommend/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/features/tax-accordion/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>
