@@ -6,6 +6,8 @@ nav_title: 关于
 nav_order: 60
 ---
 
+<img class="avatar" data-no-lightbox="true" src="/images/friends/syz.png" alt="111" loading="lazy" style="display: block;margin: 0 auto;">
+
 Hi，我是`111`，一个网络安全爱好者，喜欢安全技术和音乐，活跃在MazeSec网络安全技术爱好者社区。
 
 ## 我的项目
