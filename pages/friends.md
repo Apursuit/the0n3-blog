@@ -6,8 +6,7 @@ nav_title: 友链
 nav_order: 50
 ---
 
-微斯人，吾谁与归
-
+兄弟，你好香
 
 <div class="friend-grid">
     <a class="friend-card" href="https://maze-sec.com/" target="_blank" rel="noopener noreferrer">
