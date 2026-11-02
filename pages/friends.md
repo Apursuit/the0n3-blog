@@ -26,14 +26,6 @@ nav_order: 50
             <span class="friend-link">space.bilibili.com</span>
         </span>
     </a>
-    <a class="friend-card" href="https://linux.do/" target="_blank" rel="noopener noreferrer">
-        <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/linuxdo.png" alt="linuxdo avatar" loading="lazy">
-        <span class="friend-info">
-            <span class="friend-name">linuxdo</span>
-            <span class="friend-desc">新的理想型社区</span>
-            <span class="friend-link">linux.do</span>
-        </span>
-    </a>
     <a class="friend-card" href="https://blog.w1ndys.top/" target="_blank" rel="noopener noreferrer">
         <img class="friend-avatar" data-no-lightbox="true" src="https://avatars.githubusercontent.com/u/109416673?v=4" alt="W1ndys小屋 avatar" loading="lazy">
         <span class="friend-info">
@@ -48,14 +40,6 @@ nav_order: 50
             <span class="friend-name">TriumphK</span>
             <span class="friend-desc">当你的才华不足以满足你的野心时，应该静下心来努力学习。</span>
             <span class="friend-link">7r1umphk.github.io</span>
-        </span>
-    </a>
-    <a class="friend-card" href="https://569888.xyz/" target="_blank" rel="noopener noreferrer">
-        <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/vortex5.jpg" alt="Sublarge avatar" loading="lazy">
-        <span class="friend-info">
-            <span class="friend-name">Sublarge</span>
-            <span class="friend-desc">知其攻，守其防；知其黑，守其白。</span>
-            <span class="friend-link">569888.xyz</span>
         </span>
     </a>
     <a class="friend-card" href="https://skyarrow416.github.io/" target="_blank" rel="noopener noreferrer">
@@ -88,6 +72,22 @@ nav_order: 50
             <span class="friend-name">Aristore</span>
             <span class="friend-desc">你好，很高兴认识你</span>
             <span class="friend-link">aristore.top</span>
+        </span>
+    </a>
+        <a class="friend-card" href="https://daochunhan.me/" target="_blank" rel="noopener noreferrer">
+        <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/daochunhan.png" alt="daochunhan avatar" loading="lazy">
+        <span class="friend-info">
+            <span class="friend-name">daochunhan</span>
+            <span class="friend-desc">Hi~ 👋</span>
+            <span class="friend-link">daochunhan.me</span>
+        </span>
+    </a>
+        <a class="friend-card" href="https://569888.xyz/" target="_blank" rel="noopener noreferrer">
+        <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/vortex5.jpg" alt="Sublarge avatar" loading="lazy">
+        <span class="friend-info">
+            <span class="friend-name">Sublarge</span>
+            <span class="friend-desc">知其攻，守其防；知其黑，守其白。</span>
+            <span class="friend-link">569888.xyz</span>
         </span>
     </a>
     <a class="friend-card" href="https://www.hyhforever.top/" target="_blank" rel="noopener noreferrer">
