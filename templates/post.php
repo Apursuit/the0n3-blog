@@ -16,14 +16,14 @@ ob_start();
         <?php if (!empty($post['frontMatter']['categories'])): ?>
             <span class="post-meta-item">分类:
                 <?php foreach ($post['frontMatter']['categories'] as $category): ?>
-                    <span><?= htmlspecialchars($category) ?></span>
+                    <a href="/categories/<?= htmlspecialchars(\App\Taxonomy::urlPath((string) $category)) ?>/"><?= htmlspecialchars((string) $category) ?></a>
                 <?php endforeach; ?>
             </span>
         <?php endif; ?>
         <?php if (!empty($post['frontMatter']['tags'])): ?>
             <span class="post-meta-item">标签:
                 <?php foreach ($post['frontMatter']['tags'] as $tag): ?>
-                    <span>#<?= htmlspecialchars($tag) ?></span>
+                    <a href="/tags/<?= htmlspecialchars(\App\Taxonomy::urlPath((string) $tag)) ?>/">#<?= htmlspecialchars((string) $tag) ?></a>
                 <?php endforeach; ?>
             </span>
         <?php endif; ?>

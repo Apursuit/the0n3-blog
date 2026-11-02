@@ -51,9 +51,9 @@ nav_order: 50
         </span>
     </a>
     <a class="friend-card" href="https://569888.xyz/" target="_blank" rel="noopener noreferrer">
-        <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/vortex5.jpg" alt="vortex avatar" loading="lazy">
+        <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/vortex5.jpg" alt="Sublarge avatar" loading="lazy">
         <span class="friend-info">
-            <span class="friend-name">vortex</span>
+            <span class="friend-name">Sublarge</span>
             <span class="friend-desc">知其攻，守其防；知其黑，守其白。</span>
             <span class="friend-link">569888.xyz</span>
         </span>

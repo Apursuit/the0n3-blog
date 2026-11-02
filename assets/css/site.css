@@ -131,6 +131,12 @@ html[data-theme="dark"] .markdown-body {
     color: var(--fgColor-default);
 }
 
+/* 代码块背景色 */
+html[data-theme="dark"] .markdown-body pre {
+    background-color: #1a1a1c;
+}
+
+
 /* 3. 全局基础 */
 html {
     scroll-behavior: smooth;
@@ -193,6 +199,7 @@ html[data-theme="light"] a::selection {
 html[data-theme="dark"] a::selection {
     color: #8cc0ff;
 }
+
 
 /* 代码块底接近中性，同浓度易被吞，浓度 +6% */
 pre ::selection {
@@ -623,6 +630,119 @@ html[data-theme="light"] .markdown-body .markdown-alert-caution {
 html[data-theme="dark"] .markdown-body .post-item a,
 html[data-theme="dark"] .markdown-body .tax-item a {
     color: #c9cdd1;
+}
+
+/* 分类 / 标签索引：名字与数量两列，细线分组，不用卡片盒
+   （深色下 surface-card 与页面同色，卡片只能靠描边，反而增加噪点） */
+.markdown-body .tax-index {
+    list-style: none;
+    margin: 1.4rem 0 0;
+    padding-left: 0;
+}
+
+.markdown-body .tax-index__item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: 14px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--line-divider);
+}
+
+.markdown-body .tax-index__item a {
+    color: #111827;
+    text-decoration: none;
+    min-width: 0;
+    transition: color 0.15s ease;
+}
+
+.markdown-body .tax-index__item a:hover {
+    color: var(--fgColor-accent);
+    text-decoration: underline;
+}
+
+html[data-theme="dark"] .markdown-body .tax-index__item a {
+    color: #c9cdd1;
+}
+
+.markdown-body .tax-index__count {
+    color: var(--fgColor-muted);
+    font-size: var(--font-size-meta);
+    font-family: var(--font-family-ui);
+    white-space: nowrap;
+}
+
+/* 标签云：字号编码文章数（四档 15/10/5，见 Taxonomy::weightTier），
+   数量不进视觉，只走 title 与 aria-label。
+   baseline 对齐是关键：不同字号同行时底部齐平，否则高低参差像排版事故。
+
+   选择器统一带 .markdown-body 前缀：github-markdown.css 的 .markdown-body a
+   特异性为 (0,1,1)，会压过单类选择器 (0,1,0)，不加前缀时 color 会被强制成 accent 蓝。 */
+.markdown-body .tag-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 10px 18px;
+    line-height: 1.15;
+    margin: 1.4rem 0 0;
+    font-family: var(--font-family-ui);
+}
+
+.markdown-body .tag-cloud__item {
+    white-space: nowrap;
+    text-decoration: none;
+    color: var(--fgColor-muted);
+    padding: 0.2em 0;
+    transition: color 0.15s ease;
+}
+
+.markdown-body .tag-cloud__item:hover {
+    color: var(--fgColor-accent);
+    text-decoration: underline;
+}
+
+/* 前两档同时提亮，形成「字号 + 明度」双编码；后两档只靠字号区分 */
+.markdown-body .tag-cloud__item--xl {
+    font-size: 1.5em;
+    font-weight: 500;
+    color: var(--fgColor-default);
+}
+
+.markdown-body .tag-cloud__item--l {
+    font-size: 1.3em;
+    font-weight: 500;
+    color: var(--fgColor-default);
+}
+
+.markdown-body .tag-cloud__item--m {
+    font-size: 1.12em;
+}
+
+.markdown-body .tag-cloud__item--s {
+    font-size: 0.92em;
+}
+
+/* 窄屏压缩梯度：手机上字号的绝对差异更夸张，梯度太大会散架 */
+@media (max-width: 767px) {
+    .markdown-body .tag-cloud {
+        gap: 8px 14px;
+    }
+
+    .markdown-body .tag-cloud__item--xl {
+        font-size: 1.3em;
+    }
+
+    .markdown-body .tag-cloud__item--l {
+        font-size: 1.16em;
+    }
+
+    .markdown-body .tag-cloud__item--m {
+        font-size: 1.02em;
+    }
+
+    .markdown-body .tag-cloud__item--s {
+        font-size: 0.95em;
+    }
 }
 
 .pagination {

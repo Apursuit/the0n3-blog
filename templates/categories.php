@@ -1,30 +1,19 @@
 <?php
+/*
+ * 分类索引：只做导航，不再内联文章 JSON。
+ * 每个分类的完整文章列表在 /categories/{原始名称}/ 下，由 taxonomy.php 渲染。
+ */
 $pageTitle = '分类';
 $pageDescription = '本站全部分类，按分类浏览文章。';
 ob_start();
 ?>
 
 <h1>分类</h1>
-<ul class="tax-accordion">
-    <?php
-    foreach ($categories as $category => $posts):
-        $postItems = [];
-        foreach ($posts as $post) {
-            $postItems[] = [
-                'title' => $post['frontMatter']['title'] ?? '',
-                'permalink' => $post['frontMatter']['permalink'] ?? '#',
-                'date' => \App\Utils::formatDate($post['frontMatter']['date'] ?? ''),
-            ];
-        }
-        $postsJson = htmlspecialchars(json_encode($postItems, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8');
-        ?>
-        <li class="tax-item" data-posts="<?= $postsJson ?>">
-            <button class="tax-toggle" type="button" aria-expanded="false">
-                <span class="tax-name"><?= htmlspecialchars($category) ?></span>
-                <span class="tax-count"><?= count($posts) ?></span>
-                <span class="tax-chevron" aria-hidden="true"></span>
-            </button>
-            <ul class="post-list" aria-hidden="true"></ul>
+<ul class="tax-index">
+    <?php foreach ($categories as $category => $posts): ?>
+        <li class="tax-index__item">
+            <a href="/categories/<?= htmlspecialchars(\App\Taxonomy::urlPath((string) $category)) ?>/"><?= htmlspecialchars((string) $category) ?></a>
+            <span class="tax-index__count"><?= count($posts) ?></span>
         </li>
     <?php endforeach; ?>
 </ul>

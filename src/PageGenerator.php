@@ -195,6 +195,74 @@ class PageGenerator
             $sitemapEntries['/categories/'] = $buildTimestamp;
             $sitemapEntries['/archives/'] = $buildTimestamp;
         }
+
+        // 索引页之后生成各条目的独立落地页，顺序与索引页一致（数据层已按文章数降序）
+        $this->generateTaxonomyChildren($categories, 'category', '分类', '/categories/', $siteData, $navItems, $sitemapEntries, $buildTimestamp, $siteUrl);
+        $this->generateTaxonomyChildren($tags, 'tag', '标签', '/tags/', $siteData, $navItems, $sitemapEntries, $buildTimestamp, $siteUrl);
+    }
+
+    /**
+     * 生成分类 / 标签的独立落地页，形如 /categories/{原始名称}/。
+     *
+     * 目录名保留原始名称，URL 由 Taxonomy::urlPath() 做一次 percent-encoding。
+     * 不分页：单页列出该条目下全部文章，模板内按年份分节。
+     *
+     * @param array  $items           形如 [名称 => post[]]
+     * @param string $kind            category | tag
+     * @param string $label           报错与标题用的中文标签
+     * @param string $basePath        形如 /categories/
+     * @param array  $siteData
+     * @param array  $navItems
+     * @param array  $sitemapEntries  引用传递，直接追加
+     * @param string $buildTimestamp
+     * @param string $siteUrl
+     */
+    private function generateTaxonomyChildren(
+        array $items,
+        string $kind,
+        string $label,
+        string $basePath,
+        array $siteData,
+        array $navItems,
+        array &$sitemapEntries,
+        string $buildTimestamp,
+        string $siteUrl
+    ): void {
+        // NTFS 大小写不敏感：本地 Windows 预览时，大小写不同的两个名称会写进同一个目录并
+        // 静默覆盖（线上 Linux 则是两个独立页面）。只告警不自动改名，是否合并由作者决定。
+        foreach (Taxonomy::findCaseConflicts(array_keys($items)) as $group) {
+            Utils::log(
+                "{$label}目录名大小写冲突：" . implode(' / ', $group)
+                . '，本地 Windows 预览会互相覆盖',
+                'warning'
+            );
+        }
+
+        foreach ($items as $name => $posts) {
+            $name = (string) $name;
+            $urlPath = $basePath . Taxonomy::urlPath($name) . '/';
+            $targetPath = $this->config['dist_path'] . $basePath . Taxonomy::dirName($name, $label);
+
+            if (!is_dir($targetPath)) {
+                mkdir($targetPath, 0755, true);
+            }
+
+            $html = $this->renderer->render('taxonomy', [
+                'type' => $kind,
+                'name' => $name,
+                'posts' => $posts,
+                'pageTitle' => "{$label}：{$name}",
+                'pageDescription' => "{$label}「{$name}」下的全部文章，共 " . count($posts) . ' 篇。',
+                'pageCanonical' => $siteUrl . $urlPath,
+                'site' => $siteData,
+                'navItems' => $navItems,
+            ]);
+            file_put_contents($targetPath . '/index.html', $html);
+
+            if ($siteUrl !== '') {
+                $sitemapEntries[$urlPath] = $buildTimestamp;
+            }
+        }
     }
 
     private function buildNavItems(array $siteData, array $pages): array
