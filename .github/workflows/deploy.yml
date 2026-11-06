@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  pages: read
 
 concurrency:
   group: pages-deploy
@@ -64,6 +65,28 @@ jobs:
         continue-on-error: true
 
       # 7) 部署 dist 到 gh-pages 分支
+      - name: Wait for active Pages deployment
+        if: steps.build.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          for attempt in {1..30}; do
+            status=$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq '.status // ""')
+
+            if [ "$status" != "building" ]; then
+              echo "Pages status is '$status'. Continue deployment."
+              exit 0
+            fi
+
+            echo "Pages status is 'building'. Waiting for current deployment to finish (${attempt}/30)..."
+            sleep 20
+          done
+
+          echo "::error::Timed out waiting for current Pages deployment to finish."
+          exit 1
+
       - name: Deploy to gh-pages
         if: steps.build.outcome == 'success'
         uses: peaceiris/actions-gh-pages@v4
