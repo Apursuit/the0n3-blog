@@ -1,0 +1,421 @@
+/* ============================================
+   Search Modal
+   说明：
+   1. 导航栏只保留搜索入口按钮
+   2. 真实搜索交互在全局命令面板中完成
+   3. 第一版暂不展示文章摘要，重点做好层级和键盘体验
+   ============================================ */
+
+body.search-open {
+    overflow: hidden;
+}
+
+/* 搜索入口按钮：
+   保持克制，不抢导航主内容，但能明确表达可搜索。 */
+.search-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border: 1px solid var(--borderColor-default, #d1d9e0);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--bgColor-default, #fff) 92%, var(--bgColor-muted, #f6f8fa));
+    color: var(--fgColor-default, #1f2328);
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+    transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.search-trigger:hover {
+    border-color: var(--borderColor-muted, #d1d9e0b3);
+    color: var(--fgColor-accent, #0969da);
+    transform: translateY(-1px);
+}
+
+.search-trigger__label {
+    font-weight: 500;
+}
+
+.search-trigger__hint {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5rem;
+    height: 1.4rem;
+    padding: 0 0.4rem;
+    border-radius: 999px;
+    background: var(--bgColor-neutral-muted, #818b981f);
+    color: var(--fgColor-muted, #59636e);
+    font-size: 12px;
+    line-height: 1;
+}
+
+/* 弹层容器 */
+.search-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+}
+
+.search-modal[hidden] {
+    display: none;
+}
+
+.search-modal__overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.42);
+    backdrop-filter: blur(8px);
+    /* 遮罩用简单的 opacity 过渡即可（背景变暗不应回弹，Apple Design §4） */
+    opacity: 0;
+    transition: opacity 200ms ease;
+}
+
+.search-modal__dialog {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    min-height: 100%;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 8vh 18px 24px;
+    box-sizing: border-box;
+}
+
+.search-modal__panel {
+    width: min(720px, 100%);
+    border: 1px solid var(--borderColor-default, #d1d9e0);
+    border-radius: 22px;
+    background: color-mix(in srgb, var(--bgColor-default, #fff) 96%, var(--bgColor-muted, #f6f8fa));
+    box-shadow: 0 28px 80px rgba(15, 23, 42, 0.2);
+    overflow: hidden;
+    /* 初始态：由 JS 弹簧驱动进出场（Apple Design §3/§4/§7） */
+    opacity: 0;
+    transform: scale(0.92);
+    will-change: transform, opacity;
+}
+
+.search-modal__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px 22px 12px;
+}
+
+.search-modal__title-group {
+    min-width: 0;
+}
+
+.search-modal__title {
+    color: var(--fgColor-default, #1f2328);
+    font-size: 20px;
+    font-weight: 650;
+    line-height: 1.25;
+}
+
+.search-modal__subtitle {
+    margin-top: 6px;
+    color: var(--fgColor-muted, #59636e);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.search-modal__close {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 auto;
+    border: 1px solid var(--borderColor-default, #d1d9e0);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--fgColor-muted, #59636e);
+    font: inherit;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    transition: border-color 0.18s ease, color 0.18s ease, background-color 0.18s ease;
+}
+
+.search-modal__close:hover {
+    border-color: var(--borderColor-muted, #d1d9e0b3);
+    color: var(--fgColor-default, #1f2328);
+    background: var(--bgColor-muted, #f6f8fa);
+}
+
+.search-modal__body {
+    padding: 0 22px 22px;
+}
+
+/* 输入区：
+   让输入框成为主视觉，明确这是“命令面板式搜索”。 */
+.search-input-wrap {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    padding: 0 16px;
+    border: 1px solid var(--borderColor-default, #d1d9e0);
+    border-radius: 16px;
+    background: var(--bgColor-default, #fff);
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+}
+
+.search-input-wrap:focus-within {
+    border-color: var(--fgColor-accent, #0969da);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--fgColor-accent, #0969da) 10%, transparent);
+}
+
+.search-input-wrap__icon {
+    color: var(--fgColor-muted, #59636e);
+    font-size: 18px;
+    line-height: 1;
+}
+
+.search-input {
+    width: 100%;
+    min-width: 0;
+    padding: 15px 0;
+    border: 0;
+    background: transparent;
+    color: var(--fgColor-default, #1f2328);
+    font: inherit;
+    font-size: 18px;
+    line-height: 1.4;
+    box-sizing: border-box;
+}
+
+.search-input:focus {
+    outline: none;
+}
+
+.search-input::placeholder {
+    color: var(--fgColor-muted, #59636e);
+}
+
+.search-help {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    margin-top: 12px;
+    color: var(--fgColor-muted, #59636e);
+    font-size: 12px;
+}
+
+.search-help span {
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: var(--bgColor-neutral-muted, #818b981f);
+}
+
+.search-state {
+    margin-top: 14px;
+    min-height: 1.6em;
+    color: var(--fgColor-muted, #59636e);
+    font-size: 14px;
+}
+
+.search-state[data-tone="success"] {
+    color: var(--fgColor-default, #1f2328);
+}
+
+.search-state[data-tone="error"] {
+    color: #cf222e;
+}
+
+.search-results {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: min(60vh, 520px);
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.search-result-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 16px;
+    align-items: center;
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid var(--borderColor-default, #d1d9e0);
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--bgColor-default, #fff) 94%, var(--bgColor-muted, #f6f8fa));
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.18s ease, background-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.search-result-item:hover,
+.search-result-item.is-active {
+    border-color: color-mix(in srgb, var(--fgColor-accent, #0969da) 45%, var(--borderColor-default, #d1d9e0));
+    background: color-mix(in srgb, var(--fgColor-accent, #0969da) 7%, var(--bgColor-default, #fff));
+    box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
+    transform: translateY(-1px);
+}
+
+.search-result-item[aria-selected="true"] {
+    outline: none;
+}
+
+.search-result-item__main {
+    min-width: 0;
+}
+
+.search-result-item__title {
+    display: block;
+    color: var(--fgColor-default, #1f2328);
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.45;
+    word-break: break-word;
+}
+
+.search-result-item__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    align-items: center;
+    margin-top: 8px;
+    color: var(--fgColor-muted, #59636e);
+    font-size: 12px;
+}
+
+.search-result-item__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.search-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: var(--bgColor-neutral-muted, #818b981f);
+    color: var(--fgColor-muted, #59636e);
+    line-height: 1;
+}
+
+.search-result-item__arrow {
+    color: var(--fgColor-muted, #59636e);
+    font-size: 16px;
+}
+
+/* 深色模式 */
+[data-theme="dark"] .search-trigger {
+    background: color-mix(in srgb, var(--bgColor-default, #1e1e20) 92%, var(--bgColor-muted, #151b23));
+    color: var(--fgColor-default, #e1e1e5);
+}
+
+[data-theme="dark"] .search-modal__overlay {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .search-modal__panel {
+    background: #1d2229;
+    border-color: #333b45;
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+}
+
+[data-theme="dark"] .search-modal__close:hover {
+    background: #232a33;
+}
+
+[data-theme="dark"] .search-input-wrap {
+    background: #161b22;
+    border-color: #333b45;
+}
+
+[data-theme="dark"] .search-result-item {
+    background: #181d24;
+    border-color: #303743;
+}
+
+[data-theme="dark"] .search-result-item:hover,
+[data-theme="dark"] .search-result-item.is-active {
+    background: rgba(88, 166, 255, 0.12);
+    border-color: rgba(88, 166, 255, 0.36);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.28);
+}
+
+/* 减弱透明度偏好：遮罩与面板转为实心，去掉模糊（Apple Design §14） */
+@media (prefers-reduced-transparency: reduce) {
+    .search-modal__overlay {
+        background: rgba(15, 23, 42, 0.5);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+
+    .search-modal__panel {
+        background: var(--bgColor-default, #ffffff);
+    }
+}
+
+/* 响应式：
+   小屏上让面板更接近全宽，避免仍然像桌面弹窗。 */
+@media (max-width: 767px) {
+    .search-trigger {
+        padding: 7px 10px;
+        gap: 8px;
+        font-size: 13px;
+    }
+
+    .search-trigger__hint {
+        min-width: 1.3rem;
+        height: 1.25rem;
+        font-size: 11px;
+    }
+
+    .search-modal__dialog {
+        padding: 14px 10px 18px;
+    }
+
+    .search-modal__panel {
+        width: 100%;
+        border-radius: 18px;
+    }
+
+    .search-modal__header {
+        padding: 16px 16px 10px;
+    }
+
+    .search-modal__body {
+        padding: 0 16px 16px;
+    }
+
+    .search-input {
+        font-size: 16px;
+        padding: 14px 0;
+    }
+
+    .search-result-item {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .search-result-item__arrow {
+        display: none;
+    }
+}
+
+/* 滚动条优化 */
+.search-results::-webkit-scrollbar {
+    width: 7px;
+}
+
+.search-results::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.search-results::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--fgColor-muted, #59636e) 55%, transparent);
+    border-radius: 999px;
+}
+
+.search-results::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--fgColor-muted, #59636e) 75%, transparent);
+}

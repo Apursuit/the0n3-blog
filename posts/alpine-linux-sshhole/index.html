@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Alpine Linux sshhole漏洞复现 - the0n3</title>
+        <meta name="description" content="漏洞描述 SSHole 漏洞（漏洞编号 CVE-2026-123158，CVSS 评分 8.1 高危）是安全研究员 Özgün Kültekin 于 2026 年 11 月披露的一个史诗级 OpenSSH 身份验证绕过漏洞。 当攻击者针对特定配置的系统，在密码框中输入超过 256 个字符（通常为 257 至 1024 …">
+    <link rel="canonical" href="https://the0n3.top/posts/alpine-linux-sshhole/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="Alpine Linux sshhole漏洞复现">
+    <meta property="og:description" content="漏洞描述 SSHole 漏洞（漏洞编号 CVE-2026-123158，CVSS 评分 8.1 高危）是安全研究员 Özgün Kültekin 于 2026 年 11 月披露的一个史诗级 OpenSSH 身份验证绕过漏洞。 当攻击者针对特定配置的系统，在密码框中输入超过 256 个字符（通常为 257 至 1024 …">
+    <meta property="og:url" content="https://the0n3.top/posts/alpine-linux-sshhole/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/alpine-linux-sshhole/2.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Alpine Linux sshhole漏洞复现">
+    <meta name="twitter:description" content="漏洞描述 SSHole 漏洞（漏洞编号 CVE-2026-123158，CVSS 评分 8.1 高危）是安全研究员 Özgün Kültekin 于 2026 年 11 月披露的一个史诗级 OpenSSH 身份验证绕过漏洞。 当攻击者针对特定配置的系统，在密码框中输入超过 256 个字符（通常为 257 至 1024 …">
+        <meta name="twitter:image" content="https://the0n3.top/images/alpine-linux-sshhole/2.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 评论系统预连接：giscus 由前端按访客主题动态注入，提前建连可抵消注入延迟 -->
+    <link rel="preconnect" href="https://giscus.app" crossorigin>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/nav-menu/style.css">
+        <link rel="stylesheet" href="/assets/features/random-recommend/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                <details class="nav-menu">
+                    <summary class="nav-toggle" aria-label="打开菜单"><span aria-hidden="true">☰</span></summary>
+                </details>
+                <div class="nav-links">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                </div>
+                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>Alpine Linux sshhole漏洞复现</h1>
+    <p>
+        <span class="meta">发布于: 2026-11-07 13:30</span>
+    </p>
+    <div class="post-body">
+        <h2>漏洞描述</h2>
+<p>SSHole 漏洞（漏洞编号 CVE-2026-123158，CVSS 评分 8.1 高危）是安全研究员 Özgün Kültekin 于 2026 年 11 月披露的一个史诗级 OpenSSH 身份验证绕过漏洞。</p>
+<p>当攻击者针对特定配置的系统，在密码框中输入超过 256 个字符（通常为 257 至 1024 字节）的任意超长密码时，即可无需任何正确凭证，单次连接直接登录系统中本应“禁止密码登录”的特定账号。</p>
+<h2>漏洞原理</h2>
+<p><strong>musl libc 的错误处理设计（2012年）</strong></p>
+<p>在 Linux 中，传统的 /etc/shadow 文件中如果一个账号的密码字段被设为 <code>*</code>，代表该账号“未设置密码/禁止密码登录”（因为没有任何密码能哈希出单字符 <code>*</code>）。但在 2012 年，为了防止某些未检查 NULL 返回值的程序崩溃，轻量级标准 C 库 musl libc 做出调整：当密码哈希计算失败时，不返回 NULL，而是返回单字符 <code>*</code>。同时，musl 为了防止超长密码引发拒绝服务（DoS），将密码输入上限限制在 256 字节，超过该长度直接报错，而报错的返回值也是 <code>*</code>。</p>
+<p><strong>OpenSSH 的防时序攻击设计（2016年）</strong></p>
+<p>为了修复由于计算耗时不同导致黑客可以枚举用户名的漏洞（CVE-2016-6210），OpenSSH 引入了一个逻辑：即使遇到没有密码哈希的账号（例如密码字段为 <code>*</code> 的账号），sshd 也会故意借用系统中另一个活跃账号的盐值（Salt）对输入的密码算一遍哈希，以对齐响应时间。这导致原本应该被直接拒绝的 <code>*</code> 账号，也走入了密码哈希的计算流程。</p>
+<p><strong>逻辑闭环触发绕过</strong></p>
+<p>当攻击者向一个密码字段为 <code>*</code> 的账号（如 Alpine 的 root 或默认用户）发起 SSH 密码登录，并输入一个 257 字节的任意字符串时，OpenSSH 借用其他账号的盐值调用 musl 的 crypt() 函数。musl 发现密码超长，直接报错并返回字符串 <code>*</code>。OpenSSH 拿到返回值 <code>*</code> 与 /etc/shadow 中存储的字段 <code>*</code> 进行比对——完全一致，验证通过，直接放行。</p>
+<h2>漏洞前置条件</h2>
+<p>运行在 musl libc 环境：目标系统必须使用 musl 库（如 Alpine Linux、OpenWrt、Buildroot、Yocto 等），使用标准的 glibc 系统（如 Ubuntu, Debian, Fedora, CentOS）完全不受影响。</p>
+<p>未启用 PAM（可插拔认证模块）：OpenSSH 编译或运行时没有使用 PAM（Alpine 的 openssh-server 默认不启用 PAM）。</p>
+<p>开启了密码登录：SSH 配置文件中开启了 PasswordAuthentication yes（通常为默认值）。</p>
+<p>存在密码字段为 <code>*</code> 的活跃账号：目标系统中存在通过密钥或证书登录（Key-only）、或通过 LDAP 介接、或默认无密码的活跃账号，其 shadow 文件中的密码字段严格为 <code>*</code>（注：锁定的账号如果是 <code>!</code> 则不受影响）。</p>
+<p>存在另一个有真实密码的本地账号：系统中必须至少存在一个使用了 SHA256/SHA512 真实密码哈希的账号，用于让 sshd 借用盐值。</p>
+<h2>漏洞复现</h2>
+<p>在 <a href="https://alpinelinux.org/posts/2026-11-05-openssh-password-authentication-bypass/">2026-11-05 Alpine Linux 的官方安全通报</a> 中，详细说明修复了 openssh-server 从 3.16 版本到最新版本。</p>
+<p><img src="/images/alpine-linux-sshhole/2.png" alt="" decoding="async" width="1116" height="487"></p>
+<p>下面使用 docker 复现漏洞，如果你没有docker环境或拉取速度慢，可以使用这个项目安装换源来加速<a href="https://github.com/SuperManito/LinuxMirrors">https://github.com/SuperManito/LinuxMirrors</a>。</p>
+<pre><code class="language-bash"># GNU/Linux 更换系统软件源
+bash &lt;(curl -sSL https://linuxmirrors.cn/main.sh)
+# Docker 安装与换源
+bash &lt;(curl -sSL https://linuxmirrors.cn/docker.sh)</code></pre>
+<p>根据官方安全通报可知，Alpine Linux 3.15 版本及以下版本的 openssh-server 并未进行修复，仍然存在漏洞，可以用来快速复现。通过 Dockerfile 构建一个 Alpine Linux 3.15 镜像，创建两个账号：一个密码字段为 <code>*</code> 的账号 demo（禁止密码登录），另一个账号 alice 设置了真实密码 correcthorse。然后通过 SSH 客户端尝试使用超长密码登录 demo 账号，即可触发漏洞。</p>
+<pre><code class="language-Dockerfile">FROM alpine:3.15
+
+RUN apk add --no-cache openssh-server \
+    &amp;&amp; ssh-keygen -A \
+    &amp;&amp; mkdir -p /run/sshd
+
+RUN adduser -D alice &amp;&amp; echo 'alice:correcthorse' | chpasswd
+RUN adduser -D demo &amp;&amp; sed -i 's/^demo:[^:]*:/demo:*:/' /etc/shadow
+RUN echo 'PasswordAuthentication yes' &gt;&gt; /etc/ssh/sshd_config
+
+EXPOSE 22
+CMD ["/usr/sbin/sshd", "-D", "-e"]</code></pre>
+<p>编译运行</p>
+<pre><code class="language-bash">docker build -t alpine-sshhole .
+docker run -d --name alpine-sshhole -p 2222:22 alpine-sshhole</code></pre>
+<p>生成 payload（大于256个字符即可触发漏洞）</p>
+<pre><code class="language-bash">python3 -c "print('A'*300)"</code></pre>
+<p><strong>注意，漏洞机制决定了第一次密码尝试会失败，第二次才会成功。</strong></p>
+<p>由于 musl libc 的 getspnam() 复用同一静态缓冲区，第一次密码尝试时，sshd 为借用盐值读取真实账户数据，会覆盖目标账户的 shadow 条目，导致比较失败。第二次尝试时，pick_salt() 的缓存已就绪，不再触发缓冲区覆盖，目标账户的 <code>*</code> 字段得以保留，与 musl 对超长密码返回的 <code>*</code> 匹配成功。<strong>因此，必须在同一次 SSH 连接内连续输入两次密码，第一次任意短密码，第二次超长密码。</strong></p>
+<p><img src="/images/alpine-linux-sshhole/1.png" alt="" decoding="async" loading="lazy" width="1247" height="803"></p>
+<p>停止容器删除镜像</p>
+<pre><code class="language-bash">docker stop alpine-sshhole
+docker rm alpine-sshhole
+docker rmi alpine-sshhole</code></pre>
+<h2>漏洞修复</h2>
+<ul>
+<li>升级到修复了该漏洞的 OpenSSH 版本。</li>
+<li>临时禁用密码登录：在 /etc/ssh/sshd_config 中设置 PasswordAuthentication no。</li>
+</ul>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <a href="/categories/Linux%E5%AE%89%E5%85%A8/">Linux安全</a>
+                            </span>
+                    </div>
+    </article>
+
+<section class="post-recommend markdown-alert markdown-alert-tip" data-featured-recommend dir="auto" hidden aria-labelledby="featuredRecommendTitle">
+    <p class="markdown-alert-title" id="featuredRecommendTitle">
+        <svg class="octicon octicon-light-bulb mr-2" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8 1.5c-2.363 0-4 1.69-4 3.75 0 .984.424 1.625.984 2.304l.214.253c.223.264.47.556.673.848.284.411.537.896.621 1.49a.75.75 0 0 1-1.484.211c-.04-.282-.163-.547-.37-.847a8.456 8.456 0 0 0-.542-.68c-.084-.1-.173-.205-.268-.32C3.201 7.75 2.5 6.766 2.5 5.25 2.5 2.31 4.863 0 8 0s5.5 2.31 5.5 5.25c0 1.516-.701 2.5-1.328 3.259-.095.115-.184.22-.268.319-.207.245-.383.453-.541.681-.208.3-.33.565-.37.847a.751.751 0 0 1-1.485-.212c.084-.593.337-1.078.621-1.489.203-.292.45-.584.673-.848.075-.088.147-.173.213-.253.561-.679.985-1.32.985-2.304 0-2.06-1.637-3.75-4-3.75ZM5.75 12h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1 0-1.5ZM6 15.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z"></path></svg>推荐阅读
+    </p>
+    <div class="post-recommend__slot" data-featured-recommend-slot></div>
+</section>
+
+
+<section class="post-comments" aria-label="Comments"
+    data-giscus
+    data-theme-mode="auto"
+    data-theme-light="light"
+    data-theme-dark="dark_dimmed"
+    data-repo="Apursuit/the0n3-blog"
+    data-repo-id="R_kgDORvPPbA"
+    data-category="Announcements"
+    data-category-id="DIC_kwDORvPPbM4C5KAt"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="bottom"
+    data-lang="zh-CN">
+    <div class="giscus"></div>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/blog-stats/script.js"></script>
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/giscus-theme/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/random-recommend/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+User-agent: *
+Disallow:
+Sitemap: https://the0n3.top/sitemap.xml
