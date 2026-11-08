@@ -77,7 +77,7 @@ nav_order: 50
         <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/daochunhan.png" alt="daochunhan avatar" loading="lazy">
         <span class="friend-info">
             <span class="friend-name">daochunhan</span>
-            <span class="friend-desc">Hi~ 👋</span>
+            <span class="friend-desc">骤雨落，宿命敲</span>
             <span class="friend-link">daochunhan.me</span>
         </span>
     </a>
