@@ -25,14 +25,6 @@ nav_order: 50
             <span class="friend-link">space.bilibili.com</span>
         </span>
     </a>
-    <a class="friend-card" href="https://blog.w1ndys.top/" target="_blank" rel="noopener noreferrer">
-        <img class="friend-avatar" data-no-lightbox="true" src="https://avatars.githubusercontent.com/u/109416673?v=4" alt="W1ndys小屋 avatar" loading="lazy">
-        <span class="friend-info">
-            <span class="friend-name">W1ndys小屋</span>
-            <span class="friend-desc">欲戴皇冠，必承其重。</span>
-            <span class="friend-link">blog.w1ndys.top</span>
-        </span>
-    </a>
     <a class="friend-card" href="https://7r1umphk.github.io/" target="_blank" rel="noopener noreferrer">
         <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/triumphk.webp" alt="TriumphK avatar" loading="lazy">
         <span class="friend-info">
@@ -57,6 +49,22 @@ nav_order: 50
             <span class="friend-link">faabbi.github.io</span>
         </span>
     </a>
+    <a class="friend-card" href="https://tlgjm.top/" target="_blank" rel="noopener noreferrer">
+        <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/tonglinggejimo.jpg" alt="tonglinggejimo avatar" loading="lazy">
+        <span class="friend-info">
+            <span class="friend-name">tonglinggejimo</span>
+            <span class="friend-desc">很高兴见到你！</span>
+            <span class="friend-link">tlgjm.top</span>
+        </span>
+    </a>
+    <a class="friend-card" href="https://daochunhan.me/" target="_blank" rel="noopener noreferrer">
+        <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/daochunhan.png" alt="daochunhan avatar" loading="lazy">
+        <span class="friend-info">
+            <span class="friend-name">daochunhan</span>
+            <span class="friend-desc">骤雨落，宿命敲</span>
+            <span class="friend-link">daochunhan.me</span>
+        </span>
+    </a>
     <a class="friend-card" href="https://xiaozhihua.top/" target="_blank" rel="noopener noreferrer">
         <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/xzh.png" alt="咲之花 avatar" loading="lazy">
         <span class="friend-info">
@@ -73,20 +81,20 @@ nav_order: 50
             <span class="friend-link">aristore.top</span>
         </span>
     </a>
-        <a class="friend-card" href="https://daochunhan.me/" target="_blank" rel="noopener noreferrer">
-        <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/daochunhan.png" alt="daochunhan avatar" loading="lazy">
-        <span class="friend-info">
-            <span class="friend-name">daochunhan</span>
-            <span class="friend-desc">骤雨落，宿命敲</span>
-            <span class="friend-link">daochunhan.me</span>
-        </span>
-    </a>
         <a class="friend-card" href="https://569888.xyz/" target="_blank" rel="noopener noreferrer">
         <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/vortex5.jpg" alt="Sublarge avatar" loading="lazy">
         <span class="friend-info">
             <span class="friend-name">Sublarge</span>
             <span class="friend-desc">知其攻，守其防；知其黑，守其白。</span>
             <span class="friend-link">569888.xyz</span>
+        </span>
+    </a>
+    <a class="friend-card" href="https://blog.w1ndys.top/" target="_blank" rel="noopener noreferrer">
+        <img class="friend-avatar" data-no-lightbox="true" src="https://avatars.githubusercontent.com/u/109416673?v=4" alt="W1ndys小屋 avatar" loading="lazy">
+        <span class="friend-info">
+            <span class="friend-name">W1ndys小屋</span>
+            <span class="friend-desc">欲戴皇冠，必承其重。</span>
+            <span class="friend-link">blog.w1ndys.top</span>
         </span>
     </a>
     <a class="friend-card" href="https://www.hyhforever.top/" target="_blank" rel="noopener noreferrer">
@@ -139,21 +147,4 @@ nav_order: 50
     </a>
 </div>
 
-<hr style="margin: 3rem 0 1.5rem; border: 0; border-top: 1px dashed var(--c-border, #ddd);">
 
-<div class="friend-dead-section">
-    <h3 style="color: var(--c-text-muted, #999); font-size: .95rem; margin-bottom: 1rem;">
-        ⚠️ 暂时失联的友链
-        <small style="font-weight: normal; margin-left: .5rem; opacity: .75;">（站点当前无法访问，期待早日恢复）</small>
-    </h3>
-    <div class="friend-grid">
-        <div class="friend-card" style="pointer-events: none; cursor: not-allowed;">
-            <img class="friend-avatar" data-no-lightbox="true" src="/images/friends/tonglinggejimo.jpg" alt="tonglinggejimo avatar" loading="lazy">
-            <span class="friend-info">
-                <span class="friend-name">tonglinggejimo</span>
-                <span class="friend-desc">很高兴见到你！</span>
-                <span class="friend-link">tlgjm.site</span>
-            </span>
-        </div>
-    </div>
-</div>
