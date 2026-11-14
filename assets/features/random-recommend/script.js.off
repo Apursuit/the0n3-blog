@@ -12,12 +12,12 @@
     // 唯一数据源，顺序即权重。url 须与 posts/*.md 的 frontMatter.permalink 完全一致
     var FEATURED = [
         { url: '/pages/mazesec-mao/', title: 'MazeSec 矛计划 - 如何制作一台靶机' },
-        { url: '/pages/linux-config-privesc/', title: '利用逐行解析配置文件实现权限提升的八种方式' },
+        { url: '/pages/linux-config-privesc/', title: 'Linux下利用逐行解析配置文件实现权限提升的八种方式' },
         { url: '/posts/windows-admin-to-system/', title: 'Windows从Administrator提升到system权限' },
         { url: '/pages/disk-root/', title: 'Linux disk组用户提权' },
         { url: '/posts/busybox138/', title: 'Alpine Linux 下 SUID Bash 获取 euid=0 Shell 后 BusyBox 降权机制分析' },
         { url: '/posts/lnk-file-phishing/', title: '利用LNK快捷方式的钓鱼攻防' },
-        { url: '/posts/comBypassUAC/', title: 'BypassUAC 实验记录' },
+        { url: '/posts/comBypassUAC/', title: '赛博斗蛐蛐 - BypassUAC静默提权至管理员权限' },
         { url: '/posts/maze-cat/', title: 'MazeSec cat靶机设计流程' },
         { url: '/pages/maze-111/', title: 'MazeSec 111' },
         { url: '/posts/maze-hihyh/', title: 'MazeSec HiHYH 靶机设计流程' }
