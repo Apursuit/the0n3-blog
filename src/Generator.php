@@ -69,6 +69,16 @@ class Generator
             $this->categories = $result['categories'];
             $this->archives = $result['archives'];
         });
+        // sitemap 的 lastmod 依赖 git 提交历史；读取失败则中断，避免产出 lastmod 全部失效的 sitemap
+        if (!GitLastmod::init()) {
+            Utils::log(
+                '无法读取 git 提交历史，而 sitemap 的 lastmod 依赖它。'
+                . '请确认已安装 git，且当前目录是 git 仓库。构建已中断。',
+                'error'
+            );
+            return 1;
+        }
+
         $this->timeStep('7. 生成站点页面：HTML、分页、sitemap', '7. 站点页面生成完成', function () {
             $this->pageGenerator->generate($this->posts, $this->pages, $this->tags, $this->categories, $this->archives);
         });

@@ -25,6 +25,9 @@ jobs:
       # 1) 拉取代码
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          # sitemap 的 lastmod 取自 git 提交历史，浅克隆会导致读取不到历史
+          fetch-depth: 0
 
       # 2) 安装 PHP（启用 zip 扩展）
       - name: Setup PHP
