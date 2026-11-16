@@ -74,6 +74,7 @@ $giscusEnabled = is_array($giscus) && !empty($giscus['enabled']);
     data-reactions-enabled="<?= htmlspecialchars($giscus['reactions_enabled'] ?? '1') ?>"
     data-emit-metadata="<?= htmlspecialchars($giscus['emit_metadata'] ?? '0') ?>"
     data-input-position="<?= htmlspecialchars($giscus['input_position'] ?? 'bottom') ?>"
+    data-loading="<?= htmlspecialchars($giscus['loading'] ?? 'lazy') ?>"
     data-lang="<?= htmlspecialchars($giscus['lang'] ?? 'zh-CN') ?>">
     <div class="giscus"></div>
 </section>

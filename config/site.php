@@ -16,7 +16,7 @@ return [
         ['label' => '标签', 'url' => '/tags/', 'order' => 40],
         ['label' => '开往', 'url' => 'https://www.travellings.cn/go.html', 'order' => 70],
     ],
-    // Giscus 评论系统（默认关闭，需填写自己的配置）
+    # Giscus 评论系统（默认关闭，需填写自己的配置）
     'giscus' => [
         'enabled' => true,
         'repo' => 'Apursuit/the0n3-blog',
@@ -27,10 +27,13 @@ return [
         'strict' => '0',
         'reactions_enabled' => '1',
         'emit_metadata' => '0',
-        'input_position' => 'bottom',
-        // 'auto' = 评论区主题跟随站点主题（推荐）；也可直接填 giscus 主题名固定，如 light / dark
+        # 评论框放在评论上方
+        'input_position' => 'top',
+        # 懒加载
+        'loading' => 'lazy', 
+        # 'auto' = 评论区主题跟随站点主题（推荐）；也可直接填 giscus 主题名固定，如 light / dark
         'theme' => 'auto',
-        // theme=auto 时，站点浅色 / 深色分别对应的 giscus 主题
+        # theme=auto 时，站点浅色 / 深色分别对应的 giscus 主题
         'theme_light' => 'light',
         'theme_dark' => 'dark',
         'lang' => 'zh-CN',
