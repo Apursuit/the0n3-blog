@@ -1,0 +1,95 @@
+/* ============================================
+   移动端导航菜单（<details> 兄弟选择器方案，零 JS）
+   说明：
+   - <details class="nav-menu"> 只作为折叠状态开关，导航链接是它的兄弟节点
+   - 桌面端 .nav-menu 隐藏、.nav-links 用 display:contents 让包裹层不参与布局，
+     外观与改造前完全一致
+   - 折叠逻辑全部在 ≤767px 内，桌面端零影响
+   ============================================ */
+.nav-menu {
+    display: none;
+}
+
+/* 桌面端：包裹层“消失”，链接仍是 .nav-right 的直接 flex 子项 */
+.nav-links {
+    display: contents;
+}
+
+@media (max-width: 767px) {
+    /* 顶栏：左 ☰，右 搜索 */
+    .nav-right {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .nav-menu {
+        display: block;
+    }
+
+    .nav-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        box-sizing: border-box;
+        list-style: none;
+        border: 1px solid var(--borderColor-default);
+        border-radius: 10px;
+        background: var(--bgColor-muted);
+        color: var(--fgColor-default);
+        font-size: 18px;
+        line-height: 1;
+        cursor: pointer;
+        transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .nav-toggle::-webkit-details-marker {
+        display: none;
+    }
+
+    .nav-toggle::marker {
+        content: "";
+    }
+
+    .nav-toggle:hover {
+        border-color: var(--borderColor-muted);
+    }
+
+    /* 展开时给按钮一个高亮态 */
+    .nav-menu[open] > .nav-toggle {
+        color: var(--fgColor-accent);
+        border-color: var(--fgColor-accent);
+    }
+
+    /* 默认收起 */
+    .nav-links {
+        display: none;
+    }
+
+    /* 点 ☰ → <details open> → 兄弟节点 .nav-links 展开为下拉 */
+    .nav-menu[open] ~ .nav-links {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        padding: 6px var(--content-padding-x) 12px;
+        background: var(--bgColor-default);
+        border-bottom: 1px solid var(--borderColor-muted);
+        box-shadow: 0 12px 24px -12px rgba(15, 23, 42, 0.28);
+        z-index: 20;
+    }
+
+    .nav-menu[open] ~ .nav-links a {
+        padding: 12px 2px;
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+    .nav-toggle {
+        transition: none;
+    }
+}
