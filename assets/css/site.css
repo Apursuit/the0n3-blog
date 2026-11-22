@@ -549,6 +549,40 @@ main.markdown-body,
     margin: 1.25em 0;
 }
 
+/* 代码块横向滚动条：跟随主题配色，默认淡、悬停加深
+   WebKit 用伪元素控制圆角，Firefox 与新版 Chrome 走标准属性 */
+.markdown-body pre::-webkit-scrollbar,
+.markdown-body .highlight pre::-webkit-scrollbar {
+    height: 8px;
+}
+
+.markdown-body pre::-webkit-scrollbar-track,
+.markdown-body .highlight pre::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.markdown-body pre::-webkit-scrollbar-thumb,
+.markdown-body .highlight pre::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--fgColor-muted) 30%, transparent);
+    border-radius: 999px;
+}
+
+.markdown-body pre:hover::-webkit-scrollbar-thumb,
+.markdown-body .highlight pre:hover::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--fgColor-muted) 60%, transparent);
+}
+
+.markdown-body pre::-webkit-scrollbar-thumb:hover,
+.markdown-body .highlight pre::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--fgColor-muted) 80%, transparent);
+}
+
+.markdown-body pre,
+.markdown-body .highlight pre {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--fgColor-muted) 40%, transparent) transparent;
+}
+
 /* 提示块（GitHub alert）：结构外观沿用 github-markdown.css 原版，
    只微调标题间距与浅色底色；结构由 src/Markdown.php 生成 */
 .markdown-body .markdown-alert-title {
