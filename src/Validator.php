@@ -25,6 +25,7 @@ class Validator
         $this->validateContentTypes($invalidSources);
         $this->validatePermalinks($invalidSources);
         $this->validateNoConflicts($invalidSources);
+        $this->validateCoverPaths();
 
         foreach ($this->errors as $error) {
             Utils::log($error, 'warning');
@@ -142,6 +143,24 @@ class Validator
             if (strpos($permalink, '/../') !== false || strpos($permalink, '//') !== false || $permalink[0] !== '/' || substr($permalink, -1) !== '/') {
                 $this->errors[] = "{$source}: permalink 格式无效 '{$permalink}'";
                 $invalidSources[$source] = true;
+            }
+        }
+    }
+
+    /**
+     * cover 指向不存在的文件只告警，不剔除文章：图片缺失不影响正文可读，
+     * 但静默 404 在静态站里很难察觉。
+     */
+    private function validateCoverPaths(): void
+    {
+        foreach ($this->posts as $post) {
+            $cover = trim((string) ($post['frontMatter']['cover'] ?? ''));
+            if ($cover === '') {
+                continue;
+            }
+
+            if ($cover[0] !== '/' || !in_array($cover, $this->publicPaths, true)) {
+                Utils::log("{$post['sourcePath']}: cover '{$cover}' 不是站内路径或文件不存在", 'warning');
             }
         }
     }

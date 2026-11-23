@@ -666,6 +666,99 @@ html[data-theme="dark"] .markdown-body .tax-item a {
     color: #c9cdd1;
 }
 
+/* 首页列表（.post-list--feed）：整条作为链接，标题通栏，摘要两行截断。
+   规则全部挂在该修饰类下，归档页与分类落地页共用的 .post-item 不受影响。
+   标题重置字号、字重、边距与描边，否则会继承正文 h2 的 clamp 字号和 2.4rem 上边距。 */
+.markdown-body .post-list--feed > .post-item {
+    display: block;
+    padding: 0;
+    border-bottom: 1px solid #dcdcdc;
+}
+
+html[data-theme="dark"] .markdown-body .post-list--feed > .post-item {
+    border-bottom-color: #3d444d;
+}
+
+.markdown-body .post-list--feed > .post-item:last-child {
+    border-bottom: none;
+}
+
+.markdown-body .post-list--feed .post-item__link {
+    display: block;
+    padding: 16px 0;
+    color: inherit;
+    text-decoration: none;
+}
+
+/* 整块可点时取消下划线，悬停不做颜色变化 */
+.markdown-body .post-list--feed .post-item__link:hover {
+    color: inherit;
+    text-decoration: none;
+}
+
+.markdown-body .post-list--feed .post-item__title {
+    margin: 0 0 8px;
+    padding: 0;
+    border-bottom: none;
+    color: #111827;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.45;
+}
+
+html[data-theme="dark"] .markdown-body .post-list--feed .post-item__title {
+    color: #f0f6fc;
+}
+
+.markdown-body .post-list--feed .post-item__desc {
+    display: -webkit-box;
+    margin: 0;
+    overflow: hidden;
+    /* 摘要属于正文层，不降色；与标题的层级交给字号与字重 */
+    color: var(--fgColor-default);
+    font-family: var(--font-family-ui);
+    font-size: 15px;
+    line-height: 1.7;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+/* 有封面时：图片在摘要左侧，标题仍通栏；无封面的行摘要占满整行 */
+.markdown-body .post-list--feed .post-item__body {
+    display: grid;
+    grid-template-columns: 180px minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+}
+
+.markdown-body .post-list--feed .post-item__cover {
+    display: block;
+    width: 180px;
+    height: 100px;
+    margin: 0;
+    border-radius: 6px;
+    /* contain：按原始比例缩放，不裁剪；留白用页面底色，看不出来 */
+    object-fit: contain;
+    background: transparent;
+    cursor: inherit;
+}
+
+.markdown-body .post-list--feed .post-item__cover:hover {
+    filter: none;
+}
+
+@media (max-width: 767px) {
+    .markdown-body .post-list--feed .post-item__body {
+        grid-template-columns: 96px minmax(0, 1fr);
+        gap: 12px;
+    }
+
+    .markdown-body .post-list--feed .post-item__cover {
+        width: 96px;
+        height: 54px;
+    }
+}
+
 /* 分类 / 标签索引：名字与数量两列，细线分组，不用卡片盒
    （深色下 surface-card 与页面同色，卡片只能靠描边，反而增加噪点） */
 .markdown-body .tax-index {

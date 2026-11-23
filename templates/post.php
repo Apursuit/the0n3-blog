@@ -1,5 +1,11 @@
 <?php
 $pageTitle = $post['frontMatter']['title'];
+
+// 更新时间来自 git 最后一次提交；与发布同时刻（发布后未再改动）不重复显示
+$publishedTs = \App\Utils::dateToTimestamp($post['frontMatter']['date'], $post['sourcePath'] ?? '');
+$updatedTs = $post['updatedAt'] ?? null;
+$showUpdated = $updatedTs !== null && $updatedTs > $publishedTs;
+
 ob_start();
 ?>
 
@@ -7,6 +13,9 @@ ob_start();
     <h1><?= htmlspecialchars($post['frontMatter']['title']) ?></h1>
     <p>
         <span class="meta">发布于: <?= \App\Utils::formatDate($post['frontMatter']['date'], 'Y-m-d H:i') ?></span>
+        <?php if ($showUpdated): ?>
+            <span class="meta">· 更新于: <?= \App\Utils::formatDate($updatedTs, 'Y-m-d H:i') ?></span>
+        <?php endif; ?>
     </p>
     <div class="post-body">
         <?= $post['html'] ?>

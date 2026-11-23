@@ -6,6 +6,7 @@ class PostProcessor
 {
     private array $config;
     private array $parseErrors = [];
+    private array $summaryStats = ['summary' => 0, 'description' => 0, 'body' => 0, 'none' => 0];
 
     public function __construct(array $config)
     {
@@ -65,8 +66,13 @@ class PostProcessor
 
     public function prepare(array $posts): array
     {
+        $this->summaryStats = ['summary' => 0, 'description' => 0, 'body' => 0, 'none' => 0];
         foreach ($posts as &$post) {
             $post['html'] = Markdown::toHtml($post['content'], $this->config);
+            // 摘要在 HTML 生成后提取，与文章页共用同一份渲染结果
+            $post['summary'] = $this->buildSummary($post);
+            // 更新时间取该文件最后一次提交；未提交的新文章为 null
+            $post['updatedAt'] = GitLastmod::resolve($post['sourcePath'] ?? '');
         }
         unset($post);
 
@@ -122,6 +128,41 @@ class PostProcessor
             'categories' => $categories,
             'archives' => $archives,
         ];
+    }
+
+    /**
+     * 摘要取值顺序：summary → description → 正文首段 → 无（返回 null，模板不输出该元素）。
+     *
+     * summary 是首页专用、由作者手写，非空即采用，不套用自动提取的 20 字门槛；
+     * description 是给搜索引擎的，只作回退。
+     */
+    private function buildSummary(array $post): ?string
+    {
+        $handwritten = trim((string) ($post['frontMatter']['summary'] ?? ''));
+        if ($handwritten !== '') {
+            $this->summaryStats['summary']++;
+            return Summary::limit($handwritten);
+        }
+
+        $description = trim((string) ($post['frontMatter']['description'] ?? ''));
+        if (mb_strlen($description, 'UTF-8') >= Summary::MIN_LENGTH) {
+            $this->summaryStats['description']++;
+            return Summary::limit($description);
+        }
+
+        $body = Summary::fromHtml($post['html'] ?? '');
+        if ($body !== null) {
+            $this->summaryStats['body']++;
+            return $body;
+        }
+
+        $this->summaryStats['none']++;
+        return null;
+    }
+
+    public function getSummaryStats(): array
+    {
+        return $this->summaryStats;
     }
 
     /**

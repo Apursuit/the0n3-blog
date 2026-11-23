@@ -66,8 +66,8 @@ class PageGenerator
                     continue;
                 }
 
-                // 优先取 git 最后提交时间；未提交的新文件回退到 date
-                $gitTs = GitLastmod::resolve($post['sourcePath'] ?? '');
+                // 复用 PostProcessor 已解析的更新时间；未提交的新文件回退到 date
+                $gitTs = $post['updatedAt'] ?? null;
                 $lastmod = $gitTs !== null
                     ? date('c', $gitTs)
                     : Utils::formatDate($post['frontMatter']['date'] ?? '', 'c');
@@ -112,7 +112,7 @@ class PageGenerator
     private function generateIndexPages(array $posts, array $siteData, array $navItems): void
     {
         # 每页显示的文章数量
-        $pageSize = 10;
+        $pageSize = 30;
         $pinnedPosts = array_filter($posts, function ($post) {
             return ($post['frontMatter']['pin'] ?? 0) > 0;
         });

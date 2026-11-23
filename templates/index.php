@@ -6,11 +6,28 @@ ob_start();
 ?>
 
 <h1>最近</h1>
-<ul class="post-list">
+<ul class="post-list post-list--feed">
     <?php foreach ($posts as $post): ?>
+        <?php
+        $summary = $post['summary'] ?? null;
+        $cover = trim((string) ($post['frontMatter']['cover'] ?? ''));
+        $hasSummary = $summary !== null && $summary !== '';
+        ?>
         <li class="post-item">
-            <a href="<?= htmlspecialchars($post['frontMatter']['permalink']) ?>"><?= htmlspecialchars($post['frontMatter']['title']) ?></a>
-            <span class="meta"><?= \App\Utils::formatDate($post['frontMatter']['date']) ?></span>
+            <a class="post-item__link" href="<?= htmlspecialchars($post['frontMatter']['permalink']) ?>">
+                <h2 class="post-item__title"><?= htmlspecialchars($post['frontMatter']['title']) ?></h2>
+                <?php if ($cover !== ''): ?>
+                    <div class="post-item__body">
+                        <?php /* data-no-lightbox：避免点击封面被图片放大脚本接管，打断跳转 */ ?>
+                        <img class="post-item__cover" src="<?= htmlspecialchars($cover) ?>" alt="" width="180" height="100" loading="lazy" decoding="async" data-no-lightbox="true">
+                        <?php if ($hasSummary): ?>
+                            <p class="post-item__desc"><?= htmlspecialchars($summary) ?></p>
+                        <?php endif; ?>
+                    </div>
+                <?php elseif ($hasSummary): ?>
+                    <p class="post-item__desc"><?= htmlspecialchars($summary) ?></p>
+                <?php endif; ?>
+            </a>
         </li>
     <?php endforeach; ?>
 </ul>

@@ -62,6 +62,17 @@ class Generator
             $this->validator = new Validator($this->publicPaths, $systemPages);
             $this->posts = $this->validator->validate($this->posts);
         });
+        // git 历史同时供给文章「更新于」与 sitemap 的 lastmod，必须在第 6 步前就绪；
+        // 读取失败则中断，避免产出时间全错的页面与 sitemap
+        if (!GitLastmod::init()) {
+            Utils::log(
+                '无法读取 git 提交历史，而文章更新时间与 sitemap 的 lastmod 都依赖它。'
+                . '请确认已安装 git，且当前目录是 git 仓库。构建已中断。',
+                'error'
+            );
+            return 1;
+        }
+
         $this->timeStep('6. 处理文章数据：Markdown、标签、分类、归档', '6. 文章数据处理完成', function () {
             $result = $this->postProcessor->prepare($this->posts);
             $this->posts = $result['posts'];
@@ -69,15 +80,12 @@ class Generator
             $this->categories = $result['categories'];
             $this->archives = $result['archives'];
         });
-        // sitemap 的 lastmod 依赖 git 提交历史；读取失败则中断，避免产出 lastmod 全部失效的 sitemap
-        if (!GitLastmod::init()) {
-            Utils::log(
-                '无法读取 git 提交历史，而 sitemap 的 lastmod 依赖它。'
-                . '请确认已安装 git，且当前目录是 git 仓库。构建已中断。',
-                'error'
-            );
-            return 1;
-        }
+        $summaryStats = $this->postProcessor->getSummaryStats();
+        Utils::log(
+            "首页摘要来源：summary {$summaryStats['summary']} 篇，"
+            . "description {$summaryStats['description']} 篇，"
+            . "正文首段 {$summaryStats['body']} 篇，无摘要 {$summaryStats['none']} 篇"
+        );
 
         $this->timeStep('7. 生成站点页面：HTML、分页、sitemap', '7. 站点页面生成完成', function () {
             $this->pageGenerator->generate($this->posts, $this->pages, $this->tags, $this->categories, $this->archives);
