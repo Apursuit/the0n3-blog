@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>the0n3</title>
+        <meta name="description" content="the0n3 的个人博客：专注 Linux安全、 Web 安全、CTF 赛题解析与工程实践，基于 Markdown 的极简静态站点。">
+    <link rel="canonical" href="https://the0n3.top/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="the0n3">
+    <meta property="og:description" content="the0n3 的个人博客：专注 Linux安全、 Web 安全、CTF 赛题解析与工程实践，基于 Markdown 的极简静态站点。">
+    <meta property="og:url" content="https://the0n3.top/">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/og-default.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="the0n3">
+    <meta name="twitter:description" content="the0n3 的个人博客：专注 Linux安全、 Web 安全、CTF 赛题解析与工程实践，基于 Markdown 的极简静态站点。">
+        <meta name="twitter:image" content="https://the0n3.top/images/og-default.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 评论系统预连接：giscus 由前端按访客主题动态注入，提前建连可抵消注入延迟 -->
+    <link rel="preconnect" href="https://giscus.app" crossorigin>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/nav-menu/style.css">
+        <link rel="stylesheet" href="/assets/features/random-recommend/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                <details class="nav-menu">
+                    <summary class="nav-toggle" aria-label="打开菜单"><span aria-hidden="true">☰</span></summary>
+                </details>
+                <div class="nav-links">
+                                <a href="/" class="is-active" aria-current="page">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                </div>
+                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <main class="markdown-body">
+            
+<h1>最近</h1>
+<ul class="post-list post-list--feed">
+                    <li class="post-item">
+            <a class="post-item__link" href="/posts/script-optimize-reverse-shell-user-unavailable-solution/">
+                <h2 class="post-item__title">script优化反弹shell用户不可用问题分析和解决方案</h2>
+                                    <div class="post-item__body">
+                                                <img class="post-item__cover" src="/images/script-optimize-reverse-shell-user-unavailable-solution/1.png" alt="" width="180" height="100" loading="lazy" decoding="async" data-no-lightbox="true">
+                                                    <p class="post-item__desc">在授权测试环境中遇到命令执行漏洞时，选择反弹shell并进行优化shell让靶机分配一个pty伪终端无疑会获取到更舒服的操作体验，在选择使用script优化反弹shell时，可能会遇到用户不可用的问题，下面讲讲分析和解决方案。</p>
+                                            </div>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/posts/vulhub-weblogic/">
+                <h2 class="post-item__title">Weblogic 漏洞复现合集</h2>
+                                    <div class="post-item__body">
+                                                <img class="post-item__cover" src="/images/vulhub-weblogic/weblogic.png" alt="" width="180" height="100" loading="lazy" decoding="async" data-no-lightbox="true">
+                                                    <p class="post-item__desc">使用 vulhub 复现 Weblogic 漏洞合集，包含WebLogic 弱口令、任意文件读取与远程代码执行、Weblogic &lt; 10.3.6 &#039;wls-wsat&#039; XMLDecoder 反序列化漏洞（CVE-2017-10271）、 Weblogic WLS Core Components 反序列化命令执行（CVE-2018-2628）、Weblogic 任意文件上传漏洞（CVE-2018-2894）、Weblogic 管理控制台未授权远程命令执行漏洞（CVE-2020…</p>
+                                            </div>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/posts/maze-babyad1/">
+                <h2 class="post-item__title">MazeSec babyad1域渗透记录</h2>
+                                    <p class="post-item__desc">复盘下我的第一台域靶机，Kerberoasting攻击拿到备份操作组域用户凭据，利用卷影复制导出域控哈希拿下域控，同时复现因没有打补丁存在可提权的漏洞 Zerologon 与 noPac 冒充域控。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/posts/maze-babyad1-make/">
+                <h2 class="post-item__title">MazeSec babyad1设计流程</h2>
+                                    <p class="post-item__desc">突发奇想准备设计一系列 Windows AD域渗透的 baby 系列，这次尝试在Windows Server 2019 Standard，Server Core 安装，减小靶机体积。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/posts/maze-hidaochunhan/">
+                <h2 class="post-item__title">MazeSec Hidaochunhan</h2>
+                                    <p class="post-item__desc">通过端口扫描发现DNS与Web服务，利用DNS反向查询获取内网域名daochunhan.dsz，扫描目录发现.git泄露，审计代码定位到搜索功能中先HTML实体编码再URL解码的逻辑缺陷，绕过防护实现SQL注入，彩虹表攻击拿到明文密码复用密码登录SSH。登录后审计sudo权限脚本，发现site.addsitedir()加载插件目录时会执行.pth文件，借此写入Python代码完成提权。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/posts/maze-hidaochunhan-make/">
+                <h2 class="post-item__title">MazeSec Hidaochunhan靶机设计流程</h2>
+                                    <p class="post-item__desc">最近阅读hacktricks了解到site.addsitedir可以导入pth文件中的模块，同时执行同行的其他python代码，群友靶机貌似还没出现过这种玩法。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/posts/nxc-usage/">
+                <h2 class="post-item__title">NetExec（nxc）内网渗透工具指南</h2>
+                                    <div class="post-item__body">
+                                                <img class="post-item__cover" src="/images/netexec-usage/logo.png" alt="" width="180" height="100" loading="lazy" decoding="async" data-no-lightbox="true">
+                                                    <p class="post-item__desc">NetExec（命令行简称 nxc）是一款用于自动化网络安全评估、内网渗透测试和漏洞检测的开源工具，本文讲解用法：安装、认证、枚举、爆破与凭据提取、枚举、喷洒、执行命令与凭据转储，Windows AD域渗透利器。</p>
+                                            </div>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/posts/vulhub-thinkphp/">
+                <h2 class="post-item__title">ThinkPHP 漏洞复现合集</h2>
+                                    <div class="post-item__body">
+                                                <img class="post-item__cover" src="/images/vulhub-thinkphp/logo.png" alt="" width="180" height="100" loading="lazy" decoding="async" data-no-lightbox="true">
+                                                    <p class="post-item__desc">Thinkphp 漏洞复现合集，包含 ThinkPHP 2.x 任意代码执行漏洞、ThinkPHP5 5.0.22/5.1.29 远程代码执行漏洞、ThinkPHP5 5.0.23 远程代码执行漏洞、ThinkPHP 多语言本地文件包含漏洞</p>
+                                            </div>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/posts/maze-canvas/">
+                <h2 class="post-item__title">MazeSec Canvas 复盘</h2>
+                                    <p class="post-item__desc">复盘倒春寒的hard难度靶机Canvas，UDP端口扫描发现CoAP服务，利用任意文件读取/proc目录获取源码与进程信息，结合本地fontd服务的越界写漏洞，构造XSS载荷通过bot触发RCE...</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/posts/sdcms-php-ee-v3_1-sql-injection/">
+                <h2 class="post-item__title">SDCMS PHP EE v3.1 Front-End Search SQL Injection Vulnerability</h2>
+                                    <p class="post-item__desc">Vulnerability type: SQL injection (time-based blind) Affected version: SDCMS PHP EE 3.1 Entry point: /?m=search Privileges required: Anonymous front-end access Test environment: PHP 7.4.3, MySQL 5.7.26 Verification status: Reproduced locall…</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/posts/sdcms-php-ee-v3_1-sql-injection-zh/">
+                <h2 class="post-item__title">sdcms php ee v3.1 前台搜索 SQL 注入漏洞</h2>
+                                    <p class="post-item__desc">SDCMS PHP EE 3.1 的前台搜索功能存在 SQL 注入。用户提交的 keyword 经过参数处理后，被直接拼接到 SQL 查询语句中。攻击者无需登录即可构造特殊输入，通过响应时间判断 SQL 查询结果。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/posts/alpine-linux-sshhole/">
+                <h2 class="post-item__title">Alpine Linux sshole漏洞复现</h2>
+                                    <div class="post-item__body">
+                                                <img class="post-item__cover" src="/images/alpine-linux-sshhole/0.png" alt="" width="180" height="100" loading="lazy" decoding="async" data-no-lightbox="true">
+                                                    <p class="post-item__desc">记录并复现 Alpine Linux 环境下 OpenSSH 身份验证绕过漏洞（CVE-2026-123158），探讨 musl libc 错误处理与 OpenSSH 防时序攻击机制的冲突，通过Docker复现漏洞与修复建议。</p>
+                                            </div>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/posts/alpine-linux-bbsuid/">
+                <h2 class="post-item__title">Alpine Linux bbsuid提权</h2>
+                                    <p class="post-item__desc">这次来聊聊 bbsuid 是什么，当你在终端运行 AI Agent 自动化打靶机遇到 Alpine Linux 的操作系统，发现一个陌生的 suid 程序 bbsuid ，Agent 几乎不可避免地把注意力集中在分析这个程序上，已知当前不能用来提权或恶意利用。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/posts/windows-events-viewer/">
+                <h2 class="post-item__title">Windows事件查看器</h2>
+                                    <p class="post-item__desc">事件查看器是 Windows 内置的日志查看工具，系统各组件产生的运行记录都汇聚于此。排查时主要用它确认以下几类问题：</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/posts/bilibili-tampermonkey-focus-search/">
+                <h2 class="post-item__title">油猴脚本：快速聚焦bilibili搜索框</h2>
+                                    <div class="post-item__body">
+                                                <img class="post-item__cover" src="/images/bilibili-tampermonkey-focus-search/logo.png" alt="" width="180" height="100" loading="lazy" decoding="async" data-no-lightbox="true">
+                                                    <p class="post-item__desc">bilibili油猴脚本，按 / 快速聚焦搜索框，按 Esc 取消聚焦，另外 https://www.bilibili.com/zh-Hans/ 这个路径访问 bilibili 似乎是专门给简中定制的界面，非常清新没有广告。</p>
+                                            </div>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/posts/8ba570/">
+                <h2 class="post-item__title">MazeSec su靶机设计流程</h2>
+                                    <p class="post-item__desc">阅读hacktricks文档了解Linux capabilities时，本地测试发现cap_fsetid权限下读写文件不会损失二进制文件suid属性，设计台靶机，入口执行一个选手可以控制的文件，提权利用cap_fsetid权限的php修改可写的su二进制文件。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/posts/php-tmp-file/">
+                <h2 class="post-item__title">PHP临时文件生成分析及利用</h2>
+                                    <p class="post-item__desc">昨天在测试沫沫的靶机Phptmp时，一个无字母数字RCE漏洞的web入口，第一版很容易的通过取反的方案实现了rce打穿了，给作者反馈后，第二版上ban掉了异或取反等无字母数字的利用方案，引导选手往作者预期的“临时文件”利用方向去做。测试完后，有些意犹未尽，水篇文章来分析一下PHP临时文件的生成机制和利用方式。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/posts/tools-recommend/">
+                <h2 class="post-item__title">Windows常用工具推荐</h2>
+                                    <div class="post-item__body">
+                                                <img class="post-item__cover" src="/images/tools-recommend/5.png" alt="" width="180" height="100" loading="lazy" decoding="async" data-no-lightbox="true">
+                                                    <p class="post-item__desc">推荐一些常用的 Windows 工具，界面清新美观，轻量低占用。</p>
+                                            </div>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/posts/alacritty-minimal-config/">
+                <h2 class="post-item__title">轻量终端 Alacritty 极简配置</h2>
+                                    <p class="post-item__desc">我很喜欢 Tabby 的终端风格，很清爽很干净，推荐一下Tabby github。今天我在用 Tabby 终端时发现ctrl+shift+v粘贴总是出现粘贴两次的效果，并在项目官方的issue中找到了该问题ctrl+shift+v pastes twice #11706。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/posts/maze-cat/">
+                <h2 class="post-item__title">MazeSec cat靶机设计流程</h2>
+                                    <p class="post-item__desc">靶机灵感，不出网环境下的内存马实战。入口为nginx反代容器Tomcat的文件上传服务，容器内隔离不出网。上传JSP后立即删除，选手需通过条件竞争在删除窗口内触发JSP执行，注入内存马获取稳定控制。利用suid vim提权，需要注意/bin/sh是busybox的applet，直接执行shell命令会遇到提权“伪失败”的情况。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/posts/lnk-file-phishing/">
+                <h2 class="post-item__title">利用LNK快捷方式的钓鱼攻防</h2>
+                                    <p class="post-item__desc">LNK 文件钓鱼实验（Windows）：拆解快捷方式钓鱼的完整攻击链——修改 LNK 的目标、起始位置、运行方式与图标，把恶意程序伪装成 PDF / 文本等常见文档，配合隐藏目录与迷惑文件诱导点击；并进阶演示 PowerShell 远程加载的无文件落地，以及 mshta.exe 加载 HTA、rundll32.exe 加载远程 SCT 等隐蔽跳板，最后给出防御建议。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/posts/windows-admin-to-system/">
+                <h2 class="post-item__title">Windows从Administrator提升到system权限</h2>
+                                    <p class="post-item__desc">记录从 Administrator 提升到 SYSTEM 的几种方法。一是借管理员权限创建服务（PsExec、schtasks）；二是利用特权窃取令牌——用 SeDebugPrivilege 复制 winlogon 等 SYSTEM 进程令牌，或用 SeImpersonatePrivilege 配合 Potato 家族（Hot/Rotten/Juicy/Rogue）、PrintSpoofer、GodPotato 诱骗 SYSTEM 认证并模拟其令牌。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/posts/comBypassUAC/">
+                <h2 class="post-item__title">赛博斗蛐蛐 - BypassUAC静默提权至管理员权限</h2>
+                                    <div class="post-item__body">
+                                                <img class="post-item__cover" src="/images/comBypassuac/uac.png" alt="" width="180" height="100" loading="lazy" decoding="async" data-no-lightbox="true">
+                                                    <p class="post-item__desc">这篇实验的灵感来自 B 站&quot;病毒杀软对抗&quot;主题下的赛博斗蛐蛐：有博主在虚拟机里准备了一批样本，在默认的管理员组账户下直接双击运行，全程没有弹出 UAC 窗口，样本却在后台完成了疑似需要管理员权限的操作。</p>
+                                            </div>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/posts/vm-trace-cleanup-and-image-compression/">
+                <h2 class="post-item__title">虚拟机清理痕迹与压缩镜像</h2>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/posts/CVE-2026-64531-OVSWrap/">
+                <h2 class="post-item__title">CVE-2026-64531 OVSwrap本地权限提升漏洞复现</h2>
+                                    <p class="post-item__desc">CVE-2026-64531 OVSwrap本地权限提升漏洞复现，Linux 内核 openvswitch 模块存在一个由 16 位 nla_len 截断导致的 OOB 解析漏洞，能够实现任意内存读与逐字节递减写原语，在命名空间内定位宿主进程 cred，把 fsuid/fsgid 清为 0 写入 sudoers 提权到 root。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/posts/htb-cap/">
+                <h2 class="post-item__title">HTB Cap</h2>
+                                    <p class="post-item__desc">HTB Cap 靶机：Web 服务能够下载 5 秒内的抓包流量，从 FTP 明文流量中拿到登录凭证，python3 具备setuid能力，通过os.setuid(0) 提权到 root...</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/posts/htb-logging/">
+                <h2 class="post-item__title">HTB logging</h2>
+                                    <p class="post-item__desc">HTB Logging 靶机 Writeup（Windows AD，Medium）：审计 SMB 日志共享拿到 svc_recovery 新密码，因账户属 Protected Users 组无法 NTLM 认证，改用 Kerberos 取 TGT；BloodHound 发现对 msa_health$ 有写权限，用 Shadow Credentials（影子凭据）获取其哈希并登录 WinRM；再经 UpdateMonitor 的 DLL 劫持与 WSUS 劫持（AD CS 申请…</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/posts/suid-sudo-collect/">
+                <h2 class="post-item__title">suid sudo提权收集</h2>
+                                    <p class="post-item__desc">SUID / sudo 提权技巧收集：三种把普通命令变成提权原语的方法——sudo apk 借助恶意包 post-install 脚本以 root 执行命令、sudo tree --fromfile 任意文件写入（可改 sudoers、authorized_keys）、suid touch 配合 umask 000 写 ld.so.preload 加载恶意 SO。含各方案的适用发行版（glibc / musl）与复现命令。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/posts/htb-support/">
+                <h2 class="post-item__title">HTB support</h2>
+                                    <p class="post-item__desc">HTB Support 靶机 Writeup（Windows AD）：从 SMB 空会话 / Guest 枚举发现 support-tools 共享，反编译 .NET 程序 UserInfo.exe 解出 ldap 凭证；LDAP 枚举在 support 用户的 info 字段拿到明文密码，BloodHound 发现 Shared Support Accounts 组对 DC$ 有 GenericAll，最终利用 RBCD（S4U2Self + S4U2Proxy）获取 Ad…</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/posts/maze-firebird/">
+                <h2 class="post-item__title">MazeSec Firebird</h2>
+                                    <p class="post-item__desc">MazeSec Firebird 靶机 Writeup：AD CS ESC7 利用、LDAP 属性信息泄露、NTLM 哈希传递、PKINIT 域认证。选手从给定的普通域用户 ll104567 凭证出发，通过 LDAP 协议精细化枚举发现 111 用户的 info 字段泄露数据库服务账号密码，利用该凭证访问受保护的 DB_Vault 共享目录，获取 sublarge 用户的 NTLM 哈希；通过哈希传递（PTH）结合 WinRM 服务获取 sublarge 的交互式权限，枚举…</p>
+                            </a>
+        </li>
+    </ul>
+
+        <nav class="pagination" aria-label="Pagination">
+                    <span class="pagination-link is-disabled">上一页</span>
+        
+        <span class="pagination-link is-current" aria-current="page">1 / 7</span>
+
+                    <a class="pagination-link" href="/page/2/" rel="next">下一页</a>
+            </nav>
+
+        </main>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/blog-stats/script.js"></script>
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/giscus-theme/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

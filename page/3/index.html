@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>第 3 页 - the0n3</title>
+        <meta name="description" content="the0n3 的个人博客：专注 Linux安全、 Web 安全、CTF 赛题解析与工程实践，基于 Markdown 的极简静态站点。">
+    <link rel="canonical" href="https://the0n3.top/page/3/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="第 3 页 - the0n3">
+    <meta property="og:description" content="the0n3 的个人博客：专注 Linux安全、 Web 安全、CTF 赛题解析与工程实践，基于 Markdown 的极简静态站点。">
+    <meta property="og:url" content="https://the0n3.top/page/3/">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/og-default.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="第 3 页 - the0n3">
+    <meta name="twitter:description" content="the0n3 的个人博客：专注 Linux安全、 Web 安全、CTF 赛题解析与工程实践，基于 Markdown 的极简静态站点。">
+        <meta name="twitter:image" content="https://the0n3.top/images/og-default.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 评论系统预连接：giscus 由前端按访客主题动态注入，提前建连可抵消注入延迟 -->
+    <link rel="preconnect" href="https://giscus.app" crossorigin>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/nav-menu/style.css">
+        <link rel="stylesheet" href="/assets/features/random-recommend/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                <details class="nav-menu">
+                    <summary class="nav-toggle" aria-label="打开菜单"><span aria-hidden="true">☰</span></summary>
+                </details>
+                <div class="nav-links">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                </div>
+                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <main class="markdown-body">
+            
+<h1>最近</h1>
+<ul class="post-list post-list--feed">
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/maze-113/">
+                <h2 class="post-item__title">MazeSec 113</h2>
+                                    <p class="post-item__desc">SNMP 信息泄露、sudo 脚本变量注入、Bash 数组索引解析命令替换、PATH 环境变量劫持、IFS 分隔符篡改。选手通过 UDP 161 端口的 SNMP 服务泄露 welcome 用户的明文密码，可免密sudo执行 /opt/113.sh 脚本。多种方法提权，方法一：利用 Bash 变量默认以数组形式存储的特性，通过声明 exec_[0] 绕过变量名黑名单限制；方法二：利用 Bash 数组索引支持命令替换的语法特性，在索引位置执行任意命令；方法三：通过劫持 PATH…</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/maze-112/">
+                <h2 class="post-item__title">MazeSec 112</h2>
+                                    <p class="post-item__desc">XXE 任意文件读取、掩码密码爆破、sudo 脚本路径解析劫持、Zabbix 数据库初始化、静态 PHP 编译部署、nmap Lua 提权。web服务发现 XXE 漏洞，file:// 协议读取/etc/passwd，从其注释中提取掩码密码线索，利用路径解析规则，覆盖脚本内容并构造目录结构。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/maze-111/">
+                <h2 class="post-item__title">MazeSec 111</h2>
+                                    <p class="post-item__desc">MazeSec 111 靶机 Writeup：任意文件读取、Hydra 弱口令爆破、sudo wfuzz 文件写入、sudo id 覆写执行、换行符注入提权。选手通过 80 端口的 file.php 发现任意文件读取漏洞，读取 /etc/passwd 确认系统存在 tao 用户；使用 Hydra 配合 rockyou.txt 字典爆破 SSH，成功获取 tao 用户的凭证（密码 rockyou）；登录后通过 sudo -l 发现 tao 拥有 NOPASSWD 权限执行 /u…</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/maze-meltdown/">
+                <h2 class="post-item__title">MazeSec Meltdown</h2>
+                                    <p class="post-item__desc">MazeSec Meltdown 靶机 Writeup：SQL 注入后台 Getshell、存储型 PHP 代码执行、sudo repeater.sh 过滤绕过、grep 按行匹配缺陷、换行符注入。选手通过 SQL 注入漏洞获取后台用户 rin 的明文凭证，登录后台后在物品描述字段写入 PHP 代码，利用后端直接解析存储内容的特性触发代码执行，获取 www-data 权限；在 rin 用户环境下发现其拥有 sudo 权限执行 /opt/repeater.sh 脚本，审计脚本发…</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/vulnyx-mailforge/">
+                <h2 class="post-item__title">vulnyx MailForge</h2>
+                                    <p class="post-item__desc">Vulnyx MailForge 靶机 Writeup：5000 端口的 eml 邮件预览服务存在 Flask SSTI，在 Subject 字段注入 {{config}} 确认后用 url_for 全局变量执行命令反弹 shell；再借可写的 sudo 脚本 /usr/local/bin/cleaner.sh 提权到 root，并分析 LinPEAS 对 BusyBox su 的误报原因。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/vulnyx-alpine/">
+                <h2 class="post-item__title">vulnyx alpine</h2>
+                                    <p class="post-item__desc">Vulnyx alpine 靶机 Writeup：Web 目录下的 profile.html 泄露 developer 的 SSH 密码，登录后按 README 提示定位到 sysadmin 的 webapp 仓库，用 git log 从提交记录里找到私钥登录 sysadmin；再发现 /opt/cleaner.sh 由 root 定时执行且 sysadmin 可写，追加 sudoers 无密码配置完成提权。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/hmv-tpn/">
+                <h2 class="post-item__title">HackMyVM tpN</h2>
+                                    <p class="post-item__desc">HackMyVM tpN 靶机 Writeup：8080 的 ThinkPHP 应用存在 .git 泄露，用 git-dumper 下载源码审计出 Admin/hello 后门（call_user_func）与 session 校验逻辑；先访问 /index/token/token 拿合法 session，再用 GET 传参绕过 default_route_pattern 限制反弹 shell，最后用 Dirty Pipe（CVE-2022-0847）覆盖 SUID gpas…</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/mazesec-mao/">
+                <h2 class="post-item__title">MazeSec 矛计划 - 如何制作一台靶机</h2>
+                                    <p class="post-item__desc">MazeSec 矛计划靶机制作指南：以 Search 靶机为例，完整演示从模板 OVA 导入、用户与密码配置、Apache + PHP + Feehi CMS 部署、MySQL 5.7 二进制安装、sudo 与 SSH 密钥配置、flag 放置，到擦除痕迹、导出 OVA、完整测试的靶机出题全流程，并总结出题规范、dirsearch 参数挖掘提权思路与踩坑记录。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/hmv-realsaga/">
+                <h2 class="post-item__title">HackMyVM Realsaga 复盘：WordPress 插件漏洞 + Docker 逃逸</h2>
+                                    <p class="post-item__desc">HackMyVM Realsaga 靶机复盘：wpscan 爆破出 WordPress 用户，nuclei 发现 easy-wp-smtp 插件漏洞——通过调试日志里的密码重置链接接管管理员 wpadmin；改插件 Getshell 后进入 Docker 容器，用 SUID find 拿到容器 root，再借挂载的 docker.sock（docker.saga）挂载宿主机根目录完成 Docker 逃逸。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/maze-alluser/">
+                <h2 class="post-item__title">MazeSec AllUser</h2>
+                                    <p class="post-item__desc">MazeSec AllUser 靶机 Writeup：OpenSSH 私钥格式转换、ssh2john 爆破、iptables LOG 注入、PHP 文件包含 Getshell、特殊文件名绕过。选手通过 SSH 服务探测捕获到十六进制的 OpenSSH 私钥数据，经 Python 脚本还原并封装为标准 PEM 格式；利用 ssh2john 提取哈希后通过 John 爆破得到私钥密码 0123456，结合公钥注释推断出用户名 sandu 并成功登录；在 sandu 用户环境下发现…</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/maze-secure/">
+                <h2 class="post-item__title">MazeSec Secure</h2>
+                                    <p class="post-item__desc">MazeSec Secure 靶机 Writeup：DVWA 命令执行、LinPEAS 凭证扫描、SSH AuthorizedKeysFile 路径劫持、PKCS#11 动态库劫持、sudo ssh-keygen 提权。选手通过目录扫描发现 DVWA 靶场，利用 Low 级别命令执行模块反弹 Shell 获取 www-data 权限；运行 LinPEAS 审计脚本，从 su 爆破尝试中提取出用户 lzh 的明文密码 hzl；通过查找近期变更文件发现 SSH 服务配置被修改为…</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/linux-config-privesc/">
+                <h2 class="post-item__title">Linux下利用逐行解析配置文件实现权限提升的八种方式</h2>
+                                    <p class="post-item__desc">Linux 提权技巧：利用配置文件逐行解析、忽略错误行的特性，在写入内容不完全可控时构造换行注入一行有效配置即可提权，涵盖覆写 sudo 文件、authorized_keys、cron、sudoers、passwd、shadow、group、ld.so.preload 八种方式。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/maze-sudohome/">
+                <h2 class="post-item__title">MazeSec SudoHome</h2>
+                                    <p class="post-item__desc">MazeSec SudoHome 靶机 Writeup：sudo 链式提权、--files0-from 信息泄露、ProxyCommand 逃逸、wfuzz Payload 回显、md5sum 字典爆破、软链接劫持。选手通过 SSH 登录提示发现 user1 用户，利用其 sudo 权限逐层向下跳转：user1 通过 sudo du --files0-from 参数泄露 user2 密码；user2 利用 sudo file -f 报错回显获取 user3 凭证；user3…</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/maze-spiteful/">
+                <h2 class="post-item__title">MazeSec Spiteful</h2>
+                                    <p class="post-item__desc">MazeSec Spiteful 靶机 Writeup：换行符注入绕过 WAF、MySQL LOAD DATA 读 Shadow、sudo rkhunter 日志注入、Cron 定时任务写文件、Alpine 容器提权。选手通过 Web 暴力破解获取 ll104567 用户凭证，在受限的命令执行界面利用允许的命令拼接换行符 %0a 绕过正则拦截，通过 BusyBox 下载 Webshell 获取 www-data 权限；审计源码发现 todd 用户的 SSH 凭证，登录后利用…</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/111z-make/">
+                <h2 class="post-item__title">MazeSec 111z 设计流程</h2>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/maze-111z/">
+                <h2 class="post-item__title">MazeSec 111z</h2>
+                                    <p class="post-item__desc">MazeSec 111z 靶机 Writeup：PHP disable_functions 绕过、LD_PRELOAD 劫持、sudo neofetch 配置滥用、tar 通配符注入、SSH 凭证泄露。选手通过审计前端 JS 发现上传限制，利用 PHP 标签闭合省略分号及函数名大小写混淆绕过 WAF，成功上传 WebShell；面对严格的 disable_functions 限制，借助蚁剑插件利用 putenv 与 error_log 函数配合 LD_PRELOAD 劫持实现…</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/maze-vm1/">
+                <h2 class="post-item__title">MazeSec vm1</h2>
+                                    <p class="post-item__desc">MazeSec vm1 靶机 Writeup：/proc 进程信息泄露、Python Flask 沙箱逃逸、sudo tree --fromfile 任意文件读取、tree 输出重定向写文件、Cron 定时任务提权。选手通过端口扫描发现 9000 端口存在文件读取功能，利用该漏洞读取 /etc/passwd 确认 Docker 容器环境，并通过读取 /proc 目录下各进程的 cmdline 文件定位到容器内运行的 Python Agent 服务；分析源码发现其存在 eval…</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/maze-babyauth/">
+                <h2 class="post-item__title">MazeSec BabyAuth</h2>
+                                    <p class="post-item__desc">MazeSec BabyAuth 靶机 Writeup：SQL 注入拖库、MD5 彩虹表破解、TOTP 密钥泄露、Google Authenticator 双因子绕过、su 交互式提权。选手通过 Burp Suite 爆破登录接口，利用弱密码 admin/iloveyou 进入后台；在 admin.php 的搜索参数中发现 SQL 注入漏洞，借助 SQLMap 读取数据库，从中获取隐藏目录路径 /SsssssssuperSecret/ 以及用户 lingmj 的 MD5 哈希…</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/maze-man/">
+                <h2 class="post-item__title">MazeSec Man</h2>
+                                    <p class="post-item__desc">MazeSec Man 靶机 Writeup：支付回调伪造、业务逻辑漏洞、sudo tldr 滥用、共享库劫持提权、SUID bash 提权。选手通过目录扫描发现存在支付功能的 Web 应用，在个人中心捕获订单号后，构造恶意 POST 请求发送至 payment.php，利用后端未校验支付状态与金额的漏洞，伪造成功的支付回调，将账户升级为 VIP 并泄露用户 xingchen 的 SSH 凭证；使用该凭证登录系统后，发现 xingchen 拥有 sudo 权限执行 tldr…</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/mysql-udf/">
+                <h2 class="post-item__title">mysql udf提权</h2>
+                                    <p class="post-item__desc">MySQL UDF 提权实战：在具备 FILE 权限、secure_file_priv 为空、插件目录可写的前提下，用 16 进制把 udf.so 写入 plugin_dir，再通过 CREATE FUNCTION sys_exec 调用系统命令实现提权。含三项前提的验证命令，以及基于 mysql:5.7 Docker 的完整复现步骤。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/maze-motto/">
+                <h2 class="post-item__title">MazeSec motto</h2>
+                                    <p class="post-item__desc">MazeSec motto 靶机 Writeup：二阶 SQL 注入、sqlmap 自动化利用、密码复用、bash 比较注入、SUID bash 提权。选手通过端口扫描发现 9090 端口运行着定制 Web 服务，在修改用户昵称处插入恶意载荷后发现座右铭展示页面出现了数据泄露，确认为二阶 SQL 注入漏洞；利用 sqlmap 的 --second-url 参数自动化攻击，从数据库中导出用户凭证，使用 RedBean/cannotforgetyou 成功登录 SSH；在 red…</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/tricks/">
+                <h2 class="post-item__title">pentest tricks collection</h2>
+                                    <p class="post-item__desc">渗透测试技巧速查合集：涵盖 dpkg -V 检查文件变动、用户组与 sudo 权限枚举、SUID 查找、busybox 反弹 shell、script / socat 稳定交互 shell、socat 端口转发，以及按时间、可写性、SUID 快速定位提权点的 find 命令。持续更新中。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/maze-xiyi/">
+                <h2 class="post-item__title">MazeSec XIYI</h2>
+                                    <p class="post-item__desc">MazeSec XIYI 靶机 Writeup：SSRF 链式利用、Gopher 协议打内网、Flask SSTI 反弹 Shell、零宽字符隐写、sudo ln 路径穿越提权。选手通过 80 端口的 SSRF 漏洞，先后利用 dict 协议探测内网端口、tftp 协议读取源码，发现 2332 端口的中继服务和 2333 端口存在 Jinja2 SSTI 的 Flask 应用；借助 Gopher 协议构造恶意 POST 请求穿透 SSRF 边界，在 2333 端口触发模板注入…</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/maze-babypass/">
+                <h2 class="post-item__title">MazeSec BabyPass</h2>
+                                    <p class="post-item__desc">MazeSec BabyPass 靶机 Writeup：密码复用、MD5 彩虹表破解、MySQL 凭证泄露、SSH 横向移动、Web 目录遍历。选手通过目录扫描发现 tms 系统中的 Readme.txt 文件，获取到 admin 与 anuj 用户的明文密码 Test@123；利用密码复用特性，直接通过 SSH 成功登录 anuj 与 admin 两个低权限用户；在 anuj 用户环境下读取 Web 目录下的配置文件 config.php，获取 MySQL 数据库凭证并登录…</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/maze-babycms/">
+                <h2 class="post-item__title">MazeSec BabyCMS</h2>
+                                    <p class="post-item__desc">MazeSec BabyCMS 靶机 Writeup：Typecho 后台 Getshell、配置文件信息泄露、MySQL 凭证提取、密码复用、SSH 登录。选手通过目录扫描发现暴露的 setup.txt 文件，获取 Typecho 后台初始凭证并成功登录 root 用户后台；通过修改配置开启 PHP 文件上传功能，在文章中上传 PHP Webshell 实现代码执行，获取 www-data 权限；在 Web 目录下读取 Typecho 配置文件 config.inc.php…</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/maze-babyshell/">
+                <h2 class="post-item__title">MazeSec BabyShell</h2>
+                                    <p class="post-item__desc">MazeSec BabyShell 靶机 Writeup：ICMP 后门利用、socat 端口转发、SUID cat 越权读取、id_ed25519 私钥泄露、SSH 免密登录。选手通过审计备份文件发现 Python 编写的 ICMP 后门，利用 Scapy 构造包含触发序列与命令长度的 ICMP 数据包，实现无回显远程命令执行，获取 zero 用户权限并通过写入 SSH 公钥完成登录；在受限环境下利用 socat 将本地 8080 端口转发至外网可访问的 8000 端口，结…</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/disk-root/">
+                <h2 class="post-item__title">Linux disk组用户提权</h2>
+                                    <p class="post-item__desc">Linux disk 组提权笔记：利用 disk 组可读写块设备，用 /usr/sbin/debugfs -w /dev/sda1 直接篡改文件系统——读取 root 私钥与 /etc/shadow、写 sudoers.d、写入 authorized_keys、投放 cron 定时任务、添加 passwd/shadow 后门用户。含 debugfs 引发内核缓存不一致、文件系统只读、虚拟机崩溃等异常分析及推荐提权顺序。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/ctf-web-target/">
+                <h2 class="post-item__title">CTF Web靶场搭建</h2>
+                                    <p class="post-item__desc">CTF Web 靶场搭建：基于 Debian 12 + Docker 部署 GZCTF 平台并集成 DVWA、sqli-labs、pikachu、rce-labs 等靶场，含 apt 换源、Docker 安装与镜像加速、开机自动替换入口 IP（systemd 服务）、开机横幅，以及用浏览器控制台脚本批量导入/启用 sqli-labs、upload-labs 题目的完整流程，最终导出虚拟机供新人使用。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/maze-ezAI1/">
+                <h2 class="post-item__title">MazeSec ezAI1</h2>
+                                    <p class="post-item__desc">MazeSec ezAI1 靶机 Writeup：LLM 提示词压力测试、/usr/sbin/debugfs /dev/sda1 磁盘分区越权读取、Linux disk 组本地提权。选手通过端口扫描发现 5000 端口部署 LLM 服务，利用提示词压力测试直接泄露 Dodo 用户明文 SSH 凭证；在登录环节遭遇用户名大小写校验差异（dodo 登录失败，Dodo 登录成功）；登录后发现当前用户隶属于高危 disk 组，通过调用 /usr/sbin/debugfs 直接挂载并读…</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/maze-bala/">
+                <h2 class="post-item__title">MazeSec bala</h2>
+                                    <p class="post-item__desc">MazeSec bala 靶机 Writeup：IRC 机器人密码泄露、sudo /usr/bin/weechat exec 插件滥用、SUID bash 提权、可写 irc_bot.py 脚本篡改、doas 无密码重启服务。选手通过端口扫描发现 6667 端口运行 IRC 服务，连接后通过与 bala 机器人交互获取敏感密码，成功 SSH 登录 fzer 用户；枚举 sudo 权限发现 fzer 可以 root 身份执行 /usr/bin/weechat，利用其内置的 ex…</p>
+                            </a>
+        </li>
+    </ul>
+
+        <nav class="pagination" aria-label="Pagination">
+                    <a class="pagination-link" href="/page/2/" rel="prev">上一页</a>
+        
+        <span class="pagination-link is-current" aria-current="page">3 / 7</span>
+
+                    <a class="pagination-link" href="/page/4/" rel="next">下一页</a>
+            </nav>
+
+        </main>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/blog-stats/script.js"></script>
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/giscus-theme/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

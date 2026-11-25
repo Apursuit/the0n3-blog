@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>MazeSec babyad1设计流程 - the0n3</title>
+        <meta name="description" content="设想 突发奇想准备设计一系列 Windows AD域渗透的 baby 系列，这次尝试在Windows Server 2019 Standard，Server Core 安装，减小靶机体积。本文参考从零制作一台 Windows AD 域模板靶机 这台靶机的设计思路：入口允许空会话的 SMB 服务，再通过匿名用户guest…">
+    <link rel="canonical" href="https://the0n3.top/posts/maze-babyad1-make/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="MazeSec babyad1设计流程">
+    <meta property="og:description" content="设想 突发奇想准备设计一系列 Windows AD域渗透的 baby 系列，这次尝试在Windows Server 2019 Standard，Server Core 安装，减小靶机体积。本文参考从零制作一台 Windows AD 域模板靶机 这台靶机的设计思路：入口允许空会话的 SMB 服务，再通过匿名用户guest…">
+    <meta property="og:url" content="https://the0n3.top/posts/maze-babyad1-make/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/og-default.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="MazeSec babyad1设计流程">
+    <meta name="twitter:description" content="设想 突发奇想准备设计一系列 Windows AD域渗透的 baby 系列，这次尝试在Windows Server 2019 Standard，Server Core 安装，减小靶机体积。本文参考从零制作一台 Windows AD 域模板靶机 这台靶机的设计思路：入口允许空会话的 SMB 服务，再通过匿名用户guest…">
+        <meta name="twitter:image" content="https://the0n3.top/images/og-default.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 评论系统预连接：giscus 由前端按访客主题动态注入，提前建连可抵消注入延迟 -->
+    <link rel="preconnect" href="https://giscus.app" crossorigin>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/nav-menu/style.css">
+        <link rel="stylesheet" href="/assets/features/random-recommend/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                <details class="nav-menu">
+                    <summary class="nav-toggle" aria-label="打开菜单"><span aria-hidden="true">☰</span></summary>
+                </details>
+                <div class="nav-links">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                </div>
+                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>MazeSec babyad1设计流程</h1>
+    <p>
+        <span class="meta">发布于: 2026-11-22 18:21</span>
+                    <span class="meta">· 更新于: 2026-11-23 19:58</span>
+            </p>
+    <div class="post-body">
+        <h2>设想</h2>
+<p>突发奇想准备设计一系列 Windows AD域渗透的 baby 系列，这次尝试在Windows Server 2019 Standard，Server Core 安装，减小靶机体积。本文参考<a href="https://569888.xyz/blog/168663308/">从零制作一台 Windows AD 域模板靶机</a></p>
+<p>这台靶机的设计思路：入口允许空会话的 SMB 服务，再通过匿名用户guest空密码访问已知共享文件内容backup.zip，爆破压缩密码拿到pass.txt和user.txt，pass.txt拿到泄露的测试域用户test凭证，使用该凭证做 ldap 枚举拿到域用户列表，发现Backup Operators组关键用户 ll104567，且注册了 SPN（服务主体名称），通过 Kerberoasting 攻击，利用测试用户向域控请求 ll104567 的 TGS 服务票据，并离线爆破出 ll104567 的明文密码，再备份NTDS.dit离线获取哈希，获取域管理员权限。</p>
+<pre><code class="language-plaintext">SMB 匿名访问
+→ 下载 backup.zip
+→ 爆破压缩密码
+→ test 用户凭证
+→ LDAP 枚举
+→ 发现 ll104567（Backup Operators + SPN）
+→ Kerberoasting
+→ RC4 ticket 爆破
+→ WinRM 落地（Remote Management Users）
+→ 备份 NTDS.dit + 导出 SYSTEM
+→ secretsdump 离线取哈希
+→ 域管权限（PtH）</code></pre>
+<h2>设置主机名</h2>
+<pre><code class="language-powershell">Rename-Computer -NewName 'DC' -Force
+Restart-Computer -Force</code></pre>
+<h2>升域</h2>
+<p>网卡名按 VMware 默认 Ethernet0，沿用当前网卡地址并固化为静态，避免升域后地址漂移，再设置域名、升域为域控。域控必须有一个稳定的 IP，否则重启后换地址，DNS 记录会失配。在导出分发给选手时IP不可控，通过脚本动态配置域控IP地址。</p>
+<pre><code class="language-powershell"># ============ 域配置（改这里就行）============
+$domain   = 'babyad1.dsz'
+$netbios  = 'BABYAD1'
+$DSRMPwd  = 'MazeDsrm6102@'
+$AdminPwd = '#Mazesec2026!'   # 本地 Administrator 密码，升域后继承为域 Administrator 密码
+
+# ============ 网络配置 ============
+$ErrorActionPreference = 'Continue'
+# 跨平台通用：选第一个 Up 的非回环 IPv4 承载网卡
+$if = (Get-NetAdapter | Where-Object {
+    $_.Status -eq 'Up' -and
+    $_.InterfaceDescription -notlike '*Loopback*' -and
+    $_.MediaType -ne 'Native 802.11'
+} | Select-Object -First 1).Name
+
+if (-not $if) { throw 'NO_ACTIVE_ADAPTER' }
+$maze = 'C:\ProgramData\Maze'
+New-Item -ItemType Directory -Path $maze -Force | Out-Null
+
+$addr = Get-NetIPAddress -InterfaceAlias $if -AddressFamily IPv4 |
+    Where-Object { $_.IPAddress -notlike '169.254.*' -and $_.IPAddress -ne '127.0.0.1' } |
+    Select-Object -First 1
+if (-not $addr) { throw 'NO_IPV4' }
+
+$ip     = $addr.IPAddress
+$prefix = $addr.PrefixLength
+$gw     = (Get-NetRoute -DestinationPrefix '0.0.0.0/0' -ErrorAction SilentlyContinue |
+        Select-Object -First 1).NextHop
+$origDns = (Get-DnsClientServerAddress -InterfaceAlias $if -AddressFamily IPv4).ServerAddresses |
+        Where-Object { $_ -and $_ -ne $ip -and $_ -ne '127.0.0.1' }
+
+# 转发器兜底
+if ($origDns.Count -eq 0) {
+    $origDns = @('8.8.8.8')
+}
+
+# 避免重复创建 IP（先检查）
+$existing = Get-NetIPAddress -InterfaceAlias $if -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+    Where-Object { $_.IPAddress -eq $ip }
+if (-not $existing) {
+    Set-NetIPInterface -InterfaceAlias $if -Dhcp Disabled
+    if ($gw) {
+        New-NetIPAddress -InterfaceAlias $if -IPAddress $ip -PrefixLength $prefix -DefaultGateway $gw -ErrorAction SilentlyContinue
+    } else {
+        New-NetIPAddress -InterfaceAlias $if -IPAddress $ip -PrefixLength $prefix -ErrorAction SilentlyContinue
+    }
+}
+Set-DnsClientServerAddress -InterfaceAlias $if -ServerAddresses $ip
+
+Install-WindowsFeature -Name AD-Domain-Services,DNS -IncludeManagementTools
+if ($origDns.Count -gt 0) {
+    Set-DnsServerForwarder -IPAddress $origDns -ErrorAction SilentlyContinue
+}
+
+# 设密码并清除「密码不需要」标志，否则升域前置检查会失败
+net user Administrator "$AdminPwd" /passwordreq:yes | Out-Null
+if ($LASTEXITCODE -ne 0) { throw "SET_ADMIN_PWD_FAILED: exit=$LASTEXITCODE" }
+
+$DSRM = ConvertTo-SecureString $DSRMPwd -AsPlainText -Force
+Install-ADDSForest `
+-DomainName $domain `
+-DomainNetbiosName $netbios `
+-InstallDns `
+-SafeModeAdministratorPassword $DSRM `
+-Force</code></pre>
+<p>其中 DSRM（Directory Services Restore Mode，目录服务还原模式）是域控的本地离线管理员账户，相当于普通 Windows 的 Administrator，但只在以下场景生效：</p>
+<p>域控无法启动 AD 服务时，按 F8 进 DSRM 模式；离线挂载 AD 数据库做修复/还原；某些后渗透场景（如 ntdsutil 离线提取 hash）</p>
+<p>正常运行时 DSRM 账户不活跃，不对外提供服务。</p>
+<h2>时间同步</h2>
+<p>不做专门时间同步配置。靶机不依赖任何虚拟化工具的时间同步，选手需自行通过 SMB 协议获取域控时间并同步攻击机时钟，以避免 Kerberos 票据因时间偏差验证失败。</p>
+<h2>开机同步IP、DNS</h2>
+<p>这部分解决靶机导出分发给选手时，IP地址可能会变化，导致 DNS 记录不匹配的问题。通过注册开机计划任务，开机后自动检测当前 DHCP IP，清理 DNS 中旧 A 记录，重注册新 A/SRV 记录。</p>
+<p>把 dc-ip-sync.ps1 存入 C:\ProgramData\Maze\后，用 notepad 保存时编码选「UTF-8 带 BOM」</p>
+<pre><code class="language-cmd">notepad C:\ProgramData\Maze\dc-ip-sync.ps1</code></pre>
+<pre><code class="language-powershell">&lt;#
+.SYNOPSIS
+    DC 开机 IP/DNS/A记录自适应同步脚本
+.DESCRIPTION
+    每次开机自动检测当前 DHCP IP，清理 DNS 中旧 A 记录，重注册新 A/SRV 记录
+    幂等设计：IP 未变化时跳过，不会重复操作
+#&gt;
+
+$ErrorActionPreference = 'Continue'
+
+# ============ 配置 ============
+$maze    = 'C:\ProgramData\Maze'
+$logDir  = Join-Path $maze 'logs'
+$log     = Join-Path $logDir 'dc-ip-sync.log'
+$zone    = $null   # ← 初始化，防止作用域问题
+
+# ============ 初始化 ============
+New-Item -ItemType Directory -Path $logDir -Force | Out-Null
+
+function Log($msg) {
+    $ts = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+    "[$ts] $msg" | Out-File -Append -Encoding utf8 $log
+}
+
+Log "========== DC IP Sync Start =========="
+
+# ============ 等待网络就绪（最多等 60 秒）============
+$attempt  = 0
+$if       = $null
+$ip       = $null
+$gateway  = $null
+$prefix   = $null
+
+while ($attempt -lt 12) {
+    # 找第一个 Up 的有线网卡（排除回环与无线）
+    # 排除回环与无线网卡，取首个 Up 的有线以太网适配器（跨平台通用）
+    $if = Get-NetAdapter | Where-Object {
+        $_.Status -eq 'Up' -and
+        $_.InterfaceDescription -notlike '*Loopback*' -and
+        $_.MediaType -ne 'Native 802.11'
+    } | Select-Object -First 1
+
+    if (-not $if) {
+        Log "Attempt $attempt : no active adapter, waiting..."
+        Start-Sleep 5
+        $attempt++
+        continue
+    }
+
+    # 拿 IPv4 地址（排除 APIPA 和回环）
+    $ipObj = Get-NetIPAddress -InterfaceAlias $if.Name -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+        Where-Object { $_.IPAddress -notlike '169.254.*' -and $_.IPAddress -ne '127.0.0.1' } |
+        Select-Object -First 1
+
+    if (-not $ipObj) {
+        Log "Attempt $attempt : adapter '$($if.Name)' up but no valid IPv4, waiting..."
+        Start-Sleep 5
+        $attempt++
+        continue
+    }
+
+    $ip      = $ipObj.IPAddress
+    $prefix  = $ipObj.PrefixLength
+    $gateway = (Get-NetRoute -InterfaceAlias $if.Name -DestinationPrefix '0.0.0.0/0' -ErrorAction SilentlyContinue).NextHop
+
+    # 有地址即视为网络就绪；host-only 环境本就没有默认网关，不能拿它当就绪条件
+    if ($ip) {
+        if ($gateway) {
+            Log "Network ready: if=$($if.Name) ip=$ip prefix=$prefix gw=$gateway"
+        } else {
+            Log "Network ready: if=$($if.Name) ip=$ip prefix=$prefix (no default gateway)"
+        }
+        break
+    }
+
+    Start-Sleep 5
+    $attempt++
+}
+
+if (-not $ip) {
+    Log "ERROR: Failed to obtain valid IP after 60s, aborting."
+    exit 1
+}
+
+# ============ 幂等检查：IP 和 DNS 都没变就跳过 ============
+$currentDNS = (Get-DnsClientServerAddress -InterfaceAlias $if.Name -AddressFamily IPv4 -ErrorAction SilentlyContinue).ServerAddresses
+
+# 仅当当前地址确实来自 DHCP 时才允许幂等跳过；静态残留会让检查误判为"无需同步"
+$srcOrigin = (Get-NetIPAddress -InterfaceAlias $if.Name -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+    Where-Object { $_.IPAddress -eq $ip } | Select-Object -First 1).PrefixOrigin
+
+if ($srcOrigin -eq 'Dhcp' -and $currentDNS -contains $ip) {
+    # DNS 已经指向自己了，再检查 A 记录是否已有正确 IP
+    try {
+        Import-Module DnsServer -ErrorAction Stop
+        $zone = (Get-ADDomain -ErrorAction SilentlyContinue).DNSRoot
+        if ($zone) {
+            $existingA = Get-DnsServerResourceRecord -ZoneName $zone -Name $env:COMPUTERNAME -RRType A -ErrorAction SilentlyContinue |
+                Where-Object { $_.RecordData.IPv4Address.IPAddressToString -eq $ip }
+
+            if ($existingA) {
+                Log "IP=$ip, DNS points to self, A record correct. Skipping (idempotent)."
+                Log "========== DC IP Sync End (skipped) =========="
+                exit 0
+            }
+        }
+    } catch {
+        Log "Idempotent check failed, proceeding anyway: $_"
+    }
+}
+
+Log "Proceeding with IP/DNS sync..."
+
+# 关键步骤失败计数：不为 0 时脚本以非零退出码结束，
+# 计划任务的 LastTaskResult 才能反映真实结果（否则恒为 0x0，看不出失败）
+$syncErrors = 0
+
+# ============ 1. 强制 DHCP 并轮询等待有效 IPv4（排除 APIPA）============
+Log "Step 1: Resetting to DHCP and renewing..."
+
+# 有效 DHCP IPv4 判定：DAD 已完成(Preferred) + 前缀来源 Dhcp + 非 APIPA/回环
+# 只排除 169.254.* 不够——上次运行遗留的静态地址同样满足该条件，必须用 PrefixOrigin 区分
+function Get-DhcpIPv4 {
+    param([Parameter(Mandatory)][string]$Alias)
+
+    Get-NetIPAddress -InterfaceAlias $Alias -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+        Where-Object {
+            $_.AddressState -eq 'Preferred'   -and
+            $_.PrefixOrigin -eq 'Dhcp'        -and
+            $_.IPAddress -notlike '169.254.*' -and
+            $_.IPAddress -ne '127.0.0.1'      -and
+            $_.IPAddress -ne '0.0.0.0'
+        } |
+        Sort-Object -Property IPAddress -Unique |
+        Select-Object -First 1
+}
+
+$dhcpWait  = 90   # 总等待上限（秒）
+$pollEvery = 2
+
+try {
+    # 先切 DHCP 模式，再清掉上次运行遗留的静态地址
+    # Set-NetIPInterface 只是切换模式，不会移除已绑定的手工地址，必须显式删除
+    # Remove-NetIPAddress 无 -PrefixOrigin 参数，须 Get 出对象后管道传入
+    Set-NetIPInterface -InterfaceAlias $if.Name -Dhcp Enabled -ErrorAction Stop
+
+    $stale = Get-NetIPAddress -InterfaceAlias $if.Name -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+        Where-Object { $_.PrefixOrigin -eq 'Manual' }
+    if ($stale) {
+        $stale | ForEach-Object { Log "Removing stale static IPv4: $($_.IPAddress)/$($_.PrefixLength)" }
+        $stale | Remove-NetIPAddress -Confirm:$false -ErrorAction SilentlyContinue
+    }
+    Start-Sleep -Seconds 1
+
+    # 异步续租：无 DHCP 响应时 ipconfig 会阻塞数十秒，不能让它吃掉整个等待窗口
+    $renew = Start-Process -FilePath 'ipconfig.exe' `
+        -ArgumentList '/renew', "`"$($if.Name)`"" `
+        -WindowStyle Hidden -PassThru -ErrorAction SilentlyContinue
+
+    $ipObj    = $null
+    $lastSeen = ''
+    $deadline = (Get-Date).AddSeconds($dhcpWait)
+
+    while ((Get-Date) -lt $deadline) {
+        Start-Sleep -Seconds $pollEvery
+
+        $ipObj = Get-DhcpIPv4 -Alias $if.Name
+        if ($ipObj) { break }
+
+        # 候选地址发生变化才写日志，避免每 2 秒刷一行
+        $seen = (Get-NetIPAddress -InterfaceAlias $if.Name -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+                Where-Object { $_.AddressState -eq 'Preferred' } |
+                Sort-Object -Property IPAddress -Unique |
+                ForEach-Object { "$($_.IPAddress)/$($_.PrefixOrigin)" }) -join ','
+        if ($seen -ne $lastSeen) {
+            if (-not $seen) { $seen = '&lt;none&gt;' }
+            Log "Waiting for DHCP IPv4, current: $seen"
+            $lastSeen = $seen
+        }
+    }
+
+    if ($ipObj) {
+        $ip     = $ipObj.IPAddress
+        $prefix = $ipObj.PrefixLength
+        Log "DHCP lease acquired: ip=$ip prefix=$prefix"
+
+        # 唯一性断言：换网段时旧 DHCP 租约可能残留，多地址会让 registerdns 写回错误 A 记录
+        $extra = Get-NetIPAddress -InterfaceAlias $if.Name -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+            Where-Object { $_.AddressState -eq 'Preferred' -and $_.IPAddress -ne $ip }
+        if ($extra) {
+            $extra | ForEach-Object { Log "Removing extra IPv4: $($_.IPAddress) ($($_.PrefixOrigin))" }
+            $extra | Remove-NetIPAddress -Confirm:$false -ErrorAction SilentlyContinue
+        }
+    } else {
+        # 拿不到租约且当前地址本身不是有效租约时，绝不能继续改 DNS/A 记录：
+        # 那会把域控 DNS 主动改成错误状态，比保持原样更难恢复
+        if ($srcOrigin -ne 'Dhcp') {
+            Log "ERROR: no DHCP IPv4 within ${dhcpWait}s and current address origin='$srcOrigin', aborting without touching DNS."
+            # 失败时也要更新控制台提示，否则登录界面仍显示上一次的旧 IP，会误导选手
+            try {
+                Set-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' `
+                    -Name 'legalnoticecaption' -Value 'MazeSec babyad1' -Type String -Force -ErrorAction Stop
+                Set-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' `
+                    -Name 'legalnoticetext' -Type String -Force -ErrorAction Stop `
+                    -Value (@(
+                        'Failed to obtain an IP address for the target machine.'
+                    ))
+            } catch {
+                Log "WARN: failed to write failure notice: $_"
+            }
+            exit 1
+        }
+        Log "WARN: no DHCP IPv4 within ${dhcpWait}s, keeping last DHCP address ip=$ip"
+    }
+
+    # ── 网关检查：DHCP 网关可能比地址晚到，短轮询后仍为空则只记录，不构造路由 ──
+    $newGW = $null
+    for ($i = 0; $i -lt 5; $i++) {
+        $newGW = (Get-NetRoute -InterfaceAlias $if.Name -DestinationPrefix '0.0.0.0/0' -ErrorAction SilentlyContinue |
+                Select-Object -First 1).NextHop
+        if ($newGW) { break }
+        Start-Sleep -Seconds 2
+    }
+
+    if (-not $newGW) {
+        # host-only 网络不提供默认网关；硬猜 x.y.z.1 会指向错误主机（VMware NAT 的网关是 x.y.z.2）
+        Log "No default gateway on '$($if.Name)', skipping route creation."
+    }
+} catch {
+    Log "ERROR: DHCP renew step failed: $_"
+    $syncErrors++
+}
+
+# ============ 2. DNS 指向自己 ============
+Log "Step 2: Setting DNS to self ($ip)..."
+Set-DnsClientServerAddress -InterfaceAlias $if.Name -ServerAddresses $ip
+Start-Sleep 2
+
+# ============ 2.5 Legal Notice（动态显示当前 IP 给选手）============
+Log "Step 2.5: Updating Legal Notice..."
+try {
+    $noticeText = "IP: $ip"
+    Set-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' `
+        -Name 'legalnoticecaption' -Value 'MazeSec babyad1' -Type String -Force -ErrorAction Stop
+    Set-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' `
+        -Name 'legalnoticetext' -Value $noticeText -Type String -Force -ErrorAction Stop
+    Log "Legal Notice updated: ip=$ip"
+} catch {
+    Log "WARN: Legal Notice update failed: $_"
+}
+
+# ============ 3. 清理旧 A 记录 + 补新 A 记录 ============
+Log "Step 3: Cleaning stale A records and registering new..."
+try {
+    Import-Module DnsServer -ErrorAction Stop
+
+    # ── Get-ADDomain 带重试，等 ADWS 就绪 ──
+    $adRetry = 0
+    while ($adRetry -lt 5 -and -not $zone) {
+        try {
+            $zone = (Get-ADDomain -ErrorAction Stop).DNSRoot
+            Log "Got domain zone: $zone"
+        } catch {
+            Log "Get-ADDomain attempt $adRetry failed, retrying in 5s..."
+            Start-Sleep 5
+            $adRetry++
+        }
+    }
+
+    if (-not $zone) {
+        Log "ERROR: Cannot get AD domain after 5 retries, skipping A record sync."
+        throw "No zone available"
+    }
+
+    $name = $env:COMPUTERNAME
+    Log "Zone=$zone, ComputerName=$name"
+
+    # 获取所有本机 A 记录
+    $allARecords = Get-DnsServerResourceRecord -ZoneName $zone -Name $name -RRType A -ErrorAction SilentlyContinue
+
+    if ($allARecords) {
+        $staleCount = 0
+        foreach ($rec in $allARecords) {
+            $recIP = $rec.RecordData.IPv4Address.IPAddressToString
+            if ($recIP -ne $ip) {
+                Log "Removing stale A record: $recIP"
+                Remove-DnsServerResourceRecord -ZoneName $zone -Name $name -RRType A -RecordData $rec.RecordData -Force
+                $staleCount++
+            }
+        }
+        Log "Removed $staleCount stale A record(s)."
+    }
+
+    # 确认新 IP 的 A 记录存在
+    $hasCurrent = Get-DnsServerResourceRecord -ZoneName $zone -Name $name -RRType A -ErrorAction SilentlyContinue |
+        Where-Object { $_.RecordData.IPv4Address.IPAddressToString -eq $ip }
+
+    if (-not $hasCurrent) {
+        Log "Adding new A record: $name -&gt; $ip"
+        # 不加 -CreatePtr：它要求对应反查区域 x.y.z.in-addr.arpa 已存在，
+        # 换网段后新网段的反查区域不存在会导致整条命令失败、A 记录加不上。
+        # AD 定位依赖 A + SRV，PTR 非必需
+        Add-DnsServerResourceRecordA -ZoneName $zone -Name $name -IPv4Address $ip
+        Log "A record added."
+    } else {
+        Log "A record for $ip already exists."
+    }
+
+} catch {
+    Log "ERROR: DNS A record sync failed: $_"
+    $syncErrors++
+}
+
+# ============ 4. 重注册 DNS（A + SRV）============
+Log "Step 4: Force DNS re-registration..."
+ipconfig /registerdns | Out-Null
+Start-Sleep 3
+
+# ============ 5. 重注册 SRV 记录 ============
+Log "Step 5: Force SRV registration via nltest..."
+# 2&gt;&amp;1 得到的是 ErrorRecord 对象，直接 Out-File 会写入 CategoryInfo/FullyQualifiedErrorId 等格式化文本；
+# 先逐条 ToString() 只保留消息本身
+nltest /dsregdns 2&gt;&amp;1 | ForEach-Object { $_.ToString() } | Out-File -Append -Encoding utf8 $log
+
+# ============ 6. 重启 Netlogon 确保 SRV 正确 ============
+Log "Step 6: Restarting Netlogon..."
+Restart-Service Netlogon -Force -ErrorAction SilentlyContinue
+Start-Sleep 5
+
+# ============ 7. 验证 ============
+Log "Step 7: Verification..."
+$verifyOk = $false
+if ($zone) {
+    try {
+        # nslookup 对不存在的记录只打印文本、不抛异常，必须按内容断言
+        $verifyText = (nslookup -type=SRV "_ldap._tcp.$zone" 127.0.0.1 2&gt;&amp;1 |
+                    ForEach-Object { $_.ToString() }) -join "`n"
+        $preview = ($verifyText -split "`n" | Select-Object -First 3) -join ' | '
+        Log "LDAP SRV lookup result: $preview"
+
+        $verifyOk = ($verifyText -match 'svr hostname') -and ($verifyText -match 'port\s*=\s*389')
+        if (-not $verifyOk) { Log "WARN: LDAP SRV record did not resolve as expected." }
+    } catch {
+        Log "ERROR: Verification lookup failed: $_"
+    }
+} else {
+    Log "ERROR: Verification skipped (zone not available)."
+}
+if (-not $verifyOk) { $syncErrors++ }
+
+# 退出码反映真实结果，供计划任务 LastTaskResult 判读
+if ($syncErrors -gt 0) {
+    Log "========== DC IP Sync Complete WITH $syncErrors ERROR(S) =========="
+    exit 1
+}
+Log "========== DC IP Sync Complete =========="
+exit 0</code></pre>
+<p>把下面整段粘贴到 PowerShell 执行，完成开机任务注册。任务定义持久化在任务计划库中，不需要落盘成脚本，这一步只在制作阶段执行一次。</p>
+<pre><code class="language-powershell"># 注册 DC IP 同步为开机计划任务
+$ErrorActionPreference = 'Stop'
+
+$base   = 'C:\ProgramData\Maze'
+$script = Join-Path $base 'dc-ip-sync.ps1'
+
+# 确保目录和脚本存在
+if (-not (Test-Path $script)) {
+    Write-Error "Script not found: $script"
+    exit 1
+}
+
+# 如果任务已存在，先删
+$taskName = 'Maze-DC-IP-Sync'
+Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue | Unregister-ScheduledTask -Confirm:$false
+
+# 创建任务
+$action = New-ScheduledTaskAction `
+    -Execute 'powershell.exe' `
+    -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$script`""
+
+$trigger = New-ScheduledTaskTrigger -AtStartup
+
+$principal = New-ScheduledTaskPrincipal `
+    -UserId 'SYSTEM' `
+    -LogonType ServiceAccount `
+    -RunLevel Highest
+
+$settings = New-ScheduledTaskSettingsSet `
+    -StartWhenAvailable `
+    -AllowStartIfOnBatteries `
+    -DontStopIfGoingOnBatteries `
+    -ExecutionTimeLimit (New-TimeSpan -Minutes 15) `
+    -RestartCount 3 `
+    -RestartInterval (New-TimeSpan -Minutes 2)
+
+Register-ScheduledTask `
+    -TaskName $taskName `
+    -Action $action `
+    -Trigger $trigger `
+    -Principal $principal `
+    -Settings $settings `
+    -Description 'DC IP/DNS/A-record adaptive sync at boot' `
+    -Force | Out-Null
+
+# 验证注册结果
+$task = Get-ScheduledTask -TaskName $taskName
+Write-Host "Task registered: $($task.TaskName) | State: $($task.State)" -ForegroundColor Green
+
+# 立即测试运行（可选，注释掉则等下次开机）
+Write-Host "Running task now for test..." -ForegroundColor Yellow
+Start-ScheduledTask -TaskName $taskName
+
+# 等任务真正结束再读结果。首次同步包含 DHCP 轮询与 AD 重试，通常需要 1-3 分钟，
+# 固定 Start-Sleep 5 读到的 LastTaskResult 是 0x41301（SCHED_S_TASK_RUNNING），易被误判为失败
+$deadline = (Get-Date).AddMinutes(5)
+do {
+    Start-Sleep 5
+    $task = Get-ScheduledTask -TaskName $taskName
+} while ($task.State -eq 'Running' -and (Get-Date) -lt $deadline)
+
+$info = Get-ScheduledTaskInfo -TaskName $taskName
+Write-Host "LastRunTime=$($info.LastRunTime) | State=$($task.State) | LastTaskResult=0x$($info.LastTaskResult.ToString('X8'))" -ForegroundColor Cyan
+Write-Host "---- dc-ip-sync.log (tail 15) ----"
+Get-Content 'C:\ProgramData\Maze\logs\dc-ip-sync.log' -Tail 15</code></pre>
+<h2>漏洞设计</h2>
+<p>漏洞布置：</p>
+<ul>
+<li>创建一个测试使用的域用户 test，密码 Baby@2026</li>
+<li>启用 Guest 匿名访问，允许空会话的 SMB 服务，创建共享 share，放置场景说明 readme.txt 与加密备份包 backup.zip</li>
+<li>创建一个域用户 ll104567，加入内置 Backup Operators 组，密码 !QAZ2wsx，注册 SPN（HTTP/DC.babyad1.dsz），强制使用 RC4 加密（可被 Kerberoasting）</li>
+<li>将 ll104567 加入 Remote Management Users 并启用 WinRM，作为取得凭证后的远程落地入口</li>
+<li>user flag（user.txt）放入 backup.zip，随匿名共享分发，爆破压缩包密码后取得</li>
+<li>在 Administrator 桌面放置 root flag（root.txt），需取得域管理员权限后经管理共享读取</li>
+</ul>
+<pre><code class="language-powershell"># 报错继续执行，避免中途因权限/注册表/服务等问题中断
+$ErrorActionPreference = 'Continue'
+# 创建测试用户
+# 密码不得包含账户名（含全名中超过两个连续字符的片段）：Test@123 会被
+# 密码过滤器以 ADPasswordComplexityException 拒绝，与长度/复杂度策略无关
+# New-ADUser 默认 PasswordNeverExpires=False，受域策略 MaxPasswordAge 42 天约束，改为永久有效
+foreach ($u in 'test','ll104567') {
+    $existing = Get-ADUser -Filter "SamAccountName -eq '$u'" -ErrorAction SilentlyContinue
+    if ($existing) { Remove-ADUser -Identity $existing -Confirm:$false }
+}
+New-ADUser -Name 'test' -SamAccountName 'test' `
+    -AccountPassword (ConvertTo-SecureString 'Baby@2026' -AsPlainText -Force) `
+    -PasswordNeverExpires $true `
+    -Enabled $true
+
+net user Guest /active:yes
+
+Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters' `
+    -Name 'RestrictAnonymous' -Value 0 -Type DWord
+
+Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Lsa' `
+    -Name 'EveryoneIncludesAnonymous' -Value 1 -Type DWord
+Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Lsa' `
+    -Name 'LimitBlankPasswordUse' -Value 0 -Type DWord
+
+Restart-Service LanmanServer -Force -ErrorAction SilentlyContinue
+Start-Sleep 2
+Get-Service LanmanServer | Select-Object Name, Status
+
+mkdir C:\share -Force
+New-SmbShare -Name 'share' -Path 'C:\share' -ReadAccess 'Everyone'
+
+# 场景说明放共享根目录，匿名可读；只交代锁定策略与允许离线爆破，不泄露任何凭证
+$readme = @'
+# 运维临时备忘 (内部)
+
+关于近期域控安全排查的通知：
+1. 我们的自动化审计脚本发现部分服务账号密码存在弱口令风险，正在逐步重置。
+2. 请各位运维人员注意，当前域环境已启用账户锁定策略（连续 5 次失败将锁定 30 分钟），排查密码时切勿使用自动化脚本进行在线喷洒（Spray），请通过合法途径离线验证或联系账号负责人。
+3. 这里的 backup.zip 是上周备份的测试账号清单和部分配置文件，已加密。密码我已交接给新的负责人，如有需要请向他索要，不要尝试暴力破解。
+4. 交接期间，请勿随意删改域内现有账号和组策略。
+'@
+$readme = $readme -replace "`r?`n", "`r`n"
+[System.IO.File]::WriteAllText('C:\share\readme.txt', $readme, (New-Object System.Text.UTF8Encoding($false)))
+
+New-ADUser -Name 'll104567' -SamAccountName 'll104567' `
+    -AccountPassword (ConvertTo-SecureString '!QAZ2wsx' -AsPlainText -Force) `
+    -PasswordNeverExpires $true `
+    -Enabled $true
+Add-ADGroupMember 'Backup Operators' 'll104567'
+setspn -A HTTP/DC.babyad1.dsz ll104567
+Set-ADUser ll104567 -Replace @{ 'msDS-SupportedEncryptionTypes' = 0x1 }
+
+# WinRM 落地入口：ll104567 只有 Backup Operators，无法访问 C$/ADMIN$，需要一个远程执行的位置
+# Remote Management Users 是 Builtin 组，DC 上不存在 SAM 本地账户，用 net localgroup 比 Add-LocalGroupMember 稳
+net localgroup 'Remote Management Users' 'BABYAD1\ll104567' /add
+
+# -SkipNetworkProfileCheck：网卡被判定为 Public 时不加此参数会直接拒绝启用
+Enable-PSRemoting -Force -SkipNetworkProfileCheck
+Set-Service WinRM -StartupType Automatic
+Start-Service WinRM
+
+Get-Service WinRM | Select-Object Name, Status, StartType
+Test-WSMan -ComputerName localhost
+
+net accounts /lockoutthreshold:5 /lockoutduration:30 /lockoutwindow:15
+
+# user flag 不再写入 share，随 backup.zip 分发；此处仅保留取值用于打包核对
+$userFlag = 'flag{user-6b1f4c9d-2a8e-4f3b-9c7d-1e5a8b2c6f04}'
+$rootFlag = 'flag{root-d3e7a1b5-8c2f-4d6e-a9b4-7f1c3e5d8a02}'
+Set-Content -Path 'C:\Users\Administrator\Desktop\root.txt' -Value $rootFlag -Encoding ASCII</code></pre>
+<p>SMB 匿名访问涉及的三项配置，生效方式不同，需要分开处理：</p>
+<ul>
+<li><code>RestrictAnonymous</code> 由 LanmanServer 在服务启动时读取，脚本中的 <code>Restart-Service LanmanServer</code> 即可让其生效。</li>
+<li><code>EveryoneIncludesAnonymous</code> 与 <code>LimitBlankPasswordUse</code> 位于 LSA 注册表项下，由 lsass 在系统启动时读取，重启服务无效，必须重启系统。</li>
+</ul>
+<p>所以漏洞布置脚本整体执行完毕后，需要重启一次靶机，三项配置才会同时生效。重启之前不应打包分发，否则导出的镜像中匿名访问可能仍然不可用。</p>
+<p>重启后先确认注册表值的类型与内容：</p>
+<pre><code class="language-powershell">Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters' -Name RestrictAnonymous
+Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\Lsa' -Name EveryoneIncludesAnonymous, LimitBlankPasswordUse</code></pre>
+<p>ll104567 的密码取 rockyou 字典第 13893 位的 <code>!QAZ2wsx</code>。长度 8，大写、小写、数字、符号四类齐全，满足域默认密码策略，因此不需要关闭密码复杂度，也不需要为它单独配置细粒度密码策略。该位置在字典中足够靠后，在线喷洒命中所需的尝试次数远高于 5 次锁定阈值，正常解法只能走 Kerberoasting 取票后离线爆破。</p>
+<p>在 Linux 攻击机上验证该凭据时需用单引号包裹，否则 bash 会把开头的 <code>!Q</code> 当作历史扩展：</p>
+<p>smb文件权限管理</p>
+<pre><code class="language-powershell">mkdir C:\share -Force
+if (-not (Get-SmbShare -Name 'share' -ErrorAction SilentlyContinue)) {
+    New-SmbShare -Name 'share' -Path 'C:\share' `
+        -ReadAccess 'ANONYMOUS LOGON','Everyone','guest','BABYAD1\test'
+} else {
+    Grant-SmbShareAccess -Name 'share' -AccountName 'ANONYMOUS LOGON' -AccessRight Read -Force
+    Grant-SmbShareAccess -Name 'share' -AccountName 'guest' -AccessRight Read -Force
+}
+# 先投放文件，再设 ACL，否则 icacls 找不到目标
+Copy-Item -Path 'C:\temp\backup.zip' -Destination 'C:\share\backup.zip' -Force
+icacls 'C:\share' /inheritance:r
+icacls 'C:\share' /grant 'ANONYMOUS LOGON:(R)' /grant 'Everyone:(R)' /grant 'guest:(R)' /grant 'BABYAD1\test:(R)' /grant 'BUILTIN\Administrators:(F)' /grant 'SYSTEM:(F)'
+icacls 'C:\share\readme.txt' /inheritance:r
+icacls 'C:\share\readme.txt' /grant 'ANONYMOUS LOGON:(R)' /grant 'Everyone:(R)' /grant 'guest:(R)'
+icacls 'C:\share\backup.zip' /inheritance:r
+icacls 'C:\share\backup.zip' /grant 'ANONYMOUS LOGON:(R)' /grant 'Everyone:(R)' /grant 'guest:(R)'
+Restart-Service LanmanServer -Force</code></pre>
+<h2>内置 Administrator 密码</h2>
+<p>域控上不存在本地账户，<code>Administrator</code> 是域内置管理员账户，与 ll104567 分属两个独立主体：前者属 Domain Admins，后者属 Backup Operators。两者使用不同密码：</p>
+<ul>
+<li>ll104567 的 <code>!QAZ2wsx</code> 是刻意设置的弱口令，服务于 Kerberoasting 的离线爆破环节。</li>
+<li><code>Administrator</code> 使用 <code>#Mazesec2026!</code>，长度 13、四类字符齐全，不在常见字典内，无法通过爆破获得。</li>
+</ul>
+<p>升域时，原本地 Administrator 的密码会原样继承为域 Administrator 的密码。</p>
+<p>这里必须用 <code>net user</code> 而不是 <code>Set-LocalUser</code>。空密码账户带有 <code>UF_PASSWD_NOTREQD</code> 标志（可能是vmware自动化缘故），而 <code>Set-LocalUser -Password</code> 只写入密码哈希，不会清除该标志；<code>Install-ADDSForest</code> 的前置检查读的正是这个标志，会以「本地 Administrator 帐户不需要密码」中止。密码用双引号包裹，避免开头的 <code>#</code> 被 PowerShell 当作注释。</p>
+<h2>关闭防火墙、Defender、Windows Update</h2>
+<pre><code class="language-powershell"># 关闭防火墙
+Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled False
+Get-NetFirewallProfile | Select-Object Name, Enabled
+# 移除 Defender 实时保护
+Uninstall-WindowsFeature -Name Windows-Defender
+# 关闭 Windows Update 服务
+# 1. 三个服务直接在注册表层设为 Disabled（Start=4）
+#    比 Set-Service 可靠：WaaSMedicSvc 与 UsoSvc 受保护，Set-Service 可能拒绝访问
+foreach ($s in 'wuauserv','WaaSMedicSvc','UsoSvc') {
+    Set-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\$s" -Name Start -Value 4 -Type DWord -ErrorAction SilentlyContinue
+    Stop-Service -Name $s -Force -ErrorAction SilentlyContinue
+}
+
+# 2. 关闭自动更新的策略项
+$au = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU'
+New-Item -Path $au -Force | Out-Null
+Set-ItemProperty $au -Name NoAutoUpdate -Value 1 -Type DWord
+Set-ItemProperty $au -Name AUOptions   -Value 1 -Type DWord
+
+# 3. 验证
+Get-Service wuauserv, WaaSMedicSvc, UsoSvc | Select-Object Name, Status, StartType
+Get-ItemProperty $au | Select-Object NoAutoUpdate, AUOptions</code></pre>
+<h2>清理痕迹</h2>
+<p>清空 PowerShell 历史记录</p>
+<pre><code class="language-powershell">$h = "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadline\ConsoleHost_history.txt"
+if (Test-Path $h) { Remove-Item $h -Force; "removed: $h" }</code></pre>
+<p>删除IP同步日志</p>
+<pre><code class="language-powershell">Remove-Item 'C:\ProgramData\Maze\logs\dc-ip-sync.log' -Force
+Test-Path 'C:\ProgramData\Maze\logs\dc-ip-sync.log' </code></pre>
+<h2>压缩镜像</h2>
+<p>零填充空闲空间，下载 sdelete 工具<a href="https://learn.microsoft.com/en-us/sysinternals/downloads/sdelete">SDelete v2.06 - microsoft</a>并上传到靶机，使用以下命令零填充空闲空间</p>
+<pre><code class="language-cmd">cd C:\temp
+sdelete64.exe -accepteula -z C:</code></pre>
+<p>在宿主机vmware安装目录执行压缩命令，指定虚拟磁盘文件路径，压缩完成后，虚拟磁盘文件大小会明显减小</p>
+<pre><code class="language-powershell"># 1. 碎片整理（整理内部块布局）
+D:\VMware\vmware-vdiskmanager.exe -d "F:\WindowsOVA\Windows Server 2019.vmdk"
+
+# 2. 压缩（回收空闲空间）
+D:\VMware\vmware-vdiskmanager.exe -k "F:\WindowsOVA\Windows Server 2019.vmdk"</code></pre>
+<p>最后，vmware导出虚拟机为OVF文件，再进行导入与测试，分发给选手。</p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <a href="/categories/MazeSec/">MazeSec</a>
+                                    <a href="/categories/%E6%88%91%E7%9A%84%E9%9D%B6%E6%9C%BA/">我的靶机</a>
+                            </span>
+                    </div>
+    </article>
+
+<section class="post-recommend markdown-alert markdown-alert-tip" data-featured-recommend dir="auto" hidden aria-labelledby="featuredRecommendTitle">
+    <p class="markdown-alert-title" id="featuredRecommendTitle">
+        <svg class="octicon octicon-light-bulb mr-2" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8 1.5c-2.363 0-4 1.69-4 3.75 0 .984.424 1.625.984 2.304l.214.253c.223.264.47.556.673.848.284.411.537.896.621 1.49a.75.75 0 0 1-1.484.211c-.04-.282-.163-.547-.37-.847a8.456 8.456 0 0 0-.542-.68c-.084-.1-.173-.205-.268-.32C3.201 7.75 2.5 6.766 2.5 5.25 2.5 2.31 4.863 0 8 0s5.5 2.31 5.5 5.25c0 1.516-.701 2.5-1.328 3.259-.095.115-.184.22-.268.319-.207.245-.383.453-.541.681-.208.3-.33.565-.37.847a.751.751 0 0 1-1.485-.212c.084-.593.337-1.078.621-1.489.203-.292.45-.584.673-.848.075-.088.147-.173.213-.253.561-.679.985-1.32.985-2.304 0-2.06-1.637-3.75-4-3.75ZM5.75 12h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1 0-1.5ZM6 15.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z"></path></svg>推荐阅读
+    </p>
+    <div class="post-recommend__slot" data-featured-recommend-slot></div>
+</section>
+
+
+<section class="post-comments" aria-label="Comments"
+    data-giscus
+    data-theme-mode="auto"
+    data-theme-light="light"
+    data-theme-dark="dark"
+    data-repo="Apursuit/the0n3-blog"
+    data-repo-id="R_kgDORvPPbA"
+    data-category="Announcements"
+    data-category-id="DIC_kwDORvPPbM4C5KAt"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-loading="lazy"
+    data-lang="zh-CN">
+    <div class="giscus"></div>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/blog-stats/script.js"></script>
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/giscus-theme/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

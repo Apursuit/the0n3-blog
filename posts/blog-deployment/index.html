@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>博客部署与使用指南 - the0n3</title>
+        <meta name="description" content="1. 环境准备 确保您的本地环境已安装以下组件： PHP ≥ 8.1 Composer Git 安装 PHP、Composer、git： windows # windows powershell，管理员权限运行 # 过程中会提示是否修改执行策略，输入 Y 确认。 Set-ExecutionPolicy RemoteSi…">
+    <link rel="canonical" href="https://the0n3.top/posts/blog-deployment/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="博客部署与使用指南">
+    <meta property="og:description" content="1. 环境准备 确保您的本地环境已安装以下组件： PHP ≥ 8.1 Composer Git 安装 PHP、Composer、git： windows # windows powershell，管理员权限运行 # 过程中会提示是否修改执行策略，输入 Y 确认。 Set-ExecutionPolicy RemoteSi…">
+    <meta property="og:url" content="https://the0n3.top/posts/blog-deployment/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/blog-deployment/13.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="博客部署与使用指南">
+    <meta name="twitter:description" content="1. 环境准备 确保您的本地环境已安装以下组件： PHP ≥ 8.1 Composer Git 安装 PHP、Composer、git： windows # windows powershell，管理员权限运行 # 过程中会提示是否修改执行策略，输入 Y 确认。 Set-ExecutionPolicy RemoteSi…">
+        <meta name="twitter:image" content="https://the0n3.top/images/blog-deployment/13.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 评论系统预连接：giscus 由前端按访客主题动态注入，提前建连可抵消注入延迟 -->
+    <link rel="preconnect" href="https://giscus.app" crossorigin>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/nav-menu/style.css">
+        <link rel="stylesheet" href="/assets/features/random-recommend/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                <details class="nav-menu">
+                    <summary class="nav-toggle" aria-label="打开菜单"><span aria-hidden="true">☰</span></summary>
+                </details>
+                <div class="nav-links">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                </div>
+                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>博客部署与使用指南</h1>
+    <p>
+        <span class="meta">发布于: 2026-03-22 13:59</span>
+                    <span class="meta">· 更新于: 2026-11-17 00:47</span>
+            </p>
+    <div class="post-body">
+        <h2>1. 环境准备</h2>
+<p>确保您的本地环境已安装以下组件：</p>
+<ul>
+<li>PHP ≥ 8.1</li>
+<li>Composer</li>
+<li>Git</li>
+</ul>
+<p>安装 PHP、Composer、git：</p>
+<p>windows</p>
+<pre><code class="language-bash"># windows powershell，管理员权限运行
+# 过程中会提示是否修改执行策略，输入 Y 确认。
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+irm get.scoop.sh | iex
+scoop install php composer git</code></pre>
+<p>MacOS</p>
+<pre><code class="language-bash"># macOS
+brew install php composer git</code></pre>
+<p>Ubuntu/Debian</p>
+<pre><code class="language-bash"># Ubuntu/Debian  
+sudo apt-get install php composer git</code></pre>
+<h2>2. 获取项目与安装依赖</h2>
+<pre><code class="language-bash">git clone https://gh-proxy.org/https://github.com/Apursuit/the0n3-blog-template.git
+cd the0n3-blog-template</code></pre>
+<p>composer 依赖安装：</p>
+<pre><code class="language-bash">composer install</code></pre>
+<p>如果希望提交历史从零开始，可以手动删除项目根目录下的 <code>.git</code> 文件夹，再重新初始化仓库：</p>
+<pre><code class="language-bash">git init</code></pre>
+<p>这一步是可选的。删除 <code>.git</code> 只是清掉模板自带的提交记录，不删也不影响博客的正常使用与部署。</p>
+<h2>3. 开始写作</h2>
+<p>博客结构如下，你可以在 posts/ 目录下创建 Markdown 文件，也可以创建子目录来组织文章，例如 posts/2026/03/22/test.md。</p>
+<pre><code class="language-plaintext">.
+├── assets/      # 前端资源（CSS / JS / Prism 代码高亮）
+├── config/      # 站点配置目录
+├── logs/        # 构建日志目录（默认追加写入，超过14天自动清空重写）
+├── posts/       # Markdown 文章源文件（支持子目录嵌套）
+├── public/      # 静态资源（构建时会原样拷贝至 dist/ 根目录）
+├── images/      # 图片资源（构建时会原样拷贝至 dist/images/）
+├── src/         # 核心 PHP 业务逻辑代码
+├── templates/   # HTML 页面模板
+├── dist/        # 构建后的最终静态站点输出目录（执行 build 后生成）
+└── main.php     # CLI 工具统一入口文件</code></pre>
+<p>Markdown 文章需要包含 YAML Front Matter，格式如下：</p>
+<pre><code class="language-yaml">---
+title: Hello World
+date: 2026-03-20
+permalink: /posts/hello-world/
+tags:
+    - 标签1
+categories:
+    - 分类1
+draft: false
+sidebar: true
+---</code></pre>
+<p>首尾两行的 <code>---</code> 不能省略，且必须顶格写在文件最开头。</p>
+<p>运行以下命令快速生成新文章模板：</p>
+<pre><code class="language-bash">php main.php new "文章标题"</code></pre>
+<p>这会打印出一个包含 Front Matter 的 Markdown 模板。在 <code>posts/</code> 下新建一个 <code>.md</code> 文件，把模板内容复制进去即可。</p>
+<blockquote>
+<p>注意：<code>---</code> 分隔符必须顶格，且必须出现在文件开头，否则 front matter 无法被解析。</p>
+</blockquote>
+<p><img src="/images/blog-deployment/13.png" alt="" decoding="async" width="814" height="453"></p>
+<p>如果文章包含图片资源，可以放在 images 目录下，例如 images/testdir/1.png，然后在 Markdown 中使用<code>/images/xxxx/xx.png</code>路径引用。</p>
+<pre><code class="language-markdown">![测试图片](/images/testdir/1.png)</code></pre>
+<p>文章书写完成后，运行构建命令：</p>
+<pre><code class="language-bash">php main.php build</code></pre>
+<p>博客构建的产物在 dist目录，开启本地 web 服务，访问 <a href="http://localhost:8000">http://localhost:8000</a> 预览效果：</p>
+<pre><code class="language-bash">php -S localhost:8000 -t dist/</code></pre>
+<p>访问 <a href="http://localhost:8000">http://localhost:8000</a> 即可看到博客首页，至此，你已经成功搭建了自己的博客！后续在 posts/ 目录下添加 Markdown 文章，重复构建流程即可更新博客内容。</p>
+<h2>4. 部署指南</h2>
+<p>要让其他人访问你的博客，需要把源码推送到 GitHub 仓库。推送走 SSH 认证，公钥的生成与添加步骤参考 GitHub 官方文档：<a href="https://docs.github.com/zh/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#adding-your-ssh-key-to-the-ssh-agent">生成新的 SSH 密钥并添加到 ssh-agent</a>。这块涉及不同平台的具体操作，本文不展开，遇到不理解的地方可以让 AI 协助解释，配置完成后回到本文继续。</p>
+<p>本模板已配置好完整的自动化部署流程。当您将本地更新推送到 GitHub 仓库时，GitHub Action 会自动触发构建，并把生成的静态文件推送到 gh-pages 分支，不需要在本地手动 build 再上传。</p>
+<p>先在 GitHub 新建一个仓库，仓库名设为 <code>username.github.io</code>（其中 username 替换为你的 GitHub 用户名，大小写完全一致），这样 GitHub Pages 才能正确识别并部署。</p>
+<p>然后把本地仓库的远程地址指向这个新仓库，注意用的是 SSH 地址：</p>
+<pre><code class="language-bash">git remote set-url origin git@github.com:&lt;你的用户名&gt;/&lt;你的仓库名&gt;.git
+git remote -v   # 确认 origin 已指向自己的仓库</code></pre>
+<p>推送前还要给 Actions 开启写入权限，否则它无法把构建产物推送到 gh-pages 分支。在 GitHub 仓库页面进入 Settings ➔ Actions ➔ General，向下滚动至 Workflow permissions 部分，选择 Read and write permissions 并保存。</p>
+<p><img src="/images/blog-deployment/14.png" alt="权限配置" decoding="async" loading="lazy" width="1920" height="919"></p>
+<p>完成后提交并推送，首次推送用 <code>-u</code> 建立本地与远程的跟踪关系：</p>
+<pre><code class="language-bash">git add .
+git commit -m "init"
+git push -u origin main</code></pre>
+<p>推送后打开仓库的 Actions 页面，可以看到构建流程正在运行；构建成功后，站点会自动发布到 gh-pages 分支。</p>
+<h2>自定义域名（可选）</h2>
+<p>GitHub Pages 默认提供的访问地址是 <code>username.github.io</code>。使用自己的域名分两步：先在 DNS 里配解析记录，再在仓库里声明这个域名。</p>
+<p>顶级域名（如 example.com）在域名服务商后台添加四条 A 记录，主机记录填 @（或留空），记录值为 185.199.108.153、185.199.109.153、185.199.110.153、185.199.111.153。</p>
+<p>如果有多个 GitHub Pages 项目，用子域名（如 blog.example.com）区分：添加一条 CNAME 记录，记录值为 <code>username.github.io</code>。两种方式按域名类型二选一，不要混用。</p>
+<p><img src="/images/blog-deployment/domain-1.png" alt="dns配置" decoding="async" loading="lazy" width="1181" height="675"></p>
+<p>DNS 配好后还要在仓库里声明域名，GitHub 收到请求时靠它判断该返回哪个仓库。本模板的 CNAME 在 public/ 目录下，把内容改成你的域名即可，只写域名本身，例如 example.com。</p>
+<p>还需要同步两处配置，否则 sitemap 里的地址不对，搜索引擎也难以发现它。在 <code>config/site.php</code> 中把 <code>url</code> 改成你的自定义域名：</p>
+<pre><code class="language-php">'url' =&gt; 'https://你的自定义域名',</code></pre>
+<p>在 <code>public/robots.txt</code> 末尾补一行，指向 sitemap 的绝对地址：</p>
+<pre><code class="language-txt">Sitemap: https://你的自定义域名/sitemap.xml</code></pre>
+<p><code>url</code> 留空时构建会跳过 sitemap 生成并输出一条警告，博客本身仍可正常访问。</p>
+<h2>Giscus 评论系统（可选）</h2>
+<p>默认关闭。如需启用，评论数据会存放在你 GitHub 仓库的 Discussions 中，读者需登录 GitHub 账号才能评论。</p>
+<p><strong>启用前需要完成三件准备：</strong></p>
+<ol>
+<li><strong>仓库必须公开</strong>：使用你的博客仓库或新建仓库专门用来存放评论数据。Giscus 无法访问私有仓库的 Discussions。</li>
+<li><strong>开启 Discussions</strong>：在准备作为存放评论数据的仓库 Settings → General → Features 中勾选 开启 Discussions。</li>
+<li><strong>安装 Giscus App</strong>：访问 <a href="https://github.com/apps/giscus">github.com/apps/giscus</a> 安装，授权它访问你的仓库。</li>
+</ol>
+<p>获取配置参数：</p>
+<p>打开 <a href="https://giscus.app/zh-CN">giscus.app/zh-CN</a>，填入你的仓库名（格式 <code>用户名/仓库名</code>），选择 Discussion 分类（推荐 Announcements，该分类下只有仓库维护者和 Giscus 能创建讨论，可防垃圾评论）。</p>
+<p><img src="/images/blog-deployment/giscus-1.png" alt="giscus配置" decoding="async" loading="lazy" width="1140" height="941"></p>
+<p><img src="/images/blog-deployment/giscus-2.png" alt="giscus配置2" decoding="async" loading="lazy" width="1146" height="844"></p>
+<p>页面下方会生成一段代码，从中复制四个值：<code>repo</code>、<code>repo-id</code>、<code>category</code>、<code>category-id</code>，将上述四个值填入 <code>config/site.php</code> 的 giscus 配置中，并把 <code>enabled</code> 参考修改为 <code>true</code>，保存后重新构建即可生效。</p>
+<p>博客更多细节请阅读</p>
+<ul>
+<li><a href="/posts/347b34/">项目结构与实现细节</a></li>
+<li><a href="/posts/d716e5/">markdown语法</a></li>
+</ul>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <a href="/categories/%E6%88%91%E7%9A%84%E5%8D%9A%E5%AE%A2/">我的博客</a>
+                            </span>
+                    </div>
+    </article>
+
+<section class="post-recommend markdown-alert markdown-alert-tip" data-featured-recommend dir="auto" hidden aria-labelledby="featuredRecommendTitle">
+    <p class="markdown-alert-title" id="featuredRecommendTitle">
+        <svg class="octicon octicon-light-bulb mr-2" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8 1.5c-2.363 0-4 1.69-4 3.75 0 .984.424 1.625.984 2.304l.214.253c.223.264.47.556.673.848.284.411.537.896.621 1.49a.75.75 0 0 1-1.484.211c-.04-.282-.163-.547-.37-.847a8.456 8.456 0 0 0-.542-.68c-.084-.1-.173-.205-.268-.32C3.201 7.75 2.5 6.766 2.5 5.25 2.5 2.31 4.863 0 8 0s5.5 2.31 5.5 5.25c0 1.516-.701 2.5-1.328 3.259-.095.115-.184.22-.268.319-.207.245-.383.453-.541.681-.208.3-.33.565-.37.847a.751.751 0 0 1-1.485-.212c.084-.593.337-1.078.621-1.489.203-.292.45-.584.673-.848.075-.088.147-.173.213-.253.561-.679.985-1.32.985-2.304 0-2.06-1.637-3.75-4-3.75ZM5.75 12h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1 0-1.5ZM6 15.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z"></path></svg>推荐阅读
+    </p>
+    <div class="post-recommend__slot" data-featured-recommend-slot></div>
+</section>
+
+
+<section class="post-comments" aria-label="Comments"
+    data-giscus
+    data-theme-mode="auto"
+    data-theme-light="light"
+    data-theme-dark="dark"
+    data-repo="Apursuit/the0n3-blog"
+    data-repo-id="R_kgDORvPPbA"
+    data-category="Announcements"
+    data-category-id="DIC_kwDORvPPbM4C5KAt"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-loading="lazy"
+    data-lang="zh-CN">
+    <div class="giscus"></div>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/blog-stats/script.js"></script>
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/giscus-theme/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

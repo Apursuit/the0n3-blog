@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>script优化反弹shell用户不可用问题分析和解决方案 - the0n3</title>
+        <meta name="description" content="在授权测试环境中遇到命令执行漏洞时，选择反弹shell并进行优化shell让靶机分配一个pty伪终端无疑会获取到更舒服的操作体验，在选择使用script优化反弹shell时，可能会遇到用户不可用的问题，下面讲讲分析和解决方案。 从反弹shell里收集webshell的环境信息，script命令是来自util-linux…">
+    <link rel="canonical" href="https://the0n3.top/posts/script-optimize-reverse-shell-user-unavailable-solution/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="script优化反弹shell用户不可用问题分析和解决方案">
+    <meta property="og:description" content="在授权测试环境中遇到命令执行漏洞时，选择反弹shell并进行优化shell让靶机分配一个pty伪终端无疑会获取到更舒服的操作体验，在选择使用script优化反弹shell时，可能会遇到用户不可用的问题，下面讲讲分析和解决方案。 从反弹shell里收集webshell的环境信息，script命令是来自util-linux…">
+    <meta property="og:url" content="https://the0n3.top/posts/script-optimize-reverse-shell-user-unavailable-solution/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/script-optimize-reverse-shell-user-unavailable-solution/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="script优化反弹shell用户不可用问题分析和解决方案">
+    <meta name="twitter:description" content="在授权测试环境中遇到命令执行漏洞时，选择反弹shell并进行优化shell让靶机分配一个pty伪终端无疑会获取到更舒服的操作体验，在选择使用script优化反弹shell时，可能会遇到用户不可用的问题，下面讲讲分析和解决方案。 从反弹shell里收集webshell的环境信息，script命令是来自util-linux…">
+        <meta name="twitter:image" content="https://the0n3.top/images/script-optimize-reverse-shell-user-unavailable-solution/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 评论系统预连接：giscus 由前端按访客主题动态注入，提前建连可抵消注入延迟 -->
+    <link rel="preconnect" href="https://giscus.app" crossorigin>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/nav-menu/style.css">
+        <link rel="stylesheet" href="/assets/features/random-recommend/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                <details class="nav-menu">
+                    <summary class="nav-toggle" aria-label="打开菜单"><span aria-hidden="true">☰</span></summary>
+                </details>
+                <div class="nav-links">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                </div>
+                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>script优化反弹shell用户不可用问题分析和解决方案</h1>
+    <p>
+        <span class="meta">发布于: 2026-11-26 01:16</span>
+                    <span class="meta">· 更新于: 2026-11-26 01:25</span>
+            </p>
+    <div class="post-body">
+        <p>在授权测试环境中遇到命令执行漏洞时，选择反弹shell并进行优化shell让靶机分配一个pty伪终端无疑会获取到更舒服的操作体验，在选择使用script优化反弹shell时，可能会遇到用户不可用的问题，下面讲讲分析和解决方案。</p>
+<p><img src="/images/script-optimize-reverse-shell-user-unavailable-solution/1.png" alt="账户不可用" decoding="async" width="625" height="219"></p>
+<p>从反弹shell里收集webshell的环境信息，script命令是来自util-linux包。</p>
+<pre><code class="language-bash">script --version
+script from util-linux 2.42.1</code></pre>
+<p>找到 util-linux 的Github仓库，查看相关文件源码，其中 <code>script.c</code> 文件中有如下代码 <a href="https://github.com/util-linux/util-linux/blob/stable/v2.42/term-utils/script.c#L979">https://github.com/util-linux/util-linux/blob/stable/v2.42/term-utils/script.c#L979</a> ，调用了 <code>ul_default_shell</code> 函数获取默认shell。</p>
+<pre><code class="language-c">shell = ul_default_shell(0, NULL);</code></pre>
+<p>根据开发习惯快速定位，ul_default_shell 函数声明在包含的 <code>include/default_shell.h</code> 头文件中，实现在 <code>lib/default_shell.c</code> 文件中</p>
+<p>include/default_shell.h</p>
+<pre><code class="language-c">/*
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+#ifndef UTIL_LINUX_DEFAULT_SHELL_H
+#define UTIL_LINUX_DEFAULT_SHELL_H
+
+#include &lt;pwd.h&gt;
+
+#define UL_SHELL_NOENV  (1 &lt;&lt; 0)
+#define UL_SHELL_NOPWD  (1 &lt;&lt; 1)
+
+const char *ul_default_shell(int flags, const struct passwd *pw);
+
+#endif /* UTIL_LINUX_DEFAULT_SHELL_H */</code></pre>
+<p>lib/default_shell.c</p>
+<pre><code class="language-c">/*
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+#include &lt;paths.h&gt;
+
+#include "c.h"
+#include "default_shell.h"
+
+const char *ul_default_shell(int flags, const struct passwd *pw)
+{
+    const char *shell = NULL;
+
+    if (!(flags &amp; UL_SHELL_NOENV)) {
+        shell = getenv("SHELL");
+        if (shell &amp;&amp; *shell)
+            return shell;
+    }
+    if (!(flags &amp; UL_SHELL_NOPWD)) {
+        if (!pw)
+            pw = getpwuid(getuid());
+        if (pw)
+            shell = pw-&gt;pw_shell;
+        if (shell &amp;&amp; *shell)
+            return shell;
+    }
+
+    return _PATH_BSHELL;
+}</code></pre>
+<p>阅读以上函数源码可以发现，ul_default_shell 函数会先尝试获取环境变量 SHELL 的值，如果 SHELL 环境变量存在且不为空，则返回该值；如果不存在或为空，则会尝试获取当前用户的默认 shell（通过 getpwuid 获取用户信息），如果获取到的 shell 不为空，则返回该值；如果以上两种方式都没有获取到有效的 shell，则返回系统默认的 shell 路径 _PATH_BSHELL。</p>
+<p>SHELL 来源优先级排序：SHELL 环境变量 &gt; /etc/passwd 中的 shell &gt; 系统默认 shell。</p>
+<p>获取到 shell 变量值以后，继续分析下面业务部分。准备完 pty 伪终端后，判断 shell 是否可执行，来决定使用绝对路径还是通过 PATH 查找 basename 进入子进程来执行 shell。<a href="https://github.com/util-linux/util-linux/blob/stable/v2.42/term-utils/script.c#L1028-L1056">https://github.com/util-linux/util-linux/blob/stable/v2.42/term-utils/script.c#L1028-L1056</a></p>
+<pre><code class="language-c">ul_pty_init_slave(ctl.pty);             /* 1. setsid + TIOCSCTTY，把从设备设为控制终端 */
+signal(SIGTERM, SIG_DFL);               /* 2. 恢复默认处置，注释说因为 /etc/csh.login */
+
+shname = strrchr(shell, '/');           /* 3. 取 basename 当 argv[0] */
+shname = shname ? shname + 1 : shell;
+
+if (access(shell, X_OK) == 0) {         /* 4a. shell 可执行 → 按绝对路径 exec */
+    if (ctl.command) execl(shell, shname, "-c", ctl.command, (char *)NULL);
+    else             execl(shell, shname, "-i", (char *)NULL);
+} else {                                /* 4b. 不可执行 → 退而靠 PATH 找 basename */
+    if (ctl.command) execlp(shname, shname, "-c", ctl.command, (char *)NULL);
+    else             execlp(shname, shname, "-i", (char *)NULL);
+}
+err(EXIT_FAILURE, "failed to execute %s", shell);   /* 5. 到这就说明 exec 全失败 */</code></pre>
+<p>现在可以打印当前用户 SHELL 环境变量和 /etc/passwd 中的 shell，来判断为什么会出现用户不可用的问题。经验证，两者都为 /sbin/nologin，这也是大多数服务用户的默认 shell ，是刻意的安全策略：</p>
+<p><img src="/images/script-optimize-reverse-shell-user-unavailable-solution/2.png" alt="验证" decoding="async" loading="lazy" width="771" height="327"></p>
+<p>手动使用 /sbin/nologin 来执行 script 命令，验证返回 "This account is not available"，输出完全一致</p>
+<pre><code class="language-bash">/sbin/nologin script -qc /bin/bash /dev/null
+This account is not available</code></pre>
+<p><img src="/images/script-optimize-reverse-shell-user-unavailable-solution/4.png" alt="使用nologin验证" decoding="async" loading="lazy" width="853" height="162"></p>
+<p>解决方案即，通过优先级最高且可控的 SHELL 环境变量来指定一个可用的 shell，例如 /bin/bash 或 /bin/sh，其中 VAR=x 和 VAR=x cmd 是两件不同的事——前者只改 shell 变量，后者才进环境变量且只对这条命令有效。</p>
+<pre><code class="language-bash"># 通过 VAR=x cmd 方式设置 SHELL 环境变量且只对这条命令有效
+SHELL=/bin/bash script -qc /bin/bash /dev/null
+nginx@Images:/var/www/html/uploads$
+exit
+exit
+# 通过 var=x 方式只是设置变量，不进环境变量，失败
+SHELL=/bin/bash
+script -qc /bin/bash /dev/null
+This account is not available
+# 通过 export 写入环境变量，对后续所有子进程持久生效
+export SHELL=/bin/bash
+script -qc /bin/bash /dev/null
+nginx@Images:/var/www/html/uploads$</code></pre>
+<p><img src="/images/script-optimize-reverse-shell-user-unavailable-solution/3.png" alt="解决" decoding="async" loading="lazy" width="965" height="455"></p>
+<p>需要说明的是，在容器镜像和嵌入式固件场景中常见的 Alpine Linux 发行版（基于 musl + BusyBox 的精简环境）默认没有安装 bash 和 script，需要安装 bash 和 util-linux-misc 包。</p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <a href="/categories/Linux%E5%AE%89%E5%85%A8/">Linux安全</a>
+                            </span>
+                    </div>
+    </article>
+
+<section class="post-recommend markdown-alert markdown-alert-tip" data-featured-recommend dir="auto" hidden aria-labelledby="featuredRecommendTitle">
+    <p class="markdown-alert-title" id="featuredRecommendTitle">
+        <svg class="octicon octicon-light-bulb mr-2" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8 1.5c-2.363 0-4 1.69-4 3.75 0 .984.424 1.625.984 2.304l.214.253c.223.264.47.556.673.848.284.411.537.896.621 1.49a.75.75 0 0 1-1.484.211c-.04-.282-.163-.547-.37-.847a8.456 8.456 0 0 0-.542-.68c-.084-.1-.173-.205-.268-.32C3.201 7.75 2.5 6.766 2.5 5.25 2.5 2.31 4.863 0 8 0s5.5 2.31 5.5 5.25c0 1.516-.701 2.5-1.328 3.259-.095.115-.184.22-.268.319-.207.245-.383.453-.541.681-.208.3-.33.565-.37.847a.751.751 0 0 1-1.485-.212c.084-.593.337-1.078.621-1.489.203-.292.45-.584.673-.848.075-.088.147-.173.213-.253.561-.679.985-1.32.985-2.304 0-2.06-1.637-3.75-4-3.75ZM5.75 12h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1 0-1.5ZM6 15.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z"></path></svg>推荐阅读
+    </p>
+    <div class="post-recommend__slot" data-featured-recommend-slot></div>
+</section>
+
+
+<section class="post-comments" aria-label="Comments"
+    data-giscus
+    data-theme-mode="auto"
+    data-theme-light="light"
+    data-theme-dark="dark"
+    data-repo="Apursuit/the0n3-blog"
+    data-repo-id="R_kgDORvPPbA"
+    data-category="Announcements"
+    data-category-id="DIC_kwDORvPPbM4C5KAt"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-loading="lazy"
+    data-lang="zh-CN">
+    <div class="giscus"></div>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/blog-stats/script.js"></script>
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/giscus-theme/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

